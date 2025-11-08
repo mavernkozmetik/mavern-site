@@ -1,0 +1,352 @@
+:root{
+  --bg:#0a0a0a;
+  --panel:#101010;
+  --ink:#e9eaec;
+  --muted:#9ea3a8;
+  --accent:#cfd6db;
+  --card:#141414;
+  --edge:#1b1b1b;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+a{color:var(--ink);text-decoration:none}
+.italic{font-style:italic}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+
+/* Taşmaları engelle */
+img,video{max-width:100%;height:auto;display:block}
+
+/* ===================== Topbar ===================== */
+.topbar{
+  position:sticky; top:0; z-index:20;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 18px;
+  background:linear-gradient(180deg,#0b0b0b,#0a0a0a);
+  border-bottom:1px solid var(--edge);
+  backdrop-filter:saturate(140%) blur(6px);
+}
+.logo-area{display:flex;align-items:center;gap:14px}
+.brand-logo{height:52px;width:auto;object-fit:contain;filter:drop-shadow(0 3px 12px rgba(0,0,0,.7))}
+.brand{margin:0;font-family:'Playfair Display',serif;font-style:italic;letter-spacing:1.5px}
+.topnav a{margin-left:18px;opacity:.9;padding:10px 8px;display:inline-block}
+.topnav a:hover{opacity:1;color:var(--accent)}
+.badge{display:inline-block;min-width:18px;padding:2px 6px;border-radius:12px;background:#b04545;font-size:12px;transform:translateY(-2px)}
+
+/* ===================== Paneller ===================== */
+.panel{
+  position:fixed;top:0;height:100%;width:0;overflow:hidden;
+  background:var(--panel);
+  transition:.45s cubic-bezier(.2,.9,.3,1);
+  padding-top:56px;
+  border-left:1px solid var(--edge);border-right:1px solid var(--edge);
+  z-index:30;
+}
+.panel.left{left:0}
+.panel.right{right:0}
+.panel.open{width:min(420px,calc(100vw - 32px))}
+.panel a,.panel button{display:block;padding:12px 18px;color:var(--ink);background:none;border:none;text-align:left;cursor:pointer}
+.close-btn{position:absolute;top:10px;right:14px;background:none;border:none;color:var(--ink);font-size:26px;cursor:pointer}
+
+/* ===================== Hero ===================== */
+.hero{
+  position:relative;min-height:68vh;display:flex;align-items:center;
+  border-bottom:1px solid var(--edge);
+  background:radial-gradient(80% 120% at 70% 30%,rgba(255,255,255,.05) 0%,rgba(255,255,255,0) 60%);
+}
+.hero .grain{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/></filter><rect width="120" height="120" filter="url(%23n)" opacity="0.035"/></svg>');
+  opacity:.5;mix-blend-mode:soft-light;
+}
+.hero .vignette{position:absolute;inset:0;box-shadow:inset 0 0 180px rgba(0,0,0,.75),inset 0 -60px 120px rgba(0,0,0,.6);pointer-events:none}
+.hero-inner{position:relative;z-index:1;display:flex;gap:28px;justify-content:space-between;align-items:center;width:min(1200px,92%);margin:0 auto;padding:38px 0}
+.hero-copy{max-width:640px}
+.elegant{font-family:'Playfair Display',serif;font-style:italic;letter-spacing:.5px}
+.hero h2.elegant{font-size:40px;margin:0 0 8px}
+.lead{color:var(--muted);margin:0 0 14px}
+.hero-actions{display:flex;gap:10px;margin-top:8px}
+.btn{background:#222;color:var(--ink);border:1px solid var(--edge);border-radius:10px;padding:10px 14px;cursor:pointer;transition:.18s}
+.btn:hover{background:#2c2c2c}
+.btn.primary{background:var(--accent);color:#0c0e10;border:0}
+.btn.primary:hover{filter:brightness(.92)}
+.btn.ghost{background:transparent;border-color:#2a2a2a}
+.bullets{list-style:none;padding:0;margin:18px 0 0;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap}
+.bullets li{padding:6px 10px;border:1px solid #262626;border-radius:999px;background:#111}
+
+/* Spotlight + Logo */
+.hero-art{flex:1;display:flex;justify-content:center}
+.spotlight{
+  width:280px;height:280px;border-radius:50%;
+  background: radial-gradient(circle at 50% 45%,#242424 0%,#1a1a1a 62%,#121212 100%);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 26px 90px rgba(0,0,0,.65),inset 0 0 26px rgba(255,255,255,.03);
+  border:1px solid #242424;
+}
+.spotlight img{max-width:58%;height:auto;object-fit:contain;filter:drop-shadow(0 5px 16px rgba(0,0,0,.85))}
+.ring{position:relative}
+.ring::after{content:"";position:absolute;inset:-8px;border-radius:50%;border:1px solid rgba(200,200,200,.18)}
+
+/* ===================== İçerik ===================== */
+.container{max-width:1180px;margin:0 auto;padding:24px 4%}
+.section{padding:28px 0}
+.section-head{
+  display:flex;justify-content:space-between;align-items:center;
+  border-bottom:1px solid var(--edge);padding-bottom:8px;margin-bottom:14px
+}
+.section-head a:hover{color:var(--accent)}
+
+/* ===== Ürün ızgarası – sıkı ve tutarlı ===== */
+.product-grid{
+  --gap:12px;
+  display:grid;
+  gap:var(--gap);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items:stretch;
+  justify-items:center;                 /* kartlar ortalı */
+}
+.product-card{
+  width:100%;
+  max-width:250px;                      /* kart genişliğini sınırla */
+  background:var(--card);
+  border:1px solid var(--edge);
+  border-radius:12px;
+  padding:12px;
+  box-shadow:0 10px 40px rgba(0,0,0,.45);
+  transition:transform .22s, box-shadow .22s;
+  display:flex;flex-direction:column;gap:8px;
+}
+.product-card:hover{transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,.55)}
+.product-card img{
+  width:100% !important;
+  height:auto !important;
+  aspect-ratio:4/5 !important;          /* varsayılan dikey oran */
+  object-fit:cover !important;
+  border-radius:12px;
+  background:#0a0f1b;border:1px solid #26324a;
+}
+.product-card h4,.product-card p{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0}
+.product-card h4{margin-top:2px}
+.product-card p{color:var(--muted);font-size:13px}
+.product-card .price{font-weight:700;margin:4px 0 8px}
+.product-card .btn{width:100%}
+
+/* Skeleton */
+.with-skeleton .skeleton{
+  height:240px;border-radius:12px;
+  background:linear-gradient(90deg,#151515,#1b1b1b,#151515);
+  background-size:200% 100%;animation:skeleton 1.2s infinite;
+}
+@keyframes skeleton{0%{background-position:0 0}100%{background-position:200% 0}}
+
+/* ===== About ===== */
+.about .about-card{
+  background:linear-gradient(180deg,#0d0d0d,#0b0b0b);
+  border:1px solid var(--edge);border-radius:14px;
+  padding:18px;box-shadow:0 14px 50px rgba(0,0,0,.45);
+}
+.about-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+.abt{background:#0e0e0e;border:1px solid var(--edge);border-radius:12px;padding:14px}
+.trust .trust-wrap{border:1px solid var(--edge);border-radius:14px;padding:18px;text-align:center;background:#0e0e0e}
+
+/* ===================== İletişim (yeniden tasarım) ===================== */
+.contact-form{
+  width:min(680px, 96%);
+  margin: 12px auto 0;
+  background: linear-gradient(180deg,#0d0d0d,#0b0b0b);
+  border:1px solid var(--edge);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 14px 48px rgba(0,0,0,.45);
+  display:grid;
+  gap:10px;
+}
+.contact-form input,
+.contact-form textarea{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid #2a2a2a;
+  background:transparent;
+  color:var(--ink);
+}
+.contact-form button.btn.primary{
+  width:100%;
+  padding:12px;
+  font-weight:600;
+}
+
+/* Test formu (inline style’ları ez) */
+#contactForm{
+  width:min(680px,96%) !important;
+  margin: 18px auto !important;
+  padding:16px !important;
+  background:#0d0d0d !important;
+  border:1px solid var(--edge) !important;
+  border-radius:12px !important;
+  color:#eee !important;
+}
+#contactForm input,
+#contactForm textarea{
+  width:100% !important;
+  height:auto !important;
+  background:#111 !important;
+  border:1px solid #333 !important;
+  color:#eee !important;
+  border-radius:10px !important;
+  padding:12px !important;
+}
+#contactForm button[type="submit"]{
+  background:#fff !important;
+  color:#111 !important;
+  border:0 !important;
+  padding:12px 16px !important;
+  border-radius:10px !important;
+  cursor:pointer !important;
+}
+#testStatus{color:#9cf !important}
+
+/* ===================== Sepet ===================== */
+.cart-list{max-height:52vh;overflow:auto;padding:0 12px}
+.cart-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--edge)}
+.cart-item .meta{flex:1;min-width:0}
+.cart-list .cart-item .meta > div:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qty{display:flex;gap:8px;align-items:center}
+.qty button{background:transparent;border:1px solid #2b2b2b;border-radius:6px;padding:4px 8px;color:#d5d8dc;cursor:pointer}
+.qty .num{min-width:18px;text-align:center}
+.coupon-row{padding:10px 12px;border-top:1px solid var(--edge)}
+.coupon-row input{width:60%;padding:8px;border-radius:6px;border:1px solid #2b2b2b;background:transparent;color:var(--ink)}
+.cart-summary{padding:12px;border-top:1px solid var(--edge)}
+.cart-summary .row{display:flex;justify-content:space-between;margin:6px 0}
+.cart-summary .row.total{font-weight:700}
+.checkout-form input{width:100%;padding:10px;border-radius:8px;border:1px solid #2b2b2b;background:transparent;color:var(--ink);margin:6px 0}
+.btn.actions{width:100%}
+
+/* ===================== Overlay ===================== */
+.overlay{position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:40}
+.overlay.open{display:flex;animation:fade .25s ease}
+@keyframes fade{from{opacity:.6;transform:scale(.995)}to{opacity:1}}
+.overlay-card{background:#0d0d0d;border:1px solid var(--edge);width:min(95%,1180px);height:82vh;border-radius:14px;box-shadow:0 30px 110px rgba(0,0,0,.7);padding:16px;position:relative;overflow:auto}
+
+/* ===================== Footer (merkez) ===================== */
+.footer{
+  padding:22px;
+  border-top:1px solid var(--edge);
+  color:var(--muted);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:center;            /* kesin ortala */
+  text-align:center;             /* metin ve linkler ortalı */
+}
+.footer > div{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  justify-content:center;        /* link satırı ortalı */
+}
+
+/* ===================== Sticky Cart (sadece mobilde) ===================== */
+.sticky-cart-bar{
+  position:fixed;left:0;right:0;bottom:0;
+  transform:translateY(120%);transition:transform .25s ease;
+  background:rgba(16,16,16,.98);
+  border-top:1px solid var(--edge);
+  padding:10px max(12px,env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-right));
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  z-index:50;box-shadow:0 -10px 30px rgba(0,0,0,.35);
+}
+.sticky-cart-bar .sum{display:flex;flex-direction:column;line-height:1.2}
+.sticky-cart-bar .sum small{color:var(--muted)}
+.sticky-cart-bar.show{transform:translateY(0)}
+.has-sticky-pad{padding-bottom:84px}
+
+/* ===================== Masaüstü ===================== */
+@media (min-width:901px){
+  .product-grid{--gap:10px}                 /* AYRIKLIK AZALTILDI */
+  .product-card{max-width:240px;padding:10px}
+  .product-card img{aspect-ratio:4/3 !important}
+}
+
+/* ===================== Tablet ===================== */
+@media (max-width:900px){
+  .hero-inner{flex-direction:column;gap:20px}
+  .about-grid{grid-template-columns:1fr}
+  .panel.open{width:100%}
+  .topnav a{margin-left:12px}
+}
+
+/* ===================== Telefon ===================== */
+@media (max-width:600px){
+  body{font-size:15px}
+
+  /* Logo + Mavern SOLA */
+  .topbar{flex-wrap:wrap;justify-content:flex-start;text-align:left;padding:12px 16px}
+  .logo-area{justify-content:flex-start;flex:1}
+  .brand-logo{height:44px}
+  .brand{font-size:20px}
+
+  /* Menü linkleri altta ortalı */
+  .topnav{width:100%;display:flex;justify-content:center;flex-wrap:wrap;margin-top:6px}
+  .topnav a{margin:6px 10px;font-size:15px}
+
+  .hero-inner{flex-direction:column;text-align:center;gap:18px}
+  .hero-copy{max-width:100%;padding:0 6%}
+  .hero-art .spotlight{width:220px;height:220px}
+  .spotlight img{max-width:60%}
+
+  .product-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+  .product-card{max-width:100%;padding:10px}
+  .product-card img{aspect-ratio:3/4 !important;object-fit:contain !important;max-height:200px}
+
+  .panel.open{width:100%}
+  .cart-list{max-height:60vh}
+
+  input,textarea,button{font-size:15px}
+  .section{padding:20px 0}
+  .container{padding:0 6%}
+  .footer{font-size:13px;line-height:1.4}
+  /* ====== DESKTOP SIK PAKET ====== */
+@media (min-width: 901px){
+
+  /* Katalog (anasayfa ürünler + Koleksiyon overlay) */
+  .product-grid{
+    /* sabit genişlikli kolonlar: kartlar birbirine yaklaşır, boşluk kalmaz */
+    grid-template-columns: repeat(auto-fill, minmax(220px, 240px));
+    justify-content: center;     /* grid satırını ortala, kolonları sıkıştır */
+    column-gap: 12px;            /* yatay boşluk az */
+    row-gap: 14px;               /* dikey boşluk az */
+    max-width: 1100px;           /* aşırı geniş ekranlarda yayılmasın */
+    margin-inline: auto;         /* grid’i kapsayıcıda ortala */
+  }
+
+  /* Koleksiyon overlay içindeki grid de aynı davranışta olsun */
+  .overlay-card .product-grid{
+    grid-template-columns: repeat(auto-fill, minmax(220px, 240px));
+    justify-content: center;
+    column-gap: 12px;
+    row-gap: 14px;
+    max-width: 1100px;
+    margin-inline: auto;
+  }
+
+  /* Kartlar sabit kolon genişliğini doldursun, genişlemesin */
+  .product-card{
+    width: 100%;
+    max-width: 240px;     /* kolonla uyumlu */
+    padding: 10px;
+  }
+
+  /* Görsel oranı sabit, yükseklik çok büyümesin */
+  .product-card img{
+    aspect-ratio: 4 / 5 !important;
+    object-fit: cover !important;
+    max-height: 260px;    /* çok uzun ekranlarda devleşmesin */
+  }
+
+  /* Bölüm başlıklarının altındaki çizgi ile grid arası biraz yakın */
+  .section{ padding-top: 22px; padding-bottom: 24px; }
+}
+}
