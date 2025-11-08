@@ -1,4 +1,4 @@
-// server.js — Mavern (Brevo SMTP + Kupon + Mesaj Kutusu + Güvenli Upload + Rate Limit + Helmet + HTTPS zorunluluğu)
+// server.js — Mavern (Brevo SMTP + Kupon + Mesaj Kutusu + Güvenli Upload + Rate Limit + Helmet + HTTPS)
 
 require("dotenv").config();
 const express = require("express");
@@ -15,23 +15,39 @@ const mime = require("mime-types");
 const app = express();
 
 /* ---------------------------- Güvenlik / Temel ---------------------------- */
-app.set("trust proxy", 1); // Render / proxy ortamları
+app.set("trust proxy", 1);
+
+// CSP: inline <script>/<style> ve data: görsellere izin ver (site JS’leri çalışsın)
 app.use(
   helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }, // public/static dosyalar için
-  })
-);
-app.use(
-  cors({
-    origin: true,
-    credentials: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "default-src": ["'self'"],
+        "script-src": ["'self'", "'unsafe-inline'"],            // inline <script>
+        "script-src-attr": ["'self'", "'unsafe-inline'"],       // onclick vs.
+        "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        "img-src": ["'self'", "data:", "blob:"],                // base64 & blob
+        "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
+        "connect-src": ["'self'"],                              // fetch('/api/...')
+        "object-src": ["'none'"],
+        "frame-ancestors": ["'self'"]
+      }
+    },
+    crossOriginEmbedderPolicy: false,
+    referrerPolicy: { policy: "no-referrer" }
   })
 );
 
-// Büyük istekleri engelle: 1 MB zaten yeterli
+// CORS (gerektiği kadar açık)
+app.use(cors({ origin: true, credentials: false }));
+
+// Gövde boyutu limiti
 app.use(bodyParser.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
-// Basit HTTPS'e zorlama (Render'da http --> https)
+// HTTP -> HTTPS yönlendirme (Render)
 app.use((req, res, next) => {
   const proto = req.get("x-forwarded-proto");
   if (proto && proto !== "https") {
@@ -44,7 +60,7 @@ app.use((req, res, next) => {
 /* ------------------------------- Dosya yolları ---------------------------- */
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
-const DATA_DIR = path.join(ROOT, "data"); // Render free dyno'da kalıcı değildir; yine de JSON store
+const DATA_DIR = path.join(ROOT, "data");
 const UPLOAD_DIR = path.join(PUBLIC_DIR, "uploads");
 
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
@@ -58,7 +74,7 @@ for (const [p, init] of [
   [UPLOAD_DIR],
   [PRODUCTS_FILE, "[]"],
   [MESSAGES_FILE, "[]"],
-  [COUPONS_FILE, "[]"],
+  [COUPONS_FILE, "[]"]
 ]) {
   const isFile = typeof init === "string";
   if (isFile) {
@@ -76,36 +92,27 @@ app.use(
     lastModified: true,
     maxAge: "7d",
     immutable: true,
-    setHeaders: (res) => {
-      res.setHeader("Cache-Control", "public, max-age=604800, immutable");
-    },
+    setHeaders: (res) => res.setHeader("Cache-Control", "public, max-age=604800, immutable")
   })
 );
-app.use(
-  express.static(PUBLIC_DIR, {
-    extensions: ["html"],
-  })
-);
+// public içeriğini .html uzantısı opsiyonlu sun
+app.use(express.static(PUBLIC_DIR, { extensions: ["html"] }));
 
 /* ---------------------------- Yardımcı Fonksiyonlar ----------------------- */
 const readJSON = (file, fallback = []) => {
-  try {
-    return JSON.parse(fs.readFileSync(file, "utf8") || "[]");
-  } catch {
-    return fallback;
-  }
+  try { return JSON.parse(fs.readFileSync(file, "utf8") || "[]"); }
+  catch { return fallback; }
 };
-const writeJSON = (file, data) =>
-  fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
+const writeJSON = (file, data) => fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
 
-const readProducts = () => readJSON(PRODUCTS_FILE);
+const readProducts  = () => readJSON(PRODUCTS_FILE);
 const writeProducts = (list) => writeJSON(PRODUCTS_FILE, list);
 
-const readMessages = () => readJSON(MESSAGES_FILE);
+const readMessages  = () => readJSON(MESSAGES_FILE);
 const writeMessages = (list) => writeJSON(MESSAGES_FILE, list);
 
-const readCoupons = () => readJSON(COUPONS_FILE);
-const writeCoupons = (list) => writeJSON(COUPONS_FILE, list);
+const readCoupons   = () => readJSON(COUPONS_FILE);
+const writeCoupons  = (list) => writeJSON(COUPONS_FILE, list);
 
 const containsTR = (s = "") => /[çğıöşüÇĞİÖŞÜ]/.test(s);
 const isValidEmail = (e = "") => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
@@ -118,21 +125,19 @@ function uploadAbsPathFromPublic(p) {
 }
 
 /* -------------------------------- Rate Limit ------------------------------ */
-// Genel API limiti: IP başına dakikada 60 istek
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60,
   standardHeaders: "draft-7",
-  legacyHeaders: false,
+  legacyHeaders: false
 });
 app.use("/api/", apiLimiter);
 
-// Spam'a açık uçlar için daha sıkı limit:
 const tightLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
   standardHeaders: "draft-7",
-  legacyHeaders: false,
+  legacyHeaders: false
 });
 
 /* --------------------------------- Admin Auth ----------------------------- */
@@ -152,17 +157,13 @@ function requireAuth(req, res, next) {
 app.post("/api/login", (req, res) => {
   const { username, password } = req.body || {};
   if (username === ADMIN_USER && password === ADMIN_PASS) {
-    CURRENT_TOKEN =
-      Math.random().toString(36).slice(2) + Date.now().toString(36);
+    CURRENT_TOKEN = Math.random().toString(36).slice(2) + Date.now().toString(36);
     return res.json({ success: true, token: CURRENT_TOKEN });
   }
-  return res
-    .status(401)
-    .json({ success: false, message: "Kullanıcı adı veya şifre hatalı" });
+  return res.status(401).json({ success: false, message: "Kullanıcı adı veya şifre hatalı" });
 });
 
 /* --------------------------------- SMTP (Brevo) --------------------------- */
-// Render/Brevo için bağlantı havuzu + timeouts + STARTTLS
 const secureFlag =
   String(process.env.BREVO_SECURE || "").toLowerCase() === "true" ||
   Number(process.env.BREVO_PORT) === 465;
@@ -178,31 +179,34 @@ const transporter = nodemailer.createTransport({
   connectionTimeout: 15000,
   greetingTimeout: 10000,
   socketTimeout: 20000,
-  tls: {
-    // Render/STARTTLS edge-case'lerinde takılmasın
-    rejectUnauthorized: false,
-  },
+  tls: { rejectUnauthorized: false }
 });
 
-// Sade sağlık endpoint (SMTP yoklama yapmıyor)
-app.get("/api/mail/health", (_req, res) => {
-  res.json({ ok: true, app: "alive" });
-});
+// Basit sağlık (SMTP'ye dokunmaz)
+app.get("/api/mail/health", (_req, res) => res.json({ ok: true, app: "alive" }));
 
-// Admin SMTP test (korumalı)
+// SMTP canlı test (korumalı)
 app.post("/api/admin/test-send", requireAuth, async (_req, res) => {
   try {
     await transporter.sendMail({
-      from: `"${process.env.FROM_NAME || "Mavern"}" <${
-        process.env.FROM_EMAIL || process.env.BREVO_USER
-      }>`,
+      from: `"${process.env.FROM_NAME || "Mavern"}" <${process.env.FROM_EMAIL || process.env.BREVO_USER}>`,
       to: process.env.MAIL_TO || process.env.BREVO_USER,
       subject: "Mavern SMTP Test",
-      text: "Bu bir test e-postasıdır.",
+      text: "Bu bir test e-postasıdır."
     });
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// SMTP verify (isteğe bağlı)
+app.get("/api/mail/verify", async (_req, res) => {
+  try {
+    await transporter.verify();
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 
@@ -220,46 +224,36 @@ const storage = multer.diskStorage({
       .replace(/\.[^\.]+$/, "")
       .slice(0, 40);
     cb(null, `${Date.now()}_${safeBase}.${ext}`);
-  },
+  }
 });
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const ok = ["image/jpeg", "image/png", "image/webp"].includes(
-      file.mimetype
-    );
+    const ok = ["image/jpeg", "image/png", "image/webp"].includes(file.mimetype);
     cb(ok ? null : new Error("Sadece JPG/PNG/WEBP yükleyin"), ok);
-  },
+  }
 });
 
-app.post(
-  "/api/admin/upload",
-  requireAuth,
-  upload.single("file"),
-  (req, res) => {
-    if (!req.file)
-      return res.status(400).json({ success: false, message: "Dosya yok" });
-    res.json({ success: true, path: "/uploads/" + req.file.filename });
-  }
-);
+app.post("/api/admin/upload", requireAuth, upload.single("file"), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: "Dosya yok" });
+  res.json({ success: true, path: "/uploads/" + req.file.filename });
+});
 
 /* ------------------------------- Ürünler (admin) -------------------------- */
 app.post("/api/admin/products", requireAuth, (req, res) => {
   const { name, price, image, desc } = req.body || {};
   const numeric = Number(price);
   if (!name || !Number.isFinite(numeric)) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Geçerli isim ve fiyat gerekli" });
+    return res.status(400).json({ success: false, message: "Geçerli isim ve fiyat gerekli" });
   }
   const list = readProducts();
   const item = {
     id: "p" + Date.now(),
     name: String(name).trim(),
-    price: Math.round(numeric), // fiyatı tam sayıya yuvarlıyoruz (istersen değiştir)
+    price: Math.round(numeric),
     image: image || "logo.png",
-    desc: String(desc || ""),
+    desc: String(desc || "")
   };
   list.push(item);
   writeProducts(list);
@@ -270,34 +264,24 @@ app.put("/api/admin/products/:id", requireAuth, (req, res) => {
   const id = req.params.id;
   const { name, price, image, desc } = req.body || {};
   const list = readProducts();
-  const idx = list.findIndex((p) => p.id === id);
-  if (idx === -1)
-    return res
-      .status(404)
-      .json({ success: false, message: "Ürün bulunamadı" });
+  const idx = list.findIndex(p => p.id === id);
+  if (idx === -1) return res.status(404).json({ success: false, message: "Ürün bulunamadı" });
 
   const oldImage = list[idx].image;
 
-  if (name !== undefined) list[idx].name = String(name).trim();
+  if (name  !== undefined) list[idx].name  = String(name).trim();
   if (price !== undefined) list[idx].price = Math.round(Number(price));
   if (image !== undefined) list[idx].image = String(image);
-  if (desc !== undefined) list[idx].desc = String(desc);
+  if (desc  !== undefined) list[idx].desc  = String(desc);
 
   writeProducts(list);
 
-  // Eski görselin temizliği (kullanılmıyorsa)
-  if (
-    image !== undefined &&
-    oldImage &&
-    oldImage.startsWith("/uploads/") &&
-    oldImage !== list[idx].image
-  ) {
-    const stillUsed = readProducts().some((p) => p.image === oldImage);
+  // Eski görseli başka ürün kullanmıyorsa sil
+  if (image !== undefined && oldImage && oldImage.startsWith("/uploads/") && oldImage !== list[idx].image) {
+    const stillUsed = readProducts().some(p => p.image === oldImage);
     const abs = uploadAbsPathFromPublic(oldImage);
     if (!stillUsed && abs && fs.existsSync(abs)) {
-      try {
-        fs.unlinkSync(abs);
-      } catch {}
+      try { fs.unlinkSync(abs); } catch {}
     }
   }
 
@@ -307,24 +291,18 @@ app.put("/api/admin/products/:id", requireAuth, (req, res) => {
 app.delete("/api/admin/products/:id", requireAuth, (req, res) => {
   const id = req.params.id;
   let list = readProducts();
-  const idx = list.findIndex((p) => p.id === id);
-  if (idx === -1)
-    return res
-      .status(404)
-      .json({ success: false, message: "Ürün bulunamadı" });
+  const idx = list.findIndex(p => p.id === id);
+  if (idx === -1) return res.status(404).json({ success: false, message: "Ürün bulunamadı" });
 
   const img = list[idx].image;
   list.splice(idx, 1);
   writeProducts(list);
 
-  // Görseli başka ürün kullanmıyorsa sil
   if (img && img.startsWith("/uploads/")) {
-    const used = readProducts().some((p) => p.image === img);
+    const used = readProducts().some(p => p.image === img);
     const abs = uploadAbsPathFromPublic(img);
     if (!used && abs && fs.existsSync(abs)) {
-      try {
-        fs.unlinkSync(abs);
-      } catch {}
+      try { fs.unlinkSync(abs); } catch {}
     }
   }
 
@@ -338,10 +316,9 @@ app.post("/api/coupon/check", (req, res) => {
   if (!normalized) return res.json({ success: false, message: "Kod gerekli" });
 
   const coupons = readCoupons();
-  const found = coupons.find((c) => c.code === normalized);
+  const found = coupons.find(c => c.code === normalized);
   if (!found) return res.json({ success: false, message: "Geçersiz kod" });
-  if (found.active === false)
-    return res.json({ success: false, message: "Kod pasif" });
+  if (found.active === false) return res.json({ success: false, message: "Kod pasif" });
 
   if (found.expiresAt) {
     const exp = Date.parse(found.expiresAt);
@@ -352,16 +329,9 @@ app.post("/api/coupon/check", (req, res) => {
 
   const percent = Number(found.percent || 0);
   if (!(percent > 0 && percent <= 90)) {
-    return res.json({
-      success: false,
-      message: "Kod yapılandırması geçersiz",
-    });
+    return res.json({ success: false, message: "Kod yapılandırması geçersiz" });
   }
-  return res.json({
-    success: true,
-    percent,
-    expiresAt: found.expiresAt || null,
-  });
+  return res.json({ success: true, percent, expiresAt: found.expiresAt || null });
 });
 
 app.get("/api/admin/coupons", requireAuth, (_req, res) => {
@@ -372,18 +342,11 @@ app.post("/api/admin/coupons", requireAuth, (req, res) => {
   let { code, percent, active, expiresAt } = req.body || {};
   code = String(code || "").trim().toUpperCase();
   const p = Number(percent);
-  if (!code)
-    return res.status(400).json({ success: false, message: "Kod gerekli" });
-  if (!(p > 0 && p <= 90))
-    return res
-      .status(400)
-      .json({ success: false, message: "Yüzde 1–90 arasında olmalı" });
+  if (!code) return res.status(400).json({ success: false, message: "Kod gerekli" });
+  if (!(p > 0 && p <= 90)) return res.status(400).json({ success: false, message: "Yüzde 1–90 arasında olmalı" });
 
   const list = readCoupons();
-  if (list.find((c) => c.code === code))
-    return res
-      .status(400)
-      .json({ success: false, message: "Bu kod zaten var" });
+  if (list.find(c => c.code === code)) return res.status(400).json({ success: false, message: "Bu kod zaten var" });
 
   let expISO = null;
   if (expiresAt) {
@@ -397,7 +360,7 @@ app.post("/api/admin/coupons", requireAuth, (req, res) => {
     percent: p,
     active: active === false ? false : true,
     expiresAt: expISO,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date().toISOString()
   };
   list.push(item);
   writeCoupons(list);
@@ -408,11 +371,8 @@ app.delete("/api/admin/coupons/:code", requireAuth, (req, res) => {
   const code = String(req.params.code || "").trim().toUpperCase();
   let list = readCoupons();
   const before = list.length;
-  list = list.filter((c) => c.code !== code);
-  if (list.length === before)
-    return res
-      .status(404)
-      .json({ success: false, message: "Kod bulunamadı" });
+  list = list.filter(c => c.code !== code);
+  if (list.length === before) return res.status(404).json({ success: false, message: "Kod bulunamadı" });
   writeCoupons(list);
   res.json({ success: true });
 });
@@ -420,22 +380,16 @@ app.delete("/api/admin/coupons/:code", requireAuth, (req, res) => {
 /* ------------------------------ Mesaj Kutusu -------------------------------- */
 app.get("/api/admin/messages", requireAuth, (req, res) => {
   const type = String(req.query.type || "").trim();
-  let list = readMessages().sort((a, b) =>
-    a.createdAt > b.createdAt ? -1 : 1
-  );
-  if (type === "contact" || type === "order")
-    list = list.filter((m) => m.type === type);
+  let list = readMessages().sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+  if (type === "contact" || type === "order") list = list.filter(m => m.type === type);
   res.json({ success: true, items: list });
 });
 
 app.patch("/api/admin/messages/:id/read", requireAuth, (req, res) => {
   const id = String(req.params.id || "");
   const list = readMessages();
-  const idx = list.findIndex((m) => m.id === id);
-  if (idx === -1)
-    return res
-      .status(404)
-      .json({ success: false, message: "Mesaj bulunamadı" });
+  const idx = list.findIndex(m => m.id === id);
+  if (idx === -1) return res.status(404).json({ success: false, message: "Mesaj bulunamadı" });
   list[idx].read = true;
   writeMessages(list);
   res.json({ success: true, item: list[idx] });
@@ -445,57 +399,39 @@ app.delete("/api/admin/messages/:id", requireAuth, (req, res) => {
   const id = String(req.params.id || "");
   let list = readMessages();
   const before = list.length;
-  list = list.filter((m) => m.id !== id);
-  if (list.length === before)
-    return res
-      .status(404)
-      .json({ success: false, message: "Mesaj bulunamadı" });
+  list = list.filter(m => m.id !== id);
+  if (list.length === before) return res.status(404).json({ success: false, message: "Mesaj bulunamadı" });
   writeMessages(list);
   res.json({ success: true });
 });
 
-// Mail tekrar dene (admin)
+// Mesaj mailini yeniden gönder
 app.post("/api/admin/messages/:id/resend", requireAuth, async (req, res) => {
   const id = String(req.params.id || "");
   const list = readMessages();
-  const idx = list.findIndex((m) => m.id === id);
-  if (idx === -1)
-    return res
-      .status(404)
-      .json({ success: false, message: "Mesaj bulunamadı" });
+  const idx = list.findIndex(m => m.id === id);
+  if (idx === -1) return res.status(404).json({ success: false, message: "Mesaj bulunamadı" });
 
   const msg = list[idx];
   try {
     if (msg.type === "contact") {
       await transporter.sendMail({
-        from: `"${process.env.FROM_NAME || "Mavern Site"}" <${
-          process.env.FROM_EMAIL || process.env.BREVO_USER
-        }>`,
+        from: `"${process.env.FROM_NAME || "Mavern Site"}" <${process.env.FROM_EMAIL || process.env.BREVO_USER}>`,
         replyTo: msg.email || undefined,
         to: process.env.MAIL_TO || process.env.BREVO_USER,
         subject: `Mavern İletişim - ${msg.name || "-"}`,
-        text: `Gönderen: ${msg.name || "-"} - ${msg.email || "-"}\n\nMesaj:\n${
-          msg.message || ""
-        }`,
+        text: `Gönderen: ${msg.name || "-"} - ${msg.email || "-"}\n\nMesaj:\n${msg.message || ""}`
       });
     } else if (msg.type === "order") {
-      const lines = (msg.items || [])
-        .map((it) => `• ${it.name} x${it.qty || 1} — ${it.price}₺`)
-        .join("\n");
+      const lines = (msg.items || []).map(it => `• ${it.name} x${it.qty || 1} — ${it.price}₺`).join("\n");
       await transporter.sendMail({
-        from: `"Mavern Sipariş" <${
-          process.env.FROM_EMAIL || process.env.BREVO_USER
-        }>`,
+        from: `"Mavern Sipariş" <${process.env.FROM_EMAIL || process.env.BREVO_USER}>`,
         to: process.env.MAIL_TO || process.env.BREVO_USER,
         subject: "Yeni Sipariş (Yeniden Gönderim)",
-        text: `Müşteri: ${msg.name || "-"} (${msg.email || "-"})\n\nÜrünler:\n${lines}\n\nKupon: ${
-          msg.coupon || "-"
-        }\nİndirim: ${msg.discount || 0}₺\nToplam: ${msg.payable || 0}₺`,
+        text: `Müşteri: ${msg.name || "-"} (${msg.email || "-"})\n\nÜrünler:\n${lines}\n\nKupon: ${msg.coupon || "-"}\nİndirim: ${msg.discount || 0}₺\nToplam: ${msg.payable || 0}₺`
       });
     } else {
-      return res
-        .status(400)
-        .json({ success: false, message: "Bu mesaj tipi için destek yok" });
+      return res.status(400).json({ success: false, message: "Bu mesaj tipi için destek yok" });
     }
     list[idx].mailSent = true;
     list[idx].mailError = null;
@@ -505,71 +441,40 @@ app.post("/api/admin/messages/:id/resend", requireAuth, async (req, res) => {
     list[idx].mailSent = false;
     list[idx].mailError = e.message || String(e);
     writeMessages(list);
-    res
-      .status(500)
-      .json({ success: false, message: "Yeniden gönderilemedi: " + e.message });
+    res.status(500).json({ success: false, message: "Yeniden gönderilemedi: " + e.message });
   }
 });
 
 /* --------------------------- İletişim & Checkout --------------------------- */
-// Sıkı rate limit uygula
 app.post("/api/contact", tightLimiter, async (req, res) => {
   const { name, email, message } = req.body || {};
   if (!name || !email || !message) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Lütfen tüm alanları doldurun." });
+    return res.status(400).json({ success: false, message: "Lütfen tüm alanları doldurun." });
   }
-  if (containsTR(email))
-    return res.status(400).json({
-      success: false,
-      message: "E-posta adresinde Türkçe karakter kullanmayın.",
-    });
-  if (!isValidEmail(email))
-    return res
-      .status(400)
-      .json({ success: false, message: "Geçerli bir e-posta girin." });
+  if (containsTR(email)) return res.status(400).json({ success: false, message: "E-posta adresinde Türkçe karakter kullanmayın." });
+  if (!isValidEmail(email)) return res.status(400).json({ success: false, message: "Geçerli bir e-posta girin." });
 
   const list = readMessages();
   const id = "m" + Date.now();
-  const rec = {
-    id,
-    type: "contact",
-    name,
-    email,
-    message,
-    createdAt: new Date().toISOString(),
-    read: false,
-    mailSent: false,
-    mailError: null,
-  };
+  const rec = { id, type:"contact", name, email, message, createdAt: new Date().toISOString(), read:false, mailSent:false, mailError:null };
   list.push(rec);
   writeMessages(list);
 
   try {
     await transporter.sendMail({
-      from: `"${process.env.FROM_NAME || "Mavern Site"}" <${
-        process.env.FROM_EMAIL || process.env.BREVO_USER
-      }>`,
+      from: `"${process.env.FROM_NAME || "Mavern Site"}" <${process.env.FROM_EMAIL || process.env.BREVO_USER}>`,
       replyTo: email,
       to: process.env.MAIL_TO || process.env.BREVO_USER,
       subject: `Mavern İletişim - ${name}`,
-      text: `Gönderen: ${name} - ${email}\n\nMesaj:\n${message}`,
+      text: `Gönderen: ${name} - ${email}\n\nMesaj:\n${message}`
     });
     const L = readMessages();
-    const i = L.findIndex((m) => m.id === id);
-    if (i > -1) {
-      L[i].mailSent = true;
-      L[i].mailError = null;
-      writeMessages(L);
-    }
+    const i = L.findIndex(m => m.id === id);
+    if (i > -1) { L[i].mailSent = true; L[i].mailError = null; writeMessages(L); }
     res.json({ success: true, message: "Mesaj gönderildi." });
   } catch (e) {
     console.error("Mail hata (contact):", e.message);
-    res.json({
-      success: true,
-      message: "Mesaj kaydedildi, e-posta şu an gönderilemedi.",
-    });
+    res.json({ success: true, message: "Mesaj kaydedildi, e-posta şu an gönderilemedi." });
   }
 });
 
@@ -578,27 +483,17 @@ app.post("/api/checkout", tightLimiter, async (req, res) => {
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ success: false, message: "Sepet boş." });
   }
-  if (email && containsTR(email))
-    return res.status(400).json({
-      success: false,
-      message: "E-posta adresinde Türkçe karakter kullanmayın.",
-    });
-  if (email && !isValidEmail(email))
-    return res
-      .status(400)
-      .json({ success: false, message: "Geçerli bir e-posta girin." });
+  if (email && containsTR(email)) return res.status(400).json({ success: false, message: "E-posta adresinde Türkçe karakter kullanmayın." });
+  if (email && !isValidEmail(email)) return res.status(400).json({ success: false, message: "Geçerli bir e-posta girin." });
 
-  const total = items.reduce(
-    (s, it) => s + Number(it.price) * Number(it.qty || 1),
-    0
-  );
+  const total = items.reduce((s, it) => s + Number(it.price) * Number(it.qty || 1), 0);
 
   let discount = 0;
   let appliedCoupon = null;
   if (coupon) {
     const normalized = String(coupon).trim().toUpperCase();
     const coupons = readCoupons();
-    const found = coupons.find((c) => c.code === normalized);
+    const found = coupons.find(c => c.code === normalized);
     if (found && found.active !== false) {
       let usable = true;
       if (found.expiresAt) {
@@ -613,76 +508,41 @@ app.post("/api/checkout", tightLimiter, async (req, res) => {
   }
 
   const payable = total - discount;
-  const lines = items
-    .map((it) => `• ${it.name} x${it.qty || 1} — ${it.price}₺`)
-    .join("\n");
+  const lines = items.map(it => `• ${it.name} x${it.qty || 1} — ${it.price}₺`).join("\n");
 
   const list = readMessages();
   const id = "o" + Date.now();
   const orderRec = {
-    id,
-    type: "order",
-    name: name || "-",
-    email: email || "-",
-    items,
-    coupon: appliedCoupon,
-    total,
-    discount,
-    payable,
-    createdAt: new Date().toISOString(),
-    read: false,
-    mailSent: false,
-    mailError: null,
+    id, type:"order", name: name || "-", email: email || "-",
+    items, coupon: appliedCoupon, total, discount, payable,
+    createdAt: new Date().toISOString(), read:false, mailSent:false, mailError:null
   };
   list.push(orderRec);
   writeMessages(list);
 
   try {
     await transporter.sendMail({
-      from: `"Mavern Sipariş" <${
-        process.env.FROM_EMAIL || process.env.BREVO_USER
-      }>`,
+      from: `"Mavern Sipariş" <${process.env.FROM_EMAIL || process.env.BREVO_USER}>`,
       to: process.env.MAIL_TO || process.env.BREVO_USER,
       subject: "Yeni Sipariş",
-      text: `Müşteri: ${name || "-"} (${email || "-"})\n\nÜrünler:\n${lines}\n\nKupon: ${
-        appliedCoupon || "-"
-      }\nİndirim: ${discount}₺\nToplam: ${payable}₺`,
+      text: `Müşteri: ${name || "-"} (${email || "-"})\n\nÜrünler:\n${lines}\n\nKupon: ${appliedCoupon || "-"}\nİndirim: ${discount}₺\nToplam: ${payable}₺`
     });
 
     const L = readMessages();
-    const i = L.findIndex((m) => m.id === id);
-    if (i > -1) {
-      L[i].mailSent = true;
-      L[i].mailError = null;
-      writeMessages(L);
-    }
+    const i = L.findIndex(m => m.id === id);
+    if (i > -1) { L[i].mailSent = true; L[i].mailError = null; writeMessages(L); }
 
-    res.json({
-      success: true,
-      message: "Sipariş iletildi.",
-      total,
-      discount,
-      payable,
-    });
+    res.json({ success: true, message: "Sipariş iletildi.", total, discount, payable });
   } catch (e) {
     console.error("Checkout mail hata:", e.message);
-    res.json({
-      success: true,
-      message: "Sipariş kaydedildi, e-posta şu an gönderilemedi.",
-      total,
-      discount,
-      payable,
-    });
+    res.json({ success: true, message: "Sipariş kaydedildi, e-posta şu an gönderilemedi.", total, discount, payable });
   }
 });
 
 /* ------------------------------- Fallback/Server --------------------------- */
-// Basit sürüm/info
-app.get("/api/version", (_req, res) => {
-  res.json({ name: "mavern", version: "1.0.0" });
-});
+app.get("/api/version", (_req, res) => res.json({ name: "mavern", version: "1.0.0" }));
 
-// Frontend routing için fallback (index.html)
+// Frontend routing (en sonda, API’leri gölgelemesin)
 app.get("*", (_req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, "index.html"));
 });
