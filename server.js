@@ -634,4 +634,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Mavern sunucusu çalışıyor: http://localhost:${PORT}`);
 });
-
