@@ -1,4 +1,4 @@
-// server.js — Mavern (Brevo SMTP + Kupon + Mesaj Kutusu + Güvenli Upload + Rate Limit + Helmet + HTTPS)
+// server.js — Mavern (Brevo SMTP + Kupon startsAt + Mesaj Kutusu + Güvenli Upload + Rate Limit + Helmet + HTTPS)
 
 require("dotenv").config();
 const express = require("express");
@@ -25,12 +25,12 @@ app.use(
       useDefaults: true,
       directives: {
         "default-src": ["'self'"],
-        "script-src": ["'self'", "'unsafe-inline'"],            // inline <script>
-        "script-src-attr": ["'self'", "'unsafe-inline'"],       // onclick vs.
+        "script-src": ["'self'", "'unsafe-inline'"],
+        "script-src-attr": ["'self'", "'unsafe-inline'"],
         "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        "img-src": ["'self'", "data:", "blob:"],                // base64 & blob
+        "img-src": ["'self'", "data:", "blob:"],
         "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
-        "connect-src": ["'self'"],                              // fetch('/api/...')
+        "connect-src": ["'self'"],
         "object-src": ["'none'"],
         "frame-ancestors": ["'self'"]
       }
@@ -40,7 +40,7 @@ app.use(
   })
 );
 
-// CORS (gerektiği kadar açık)
+// CORS
 app.use(cors({ origin: true, credentials: false }));
 
 // Gövde boyutu limiti
@@ -122,6 +122,32 @@ function uploadAbsPathFromPublic(p) {
   if (!p || !p.startsWith("/uploads/")) return null;
   const base = path.basename(p);
   return path.join(UPLOAD_DIR, base);
+}
+
+// ---- Fiyat & Tarih yardımcıları (Yeni) ----
+function parsePrice(text) {
+  // Dönen: { price: number|null, priceText: string, purchasable: boolean }
+  const priceText = String(text ?? "").trim();
+  const num = Number(
+    priceText
+      .replace(/[₺\s]/g, "")
+      .replace(",", ".")
+  );
+  const isNum = Number.isFinite(num);
+  return { price: isNum ? num : null, priceText, purchasable: !!isNum };
+}
+
+function toISODateOrNull(d) {
+  if (!d) return null;
+  const t = Date.parse(d);
+  if (Number.isNaN(t)) return null;
+  return new Date(t).toISOString();
+}
+
+function todayISODateStart() {
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  return d.toISOString();
 }
 
 /* -------------------------------- Rate Limit ------------------------------ */
@@ -241,17 +267,20 @@ app.post("/api/admin/upload", requireAuth, upload.single("file"), (req, res) => 
 });
 
 /* ------------------------------- Ürünler (admin) -------------------------- */
+// Fiyat artık metin de olabilir: priceText saklanır, sayısal ise purchasable=true
 app.post("/api/admin/products", requireAuth, (req, res) => {
   const { name, price, image, desc } = req.body || {};
-  const numeric = Number(price);
-  if (!name || !Number.isFinite(numeric)) {
-    return res.status(400).json({ success: false, message: "Geçerli isim ve fiyat gerekli" });
-  }
+  if (!name) return res.status(400).json({ success: false, message: "İsim gerekli" });
+
   const list = readProducts();
+  const parsed = parsePrice(price);
+
   const item = {
     id: "p" + Date.now(),
     name: String(name).trim(),
-    price: Math.round(numeric),
+    price: parsed.price,             // number | null
+    priceText: parsed.priceText,     // "150₺", "yakında", vb.
+    purchasable: parsed.purchasable, // sayıysa true
     image: image || "logo.png",
     desc: String(desc || "")
   };
@@ -270,7 +299,12 @@ app.put("/api/admin/products/:id", requireAuth, (req, res) => {
   const oldImage = list[idx].image;
 
   if (name  !== undefined) list[idx].name  = String(name).trim();
-  if (price !== undefined) list[idx].price = Math.round(Number(price));
+  if (price !== undefined) {
+    const parsed = parsePrice(price);
+    list[idx].price = parsed.price;
+    list[idx].priceText = parsed.priceText;
+    list[idx].purchasable = parsed.purchasable;
+  }
   if (image !== undefined) list[idx].image = String(image);
   if (desc  !== undefined) list[idx].desc  = String(desc);
 
@@ -310,6 +344,7 @@ app.delete("/api/admin/products/:id", requireAuth, (req, res) => {
 });
 
 /* --------------------------------- Kuponlar -------------------------------- */
+// Kupon check: startsAt + expiresAt
 app.post("/api/coupon/check", (req, res) => {
   const { code } = req.body || {};
   const normalized = String(code || "").trim().toUpperCase();
@@ -320,9 +355,18 @@ app.post("/api/coupon/check", (req, res) => {
   if (!found) return res.json({ success: false, message: "Geçersiz kod" });
   if (found.active === false) return res.json({ success: false, message: "Kod pasif" });
 
+  const now = nowTS();
+
+  if (found.startsAt) {
+    const st = Date.parse(found.startsAt);
+    if (!Number.isNaN(st) && now < st) {
+      return res.json({ success: false, message: "Kod henüz başlamadı" });
+    }
+  }
+
   if (found.expiresAt) {
     const exp = Date.parse(found.expiresAt);
-    if (!Number.isNaN(exp) && nowTS() > exp) {
+    if (!Number.isNaN(exp) && now > exp) {
       return res.json({ success: false, message: "Kod süresi dolmuş" });
     }
   }
@@ -331,15 +375,21 @@ app.post("/api/coupon/check", (req, res) => {
   if (!(percent > 0 && percent <= 90)) {
     return res.json({ success: false, message: "Kod yapılandırması geçersiz" });
   }
-  return res.json({ success: true, percent, expiresAt: found.expiresAt || null });
+  return res.json({
+    success: true,
+    percent,
+    startsAt: found.startsAt || null,
+    expiresAt: found.expiresAt || null
+  });
 });
 
 app.get("/api/admin/coupons", requireAuth, (_req, res) => {
   res.json({ success: true, items: readCoupons() });
 });
 
+// Kupon create: startsAt opsiyonel (boş ise bugün 00:00), expiresAt opsiyonel
 app.post("/api/admin/coupons", requireAuth, (req, res) => {
-  let { code, percent, active, expiresAt } = req.body || {};
+  let { code, percent, active, startsAt, expiresAt } = req.body || {};
   code = String(code || "").trim().toUpperCase();
   const p = Number(percent);
   if (!code) return res.status(400).json({ success: false, message: "Kod gerekli" });
@@ -348,17 +398,15 @@ app.post("/api/admin/coupons", requireAuth, (req, res) => {
   const list = readCoupons();
   if (list.find(c => c.code === code)) return res.status(400).json({ success: false, message: "Bu kod zaten var" });
 
-  let expISO = null;
-  if (expiresAt) {
-    const parsed = Date.parse(expiresAt);
-    if (!Number.isNaN(parsed)) expISO = new Date(parsed).toISOString();
-  }
+  const startsISO = toISODateOrNull(startsAt) || todayISODateStart();
+  const expISO = toISODateOrNull(expiresAt); // boş olabilir
 
   const item = {
     id: "c" + Date.now(),
     code,
     percent: p,
     active: active === false ? false : true,
+    startsAt: startsISO,
     expiresAt: expISO,
     createdAt: new Date().toISOString()
   };
@@ -446,6 +494,7 @@ app.post("/api/admin/messages/:id/resend", requireAuth, async (req, res) => {
 });
 
 /* --------------------------- İletişim & Checkout --------------------------- */
+// İletişim aynı (rate limit + validasyon)
 app.post("/api/contact", tightLimiter, async (req, res) => {
   const { name, email, message } = req.body || {};
   if (!name || !email || !message) {
@@ -478,6 +527,7 @@ app.post("/api/contact", tightLimiter, async (req, res) => {
   }
 });
 
+// CHECKOUT: satılamayan ürünü engelle + kuponu yeni mantıkla test et
 app.post("/api/checkout", tightLimiter, async (req, res) => {
   const { items, email, name, coupon } = req.body || {};
   if (!Array.isArray(items) || items.length === 0) {
@@ -486,21 +536,54 @@ app.post("/api/checkout", tightLimiter, async (req, res) => {
   if (email && containsTR(email)) return res.status(400).json({ success: false, message: "E-posta adresinde Türkçe karakter kullanmayın." });
   if (email && !isValidEmail(email)) return res.status(400).json({ success: false, message: "Geçerli bir e-posta girin." });
 
-  const total = items.reduce((s, it) => s + Number(it.price) * Number(it.qty || 1), 0);
+  // Ürünleri güncel listeden doğrula (id varsa id ile, yoksa isimle)
+  const all = readProducts();
+  const notBuyable = [];
+  const normalizedItems = [];
 
+  for (const it of items) {
+    const found = it.id ? all.find(p => p.id === it.id) : all.find(p => p.name === it.name);
+    if (!found) {
+      notBuyable.push({ name: it.name || "(?)", reason: "ürün bulunamadı" });
+      continue;
+    }
+    if (!found.purchasable || !Number.isFinite(found.price)) {
+      notBuyable.push({ name: found.name, reason: "satılamıyor (fiyat sayısal değil)" });
+      continue;
+    }
+    const qty = Number(it.qty || 1);
+    normalizedItems.push({ id: found.id, name: found.name, price: found.price, qty });
+  }
+
+  if (notBuyable.length > 0) {
+    return res.status(400).json({
+      success:false,
+      message: "Sepette satılamayan ürün(ler) var.",
+      notBuyable
+    });
+  }
+
+  const total = normalizedItems.reduce((s, it) => s + it.price * it.qty, 0);
+
+  // Kupon uygula (startsAt/expiresAt dâhil)
   let discount = 0;
   let appliedCoupon = null;
   if (coupon) {
     const normalized = String(coupon).trim().toUpperCase();
     const coupons = readCoupons();
-    const found = coupons.find(c => c.code === normalized);
-    if (found && found.active !== false) {
+    const now = nowTS();
+    const found = coupons.find(c => c.code === normalized && c.active !== false);
+    if (found) {
       let usable = true;
-      if (found.expiresAt) {
-        const exp = Date.parse(found.expiresAt);
-        if (!Number.isNaN(exp) && nowTS() > exp) usable = false;
+      if (found.startsAt) {
+        const st = Date.parse(found.startsAt);
+        if (!Number.isNaN(st) && now < st) usable = false;
       }
-      if (usable && found.percent > 0 && found.percent <= 90) {
+      if (usable && found.expiresAt) {
+        const exp = Date.parse(found.expiresAt);
+        if (!Number.isNaN(exp) && now > exp) usable = false;
+      }
+      if (usable && Number(found.percent) > 0 && Number(found.percent) <= 90) {
         appliedCoupon = found.code;
         discount = Math.round(total * (Number(found.percent) / 100));
       }
@@ -508,13 +591,13 @@ app.post("/api/checkout", tightLimiter, async (req, res) => {
   }
 
   const payable = total - discount;
-  const lines = items.map(it => `• ${it.name} x${it.qty || 1} — ${it.price}₺`).join("\n");
+  const lines = normalizedItems.map(it => `• ${it.name} x${it.qty} — ${it.price}₺`).join("\n");
 
   const list = readMessages();
   const id = "o" + Date.now();
   const orderRec = {
     id, type:"order", name: name || "-", email: email || "-",
-    items, coupon: appliedCoupon, total, discount, payable,
+    items: normalizedItems, coupon: appliedCoupon, total, discount, payable,
     createdAt: new Date().toISOString(), read:false, mailSent:false, mailError:null
   };
   list.push(orderRec);
@@ -551,3 +634,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Mavern sunucusu çalışıyor: http://localhost:${PORT}`);
 });
+
