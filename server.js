@@ -1,4 +1,4 @@
-// server.js — Mavern (Brevo SMTP + Kupon startsAt + Mesaj Kutusu + Güvenli Upload + Rate Limit + Helmet + HTTPS)
+// server.js — Mavern (SMTP + Kupon startsAt + Mesaj Kutusu + Güvenli Upload + Rate Limit + Helmet + HTTPS + 20s Idempotency)
 
 require("dotenv").config();
 const express = require("express");
@@ -11,13 +11,14 @@ const rateLimit = require("express-rate-limit");
 const nodemailer = require("nodemailer");
 const multer = require("multer");
 const mime = require("mime-types");
+const crypto = require("crypto");
 
 const app = express();
 
 /* ---------------------------- Güvenlik / Temel ---------------------------- */
 app.set("trust proxy", 1);
 
-// CSP: inline <script>/<style> ve data: görsellere izin ver (site JS’leri çalışsın)
+// CSP: inline script/style ve data: görsellere izin ver
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -43,11 +44,11 @@ app.use(
 // CORS
 app.use(cors({ origin: true, credentials: false }));
 
-// Gövde boyutu limiti
+// Gövde limiti
 app.use(bodyParser.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
-// HTTP -> HTTPS yönlendirme (Render vb.)
+// HTTP -> HTTPS (Render vb.)
 app.use((req, res, next) => {
   const proto = req.get("x-forwarded-proto");
   if (proto && proto !== "https") {
@@ -65,7 +66,7 @@ const UPLOAD_DIR = path.join(PUBLIC_DIR, "uploads");
 
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
 const MESSAGES_FILE = path.join(DATA_DIR, "messages.json");
-const COUPONS_FILE = path.join(DATA_DIR, "coupons.json");
+const COUPONS_FILE  = path.join(DATA_DIR, "coupons.json");
 
 // Klasör/JSON başlangıcı
 for (const [p, init] of [
@@ -74,7 +75,7 @@ for (const [p, init] of [
   [UPLOAD_DIR],
   [PRODUCTS_FILE, "[]"],
   [MESSAGES_FILE, "[]"],
-  [COUPONS_FILE, "[]"]
+  [COUPONS_FILE,  "[]"]
 ]) {
   const isFile = typeof init === "string";
   if (isFile) {
@@ -113,46 +114,83 @@ const writeMessages = (list) => writeJSON(MESSAGES_FILE, list);
 const readCoupons   = () => readJSON(COUPONS_FILE);
 const writeCoupons  = (list) => writeJSON(COUPONS_FILE, list);
 
-const containsTR = (s = "") => /[çğıöşüÇĞİÖŞÜ]/.test(s);
+const containsTR   = (s = "") => /[çğıöşüÇĞİÖŞÜ]/.test(s);
 const isValidEmail = (e = "") => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
-const nowTS = () => Date.now();
+const nowTS        = () => Date.now();
+const clientIP     = (req) => (req.headers["x-forwarded-for"]?.split(",")[0] || req.ip || "").trim();
 
 function isValidPhone(s = "") {
   const x = String(s).trim();
-  // Basit: rakam, boşluk, + (başta), parantez ve tire izinli; min 6 karakter
   return /^[+0-9()\-\s]{6,}$/.test(x);
 }
-
 function uploadAbsPathFromPublic(p) {
   if (!p || !p.startsWith("/uploads/")) return null;
   const base = path.basename(p);
   return path.join(UPLOAD_DIR, base);
 }
 
-// ---- Fiyat & Tarih yardımcıları ----
+// Fiyat & Tarih yardımcıları
 function parsePrice(text) {
-  // Dönen: { price: number|null, priceText: string, purchasable: boolean }
   const priceText = String(text ?? "").trim();
-  const num = Number(
-    priceText
-      .replace(/[₺\s]/g, "")
-      .replace(",", ".")
-  );
+  const num = Number(priceText.replace(/[₺\s]/g, "").replace(",", "."));
   const isNum = Number.isFinite(num);
   return { price: isNum ? num : null, priceText, purchasable: !!isNum };
 }
-
 function toISODateOrNull(d) {
   if (!d) return null;
   const t = Date.parse(d);
   if (Number.isNaN(t)) return null;
   return new Date(t).toISOString();
 }
-
 function todayISODateStart() {
   const d = new Date();
   d.setHours(0,0,0,0);
   return d.toISOString();
+}
+
+/* ---------------------------- Idempotency (20s) --------------------------- */
+// Aynı IP + aynı gövde (normalize edilmiş) 20 sn içinde tekrar gelirse engelle
+const INFLIGHT = new Map(); // key -> ts
+const IDEMP_TTL_MS = 20000;
+
+function hashBody(obj) {
+  const json = JSON.stringify(obj, Object.keys(obj).sort());
+  return crypto.createHash("sha256").update(json).digest("hex");
+}
+function idempKey(req, bodyKeys) {
+  const ip = clientIP(req);
+  const pick = {};
+  for (const k of bodyKeys) if (req.body?.[k] !== undefined) pick[k] = req.body[k];
+  // Sepet öğelerini deterministikle:
+  if (pick.items && Array.isArray(pick.items)) {
+    pick.items = pick.items.map(it => ({
+      id: it.id || null,
+      name: it.name || "",
+      qty: Number(it.qty || 1),
+      price: Number(it.price || 0)
+    })).sort((a,b)=> (a.id||a.name).localeCompare(b.id||b.name));
+  }
+  return ip + ":" + hashBody(pick);
+}
+function idempGuard(keys) {
+  return (req, res, next) => {
+    try {
+      const key = idempKey(req, keys);
+      const now = nowTS();
+      const last = INFLIGHT.get(key) || 0;
+      if (now - last < IDEMP_TTL_MS) {
+        return res.status(429).json({ success:false, message:"İşleminiz alınıyor, lütfen tekrarlamayın." });
+      }
+      INFLIGHT.set(key, now);
+      res.on("finish", () => {
+        // Başarılı/başarısız fark etmeksizin TTL dolunca temizlenecek:
+        setTimeout(() => INFLIGHT.delete(key), IDEMP_TTL_MS);
+      });
+      next();
+    } catch (_e) {
+      next(); // guard çökerse engelleme yapma
+    }
+  };
 }
 
 /* -------------------------------- Rate Limit ------------------------------ */
@@ -213,10 +251,10 @@ const transporter = nodemailer.createTransport({
   tls: { rejectUnauthorized: false }
 });
 
-// Basit sağlık (SMTP'ye dokunmaz)
+// Sağlık
 app.get("/api/mail/health", (_req, res) => res.json({ ok: true, app: "alive" }));
 
-// SMTP canlı test (korumalı)
+// SMTP test
 app.post("/api/admin/test-send", requireAuth, async (_req, res) => {
   try {
     await transporter.sendMail({
@@ -231,7 +269,6 @@ app.post("/api/admin/test-send", requireAuth, async (_req, res) => {
   }
 });
 
-// SMTP verify (isteğe bağlı)
 app.get("/api/mail/verify", async (_req, res) => {
   try {
     await transporter.verify();
@@ -272,7 +309,6 @@ app.post("/api/admin/upload", requireAuth, upload.single("file"), (req, res) => 
 });
 
 /* ------------------------------- Ürünler (admin) -------------------------- */
-// Fiyat artık metin de olabilir: priceText saklanır, sayısal ise purchasable=true
 app.post("/api/admin/products", requireAuth, (req, res) => {
   const { name, price, image, desc } = req.body || {};
   if (!name) return res.status(400).json({ success: false, message: "İsim gerekli" });
@@ -323,7 +359,6 @@ app.put("/api/admin/products/:id", requireAuth, (req, res) => {
       try { fs.unlinkSync(abs); } catch {}
     }
   }
-
   res.json({ success: true, item: list[idx] });
 });
 
@@ -344,12 +379,10 @@ app.delete("/api/admin/products/:id", requireAuth, (req, res) => {
       try { fs.unlinkSync(abs); } catch {}
     }
   }
-
   res.json({ success: true });
 });
 
 /* --------------------------------- Kuponlar -------------------------------- */
-// Kupon check: startsAt + expiresAt
 app.post("/api/coupon/check", (req, res) => {
   const { code } = req.body || {};
   const normalized = String(code || "").trim().toUpperCase();
@@ -361,14 +394,12 @@ app.post("/api/coupon/check", (req, res) => {
   if (found.active === false) return res.json({ success: false, message: "Kod pasif" });
 
   const now = nowTS();
-
   if (found.startsAt) {
     const st = Date.parse(found.startsAt);
     if (!Number.isNaN(st) && now < st) {
       return res.json({ success: false, message: "Kod henüz başlamadı" });
     }
   }
-
   if (found.expiresAt) {
     const exp = Date.parse(found.expiresAt);
     if (!Number.isNaN(exp) && now > exp) {
@@ -392,7 +423,6 @@ app.get("/api/admin/coupons", requireAuth, (_req, res) => {
   res.json({ success: true, items: readCoupons() });
 });
 
-// Kupon create: startsAt opsiyonel (boş ise bugün 00:00), expiresAt opsiyonel
 app.post("/api/admin/coupons", requireAuth, (req, res) => {
   let { code, percent, active, startsAt, expiresAt } = req.body || {};
   code = String(code || "").trim().toUpperCase();
@@ -404,7 +434,7 @@ app.post("/api/admin/coupons", requireAuth, (req, res) => {
   if (list.find(c => c.code === code)) return res.status(400).json({ success: false, message: "Bu kod zaten var" });
 
   const startsISO = toISODateOrNull(startsAt) || todayISODateStart();
-  const expISO = toISODateOrNull(expiresAt); // boş olabilir
+  const expISO = toISODateOrNull(expiresAt); // opsiyonel
 
   const item = {
     id: "c" + Date.now(),
@@ -458,7 +488,6 @@ app.delete("/api/admin/messages/:id", requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
-// Mesaj mailini yeniden gönder
 app.post("/api/admin/messages/:id/resend", requireAuth, async (req, res) => {
   const id = String(req.params.id || "");
   const list = readMessages();
@@ -509,7 +538,7 @@ Kupon: ${msg.coupon || "-"}
 });
 
 /* --------------------------- İletişim & Checkout --------------------------- */
-app.post("/api/contact", tightLimiter, async (req, res) => {
+app.post("/api/contact", tightLimiter, idempGuard(["name","email","message"]), async (req, res) => {
   const { name, email, message } = req.body || {};
   if (!name || !email || !message) {
     return res.status(400).json({ success: false, message: "Lütfen tüm alanları doldurun." });
@@ -542,13 +571,13 @@ app.post("/api/contact", tightLimiter, async (req, res) => {
 });
 
 // CHECKOUT: ad, email, telefon, adres ZORUNLU + satılamayan ürünü engelle + kupon
-app.post("/api/checkout", tightLimiter, async (req, res) => {
+app.post("/api/checkout", tightLimiter, idempGuard(["items","email","name","phone","address","coupon"]), async (req, res) => {
   const { items, email, name, phone, address, coupon } = req.body || {};
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ success: false, message: "Sepet boş." });
   }
 
-  // Kişi/iletişim zorunluluğu
+  // Zorunlu kişi/iletişim
   if (!name || !email || !phone || !address) {
     return res.status(400).json({ success: false, message: "Lütfen ad, e-posta, telefon ve adres bilgilerini girin." });
   }
@@ -560,36 +589,28 @@ app.post("/api/checkout", tightLimiter, async (req, res) => {
   if (addr.length < 10) return res.status(400).json({ success: false, message: "Adres çok kısa (min 10 karakter)." });
   if (addr.length > 600) return res.status(400).json({ success: false, message: "Adres çok uzun (max 600 karakter)." });
 
-  // Ürünleri güncel listeden doğrula (id varsa id ile, yoksa isimle)
+  // Ürün doğrulama
   const all = readProducts();
   const notBuyable = [];
   const normalizedItems = [];
 
   for (const it of items) {
     const found = it.id ? all.find(p => p.id === it.id) : all.find(p => p.name === it.name);
-    if (!found) {
-      notBuyable.push({ name: it.name || "(?)", reason: "ürün bulunamadı" });
-      continue;
-    }
+    if (!found) { notBuyable.push({ name: it.name || "(?)", reason: "ürün bulunamadı" }); continue; }
     if (!found.purchasable || !Number.isFinite(found.price)) {
-      notBuyable.push({ name: found.name, reason: "satılamıyor (fiyat sayısal değil)" });
-      continue;
+      notBuyable.push({ name: found.name, reason: "satılamıyor (fiyat sayısal değil)" }); continue;
     }
     const qty = Math.max(1, Number(it.qty || 1));
     normalizedItems.push({ id: found.id, name: found.name, price: found.price, qty });
   }
 
   if (notBuyable.length > 0) {
-    return res.status(400).json({
-      success:false,
-      message: "Sepette satılamayan ürün(ler) var.",
-      notBuyable
-    });
+    return res.status(400).json({ success:false, message: "Sepette satılamayan ürün(ler) var.", notBuyable });
   }
 
   const total = normalizedItems.reduce((s, it) => s + it.price * it.qty, 0);
 
-  // Kupon uygula (startsAt/expiresAt dâhil)
+  // Kupon uygula
   let discount = 0;
   let appliedCoupon = null;
   if (coupon) {
@@ -666,7 +687,6 @@ Kupon: ${appliedCoupon || "-"}
 /* ------------------------------- Fallback/Server --------------------------- */
 app.get("/api/version", (_req, res) => res.json({ name: "mavern", version: "1.0.0" }));
 
-// Frontend routing (en sonda, API’leri gölgelemesin)
 app.get("*", (_req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, "index.html"));
 });
