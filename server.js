@@ -47,7 +47,7 @@ app.use(cors({ origin: true, credentials: false }));
 app.use(bodyParser.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
-// HTTP -> HTTPS yönlendirme (Render)
+// HTTP -> HTTPS yönlendirme (Render vb.)
 app.use((req, res, next) => {
   const proto = req.get("x-forwarded-proto");
   if (proto && proto !== "https") {
@@ -95,7 +95,6 @@ app.use(
     setHeaders: (res) => res.setHeader("Cache-Control", "public, max-age=604800, immutable")
   })
 );
-// public içeriğini .html uzantısı opsiyonlu sun
 app.use(express.static(PUBLIC_DIR, { extensions: ["html"] }));
 
 /* ---------------------------- Yardımcı Fonksiyonlar ----------------------- */
@@ -118,13 +117,19 @@ const containsTR = (s = "") => /[çğıöşüÇĞİÖŞÜ]/.test(s);
 const isValidEmail = (e = "") => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 const nowTS = () => Date.now();
 
+function isValidPhone(s = "") {
+  const x = String(s).trim();
+  // Basit: rakam, boşluk, + (başta), parantez ve tire izinli; min 6 karakter
+  return /^[+0-9()\-\s]{6,}$/.test(x);
+}
+
 function uploadAbsPathFromPublic(p) {
   if (!p || !p.startsWith("/uploads/")) return null;
   const base = path.basename(p);
   return path.join(UPLOAD_DIR, base);
 }
 
-// ---- Fiyat & Tarih yardımcıları (Yeni) ----
+// ---- Fiyat & Tarih yardımcıları ----
 function parsePrice(text) {
   // Dönen: { price: number|null, priceText: string, purchasable: boolean }
   const priceText = String(text ?? "").trim();
@@ -476,7 +481,17 @@ app.post("/api/admin/messages/:id/resend", requireAuth, async (req, res) => {
         from: `"Mavern Sipariş" <${process.env.FROM_EMAIL || process.env.BREVO_USER}>`,
         to: process.env.MAIL_TO || process.env.BREVO_USER,
         subject: "Yeni Sipariş (Yeniden Gönderim)",
-        text: `Müşteri: ${msg.name || "-"} (${msg.email || "-"})\n\nÜrünler:\n${lines}\n\nKupon: ${msg.coupon || "-"}\nİndirim: ${msg.discount || 0}₺\nToplam: ${msg.payable || 0}₺`
+        text:
+`Müşteri: ${msg.name || "-"} (${msg.email || "-"})
+Telefon : ${msg.phone || "-"}
+Adres   : ${msg.address || "-"}
+
+Ürünler:
+${lines}
+
+Kupon: ${msg.coupon || "-"}
+İndirim: ${msg.discount || 0}₺
+Ödenecek: ${msg.payable || 0}₺`
       });
     } else {
       return res.status(400).json({ success: false, message: "Bu mesaj tipi için destek yok" });
@@ -494,7 +509,6 @@ app.post("/api/admin/messages/:id/resend", requireAuth, async (req, res) => {
 });
 
 /* --------------------------- İletişim & Checkout --------------------------- */
-// İletişim aynı (rate limit + validasyon)
 app.post("/api/contact", tightLimiter, async (req, res) => {
   const { name, email, message } = req.body || {};
   if (!name || !email || !message) {
@@ -527,14 +541,24 @@ app.post("/api/contact", tightLimiter, async (req, res) => {
   }
 });
 
-// CHECKOUT: satılamayan ürünü engelle + kuponu yeni mantıkla test et
+// CHECKOUT: ad, email, telefon, adres ZORUNLU + satılamayan ürünü engelle + kupon
 app.post("/api/checkout", tightLimiter, async (req, res) => {
-  const { items, email, name, coupon } = req.body || {};
+  const { items, email, name, phone, address, coupon } = req.body || {};
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ success: false, message: "Sepet boş." });
   }
-  if (email && containsTR(email)) return res.status(400).json({ success: false, message: "E-posta adresinde Türkçe karakter kullanmayın." });
-  if (email && !isValidEmail(email)) return res.status(400).json({ success: false, message: "Geçerli bir e-posta girin." });
+
+  // Kişi/iletişim zorunluluğu
+  if (!name || !email || !phone || !address) {
+    return res.status(400).json({ success: false, message: "Lütfen ad, e-posta, telefon ve adres bilgilerini girin." });
+  }
+  if (containsTR(email)) return res.status(400).json({ success: false, message: "E-posta adresinde Türkçe karakter kullanmayın." });
+  if (!isValidEmail(email)) return res.status(400).json({ success: false, message: "Geçerli bir e-posta girin." });
+  if (!isValidPhone(phone)) return res.status(400).json({ success: false, message: "Geçerli bir telefon numarası girin." });
+
+  const addr = String(address).trim();
+  if (addr.length < 10) return res.status(400).json({ success: false, message: "Adres çok kısa (min 10 karakter)." });
+  if (addr.length > 600) return res.status(400).json({ success: false, message: "Adres çok uzun (max 600 karakter)." });
 
   // Ürünleri güncel listeden doğrula (id varsa id ile, yoksa isimle)
   const all = readProducts();
@@ -551,7 +575,7 @@ app.post("/api/checkout", tightLimiter, async (req, res) => {
       notBuyable.push({ name: found.name, reason: "satılamıyor (fiyat sayısal değil)" });
       continue;
     }
-    const qty = Number(it.qty || 1);
+    const qty = Math.max(1, Number(it.qty || 1));
     normalizedItems.push({ id: found.id, name: found.name, price: found.price, qty });
   }
 
@@ -596,9 +620,16 @@ app.post("/api/checkout", tightLimiter, async (req, res) => {
   const list = readMessages();
   const id = "o" + Date.now();
   const orderRec = {
-    id, type:"order", name: name || "-", email: email || "-",
-    items: normalizedItems, coupon: appliedCoupon, total, discount, payable,
-    createdAt: new Date().toISOString(), read:false, mailSent:false, mailError:null
+    id, type:"order",
+    name: name || "-",
+    email: email || "-",
+    phone: phone || "-",
+    address: addr,
+    items: normalizedItems,
+    coupon: appliedCoupon,
+    total, discount, payable,
+    createdAt: new Date().toISOString(),
+    read:false, mailSent:false, mailError:null
   };
   list.push(orderRec);
   writeMessages(list);
@@ -608,7 +639,17 @@ app.post("/api/checkout", tightLimiter, async (req, res) => {
       from: `"Mavern Sipariş" <${process.env.FROM_EMAIL || process.env.BREVO_USER}>`,
       to: process.env.MAIL_TO || process.env.BREVO_USER,
       subject: "Yeni Sipariş",
-      text: `Müşteri: ${name || "-"} (${email || "-"})\n\nÜrünler:\n${lines}\n\nKupon: ${appliedCoupon || "-"}\nİndirim: ${discount}₺\nToplam: ${payable}₺`
+      text:
+`Müşteri: ${name} (${email})
+Telefon : ${phone}
+Adres   : ${addr}
+
+Ürünler:
+${lines}
+
+Kupon: ${appliedCoupon || "-"}
+İndirim: ${discount}₺
+Ödenecek: ${payable}₺`
     });
 
     const L = readMessages();
