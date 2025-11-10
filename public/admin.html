@@ -36,7 +36,7 @@
     .btn.ghost{ background:transparent; border-color:#2a3348; color:#cfe0ff; }
     .btn.danger{ background:#3a1717; color:#ffb3b3; border-color:#5d1b1b; }
     .tag{ padding:.2rem .5rem; border:1px solid #33415e; border-radius:999px; color:#bcd1ff; font-size:.8rem; }
-    .chip{ padding:.25rem .5rem; background:var(--chip); border:1px solid #2b3650; border-radius:999px; color:#cfe0ff; font-size:.78rem; max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .chip{ padding:.25rem .5rem; background:var(--chip); border:1px solid #2b3650; border-radius:999px; color:#cfe0ff; font-size:.78rem; max-width:260px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .table{ width:100%; border-collapse: collapse; }
     .table th,.table td{ text-align:left; padding:10px; border-bottom:1px dashed #1f2a3c; vertical-align: top; }
     .badge{ padding:.2rem .5rem; border-radius:6px; font-size:.78rem; }
@@ -109,7 +109,8 @@
       <h3>Ürün Yönetimi</h3>
       <div class="col3" style="margin-bottom:10px">
         <input id="prodName" placeholder="Ürün Adı">
-        <input id="prodPrice" placeholder="Fiyat (₺)" type="number" step="0.01">
+        <!-- fiyat artık serbest metin -->
+        <input id="prodPrice" placeholder="Fiyat / Yazı (örn: 150₺, 149.90, Yakında)" type="text">
         <input id="prodDesc" placeholder="Açıklama (opsiyonel)">
       </div>
 
@@ -156,8 +157,11 @@
         <input id="couponPercent" placeholder="% (1-90)" type="number" min="1" max="90">
         <input id="couponExpires" type="datetime-local" placeholder="Bitiş (opsiyonel)">
       </div>
+      <div class="col2" style="margin-top:10px">
+        <input id="couponStarts" type="datetime-local" placeholder="Başlangıç (opsiyonel)">
+        <label class="row" style="gap:6px; align-items:center"><input type="checkbox" id="couponActive" checked> Aktif</label>
+      </div>
       <div class="row" style="margin-top:8px; gap:8px">
-        <label class="row" style="gap:6px"><input type="checkbox" id="couponActive" checked> Aktif</label>
         <button class="btn primary" onclick="addCoupon()">Kupon Ekle</button>
         <button class="btn ghost" onclick="loadCoupons()">Yenile</button>
       </div>
@@ -165,7 +169,7 @@
         <table class="table">
           <thead>
             <tr>
-              <th>Kod</th><th>%</th><th>Bitiş</th><th>Durum</th><th>Oluşturma</th><th class="right">İşlem</th>
+              <th>Kod</th><th>%</th><th>Başlangıç</th><th>Bitiş</th><th>Durum</th><th>Oluşturma</th><th class="right">İşlem</th>
             </tr>
           </thead>
           <tbody id="couponBody"></tbody>
@@ -267,7 +271,10 @@
       const list = await r.json();
       const wrap = $('#adminProducts');
       if(!list.length){ wrap.innerHTML = '<p class="muted">Ürün yok</p>'; return; }
-      wrap.innerHTML = list.map(p => `
+      wrap.innerHTML = list.map(p => {
+        const priceLabel = (p.priceText ?? (Number.isFinite(p?.price) ? (Number(p.price).toLocaleString('tr-TR') + ' ₺') : '—'));
+        const purchLabel = p.purchasable ? '<span class="chip">Satılabilir</span>' : '<span class="chip">Satılamaz</span>';
+        return `
         <div class="product-card">
           <div class="media-row">
             <img class="thumb" src="${p.image || 'logo.png'}" alt="">
@@ -275,8 +282,9 @@
               <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
               <div class="muted" style="overflow:hidden; text-overflow:ellipsis;">${p.desc || ''}</div>
               <div class="row-wrap" style="margin-top:6px">
-                <span class="chip">${Number(p.price).toLocaleString('tr-TR')} ₺</span>
+                <span class="chip">${priceLabel}</span>
                 ${p.image ? `<span class="chip">${p.image}</span>` : ''}
+                ${purchLabel}
               </div>
             </div>
           </div>
@@ -284,8 +292,8 @@
             <button class="btn ghost" onclick="editProductPrompt('${p.id}')">Düzenle</button>
             <button class="btn danger" onclick="delProduct('${p.id}')">Sil</button>
           </div>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
     }catch(e){
       $('#adminProducts').innerHTML = '<p class="muted">Liste alınamadı</p>';
     }
@@ -293,10 +301,11 @@
 
   async function addProduct(){
     const name = $('#prodName').value.trim();
-    const price= $('#prodPrice').value.trim();
+    const price= $('#prodPrice').value.trim(); // serbest metin
     const image= $('#prodImg').value.trim();
     const desc = $('#prodDesc').value.trim();
-    if(!name || !price){ alert('Ad ve fiyat gerekli'); return; }
+    if(!name){ alert('Ürün adı gerekli'); return; }
+    if(!price){ alert('Fiyat/yazı gerekli'); return; }
 
     try{
       const r = await fetch('/api/admin/products', {
@@ -327,16 +336,26 @@
   }
 
   async function editProductPrompt(id){
-    const name = prompt('Yeni ürün adı (boş geç = değiştirme):') || undefined;
-    const priceInp = prompt('Yeni fiyat (boş geç = değiştirme):');
-    const price = priceInp === '' ? undefined : Number(priceInp);
-    const image = prompt('Yeni görsel yolu (boş = değiştirme):') || undefined;
-    const desc  = prompt('Açıklama (boş = değiştirme):') || undefined;
+    const payload = {};
+    const name = prompt('Yeni ürün adı (boş = değiştirme):');
+    if (name && name.trim()!=='') payload.name = name.trim();
+
+    const price = prompt('Yeni fiyat / yazı (örn 150₺, Yakında) (boş = değiştirme):');
+    if (price && price.trim()!=='') payload.price = price.trim();
+
+    const image = prompt('Yeni görsel yolu (boş = değiştirme):');
+    if (image && image.trim()!=='') payload.image = image.trim();
+
+    const desc  = prompt('Açıklama (boş = değiştirme):');
+    if (desc && desc.trim()!=='') payload.desc = desc.trim();
+
+    if (Object.keys(payload).length===0) return;
+
     try{
       const r = await fetch('/api/admin/products/'+encodeURIComponent(id), {
         method:'PUT',
         headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+ADMIN_TOKEN },
-        body: JSON.stringify({ name, price, image, desc })
+        body: JSON.stringify(payload)
       });
       const data = await r.json();
       if(data.success) loadProducts(); else alert(data.message||'Güncellenemedi');
@@ -346,9 +365,14 @@
   // ---- Kupon Yönetimi ----
   function statusOf(c){
     if(c.active === false) return {label:'Pasif', cls:'warn'};
+    const now = nowTs();
+    if(c.startsAt){
+      const st = Date.parse(c.startsAt);
+      if(!Number.isNaN(st) && now < st) return {label:'Henüz Başlamadı', cls:'warn'};
+    }
     if(c.expiresAt){
       const exp = Date.parse(c.expiresAt);
-      if(!Number.isNaN(exp) && nowTs() > exp) return {label:'Süresi Doldu', cls:'err'};
+      if(!Number.isNaN(exp) && now > exp) return {label:'Süresi Doldu', cls:'err'};
     }
     return {label:'Aktif', cls:'ok'};
   }
@@ -359,8 +383,8 @@
       const data = await r.json();
       const body = $('#couponBody');
       const info = $('#couponInfo');
-      if(!data.success){ body.innerHTML = '<tr><td colspan="6">Liste alınamadı</td></tr>'; return; }
-      if(!data.items.length){ body.innerHTML = '<tr><td colspan="6" class="muted">Kupon yok</td></tr>'; info.textContent=''; return; }
+      if(!data.success){ body.innerHTML = '<tr><td colspan="7">Liste alınamadı</td></tr>'; return; }
+      if(!data.items.length){ body.innerHTML = '<tr><td colspan="7" class="muted">Kupon yok</td></tr>'; info.textContent=''; return; }
 
       body.innerHTML = data.items.map(c=>{
         const st = statusOf(c);
@@ -368,6 +392,7 @@
           <tr>
             <td><b>${c.code}</b></td>
             <td>%${c.percent}</td>
+            <td>${fmtDate(c.startsAt)}</td>
             <td>${fmtDate(c.expiresAt)}</td>
             <td><span class="badge ${st.cls}">${st.label}</span></td>
             <td>${fmtDate(c.createdAt)}</td>
@@ -379,7 +404,7 @@
       }).join('');
       info.textContent = 'Toplam: ' + data.items.length;
     }catch(e){
-      $('#couponBody').innerHTML = '<tr><td colspan="6">Sunucu hatası</td></tr>';
+      $('#couponBody').innerHTML = '<tr><td colspan="7">Sunucu hatası</td></tr>';
     }
   }
 
@@ -387,17 +412,22 @@
     const code = $('#couponCode').value.trim().toUpperCase();
     const percent = Number($('#couponPercent').value);
     const expiresVal = $('#couponExpires').value;
+    const startsVal  = $('#couponStarts').value;
     const active = $('#couponActive').checked;
     if(!code || !(percent>0 && percent<=90)){ alert('Kod ve yüzde (1-90) gerekli'); return; }
     try{
       const r = await fetch('/api/admin/coupons', {
         method:'POST',
         headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+ADMIN_TOKEN },
-        body: JSON.stringify({ code, percent, active, expiresAt: expiresVal || null })
+        body: JSON.stringify({
+          code, percent, active,
+          startsAt: startsVal || null,
+          expiresAt: expiresVal || null
+        })
       });
       const data = await r.json();
       if(data.success){
-        $('#couponCode').value=''; $('#couponPercent').value=''; $('#couponExpires').value='';
+        $('#couponCode').value=''; $('#couponPercent').value=''; $('#couponExpires').value=''; $('#couponStarts').value='';
         loadCoupons();
       }else{
         alert(data.message||'Eklenemedi');
