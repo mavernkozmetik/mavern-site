@@ -1,73 +1,66 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Mavern Admin</title>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;500&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg:#0c0c0c; --card:#121212; --muted:#9aa4b2; --border:#1f2937; --text:#e5e7eb; --accent:#b6c7ff; --gold:#d4af37;
-      --red:#ff7070; --green:#8ef1a0; --btn:#f1f5f9; --btnText:#0b1220; --chip:#1b2436;
+      --bg:#0c0c0c; --card:#121212; --muted:#9aa4b2; --border:#1f2937; --text:#e5e7eb; --accent:#b6c7ff;
+      --red:#ff7070; --green:#8ef1a0; --chip:#1b2436; --gold:#d4af37; --btn:#f1f5f9; --btnText:#0b1220;
       --shadow: 0 10px 30px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.02);
     }
-    *{ box-sizing: border-box; }
-    html,body{ margin:0; padding:0; background:radial-gradient(1200px 600px at 20% -10%, #1a1a1a 0%, #0b0b0b 50%, #050607 100%); color:var(--text); font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,Arial; }
-    h1,h2,h3{ font-family:"Playfair Display", Georgia, serif; letter-spacing:.5px; }
-    a{ color:var(--accent); text-decoration:none; }
-    .wrap{ max-width:1100px; margin:24px auto; padding:0 16px; }
-    .brand{ display:flex; gap:12px; align-items:center; margin-bottom:16px; }
-    .brand .dot{ width:10px; height:10px; border-radius:50%; background:linear-gradient(135deg,#f0f2ff,#7e8fff); box-shadow:0 0 18px #8ea2ff; }
-    .brand h1{ margin:0; font-size:32px; }
-    .toolbar{ display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); backdrop-filter: blur(6px); }
-    .muted{ color:var(--muted); }
-    .grid{ display:grid; gap:16px; grid-template-columns: 1fr; }
-    @media(min-width:1024px){ .grid{ grid-template-columns: 1fr 1fr; } }
-    .card{ background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.0)); border:1px solid var(--border); border-radius:16px; padding:16px; box-shadow:var(--shadow); }
-    .card h3{ margin:0 0 10px; }
-    .row{ display:flex; gap:12px; align-items:center; }
-    .col2{ display:grid; gap:10px; grid-template-columns: 1fr 1fr; }
-    .col3{ display:grid; gap:10px; grid-template-columns: 1fr 1fr 1fr; }
-    input,select,textarea{ width:100%; background:#0f1220; border:1px solid #293246; color:#e5ecff; padding:.7rem .8rem; border-radius:10px; outline:none; }
-    textarea{ min-height:100px; }
-    .btn{ padding:.65rem 1rem; border-radius:10px; border:1px solid transparent; cursor:pointer; font-weight:600; }
-    .btn.primary{ background:var(--btn); color:var(--btnText); }
-    .btn.ghost{ background:transparent; border-color:#2a3348; color:#cfe0ff; }
-    .btn.danger{ background:#3a1717; color:#ffb3b3; border-color:#5d1b1b; }
-    .tag{ padding:.2rem .5rem; border:1px solid #33415e; border-radius:999px; color:#bcd1ff; font-size:.8rem; }
-    .chip{ padding:.25rem .5rem; background:var(--chip); border:1px solid #2b3650; border-radius:999px; color:#cfe0ff; font-size:.78rem; max-width:260px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .table{ width:100%; border-collapse: collapse; }
-    .table th,.table td{ text-align:left; padding:10px; border-bottom:1px dashed #1f2a3c; vertical-align: top; }
-    .badge{ padding:.2rem .5rem; border-radius:6px; font-size:.78rem; }
-    .ok{ background:#0f2a17; color:#9ff3b0; border:1px solid #1b5d32; }
-    .warn{ background:#2a230f; color:#f2e19a; border:1px solid #5b4f1a; }
-    .err{ background:#2a0f0f; color:#ffb3b3; border:1px solid #5d1b1b; }
-    .vip{ border:1px solid rgba(212,175,55,.5); box-shadow:0 0 0 1px rgba(212,175,55,.15) inset, 0 12px 30px rgba(212,175,55,.08); }
-    .right{ text-align:right; }
-    .center{ text-align:center; }
-    .hidden{ display:none; }
-    .tabs{ display:flex; gap:8px; margin:16px 0; flex-wrap:wrap; }
-    .tab{ padding:.5rem .9rem; border:1px solid #2a3348; border-radius:999px; cursor:pointer; color:#cfe0ff; background:rgba(255,255,255,.02); }
-    .tab.active{ border-color:rgba(212,175,55,.6); color:#ffe8a3; box-shadow:0 0 0 1px rgba(212,175,55,.25) inset; }
-    .product-card{ display:flex; gap:12px; align-items:center; justify-content:space-between; border:1px solid var(--border); border-radius:12px; padding:8px 10px; margin-bottom:8px; }
-    .thumb{ width:64px; height:64px; border-radius:10px; object-fit:cover; border:1px solid #26324a; background:#0a0f1b; flex:0 0 64px; }
-    .mini{ width:40px; height:40px; border-radius:8px; object-fit:cover; border:1px solid #26324a; background:#0a0f1b; flex:0 0 40px; }
-    .media-row{ display:flex; gap:8px; align-items:center; flex-wrap:nowrap; min-width:0; }
-    .media-row > div{ min-width:0; }
-    .list{ display:flex; flex-direction:column; gap:8px; margin-top:12px; }
-    .row-wrap{ display:flex; flex-wrap:wrap; gap:6px; }
-    .pre{ white-space:pre-wrap; overflow-wrap:break-word; }
-    .divider{ height:1px; background:#1f2937; margin:10px 0; }
-    .preview{ width:90px; height:90px; border:1px dashed #2a3348; border-radius:12px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-    .preview img{ width:100%; height:100%; object-fit:cover; }
-    .pill{ padding:.18rem .5rem; border-radius:999px; border:1px solid #2a3348; font-size:.72rem; }
-    .pill.sent{ background:#0f2a17; color:#9ff3b0; border-color:#1b5d32; }
-    .pill.nosent{ background:#2a230f; color:#f2e19a; border-color:#5b4f1a; }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:radial-gradient(1200px 600px at 20% -10%, #1a1a1a 0%, #0b0b0b 50%, #050607 100%); color:var(--text); font-family:Poppins,system-ui,Segoe UI,Roboto,Arial}
+    h1,h2,h3{font-family:"Playfair Display",Georgia,serif;letter-spacing:.5px}
+    .wrap{max-width:1100px;margin:24px auto;padding:0 16px}
+    .brand{display:flex;gap:12px;align-items:center;margin-bottom:16px}
+    .brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#f0f2ff,#7e8fff);box-shadow:0 0 18px #8ea2ff}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);backdrop-filter: blur(6px)}
+    .muted{color:var(--muted)}
+    .grid{display:grid;gap:16px;grid-template-columns:1fr}
+    @media(min-width:1024px){.grid{grid-template-columns:1fr 1fr}}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0));border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+    .row{display:flex;gap:12px;align-items:center}
+    .col2{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+    .col3{display:grid;gap:10px;grid-template-columns:1fr 1fr 1fr}
+    input,textarea{width:100%;background:#0f1220;border:1px solid #293246;color:#e5ecff;padding:.7rem .8rem;border-radius:10px;outline:none}
+    textarea{min-height:100px}
+    .btn{padding:.65rem 1rem;border-radius:10px;border:1px solid transparent;cursor:pointer;font-weight:600}
+    .btn.primary{background:var(--btn);color:var(--btnText)}
+    .btn.ghost{background:transparent;border-color:#2a3348;color:#cfe0ff}
+    .btn.danger{background:#3a1717;color:#ffb3b3;border-color:#5d1b1b}
+    .tag,.chip{padding:.25rem .5rem;border:1px solid #2b3650;border-radius:999px;color:#cfe0ff;font-size:.78rem;background:var(--chip)}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{padding:10px;border-bottom:1px dashed #1f2a3c;text-align:left;vertical-align:top}
+    .badge{padding:.2rem .5rem;border-radius:6px;font-size:.78rem}
+    .ok{background:#0f2a17;color:#9ff3b0;border:1px solid #1b5d32}
+    .warn{background:#2a230f;color:#f2e19a;border:1px solid #5b4f1a}
+    .err{background:#2a0f0f;color:#ffb3b3;border:1px solid #5d1b1b}
+    .right{text-align:right}
+    .hidden{display:none}
+    .tabs{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap}
+    .tab{padding:.5rem .9rem;border:1px solid #2a3348;border-radius:999px;cursor:pointer;color:#cfe0ff;background:rgba(255,255,255,.02)}
+    .tab.active{border-color:rgba(212,175,55,.6);color:#ffe8a3;box-shadow:0 0 0 1px rgba(212,175,55,.25) inset}
+    .product-card{display:flex;gap:12px;align-items:center;justify-content:space-between;border:1px solid var(--border);border-radius:12px;padding:8px 10px;margin-bottom:8px}
+    .thumb{width:64px;height:64px;border-radius:10px;object-fit:cover;border:1px solid #26324a;background:#0a0f1b}
+    .mini{width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid #26324a;background:#0a0f1b}
+    .list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+    .divider{height:1px;background:#1f2937;margin:10px 0}
+    /* Modal */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px}
+    .modal.show{display:flex}
+    .sheet{max-width:720px;width:100%;background:#11151f;border:1px solid #27324a;border-radius:14px;box-shadow:var(--shadow);padding:16px}
+    .preview{width:96px;height:96px;border:1px dashed #2a3348;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .preview img{width:100%;height:100%;object-fit:cover}
+    .pill{padding:.18rem .5rem;border-radius:999px;border:1px solid #2a3348;font-size:.72rem}
+    .pill.no{background:#2a230f;color:#f2e19a;border-color:#5b4f1a}
+    .pill.yes{background:#0f2a17;color:#9ff3b0;border-color:#1b5d32}
   </style>
 </head>
 <body>
-
 <div class="wrap">
   <div class="brand">
     <span class="dot"></span>
@@ -77,15 +70,13 @@
   <div class="toolbar">
     <div class="row" style="gap:8px">
       <span class="tag">VIP Panel</span>
-      <span class="muted">Profesyonel görünüm · Güvenli API</span>
+      <span class="muted">Güvenli API · Görsel Yükleme · Kupon Başlangıç Tarihi</span>
     </div>
-    <div class="row">
-      <button class="btn ghost" id="btnLogout" onclick="adminLogout()" style="display:none">Çıkış</button>
-    </div>
+    <button class="btn ghost" id="btnLogout" onclick="adminLogout()" style="display:none">Çıkış</button>
   </div>
 
   <!-- LOGIN -->
-  <section id="loginCard" class="card vip" style="margin-top:16px;">
+  <section id="loginCard" class="card" style="margin-top:16px">
     <h3>Giriş</h3>
     <div class="col3">
       <input id="adminUser" placeholder="Kullanıcı Adı" autocomplete="username">
@@ -96,7 +87,7 @@
   </section>
 
   <!-- PANEL -->
-  <section id="panel" class="card vip hidden" style="margin-top:16px;">
+  <section id="panel" class="card hidden" style="margin-top:16px">
     <div class="tabs">
       <button class="tab active" data-tab="products">Ürünler</button>
       <button class="tab" data-tab="orders">Gelen Siparişler</button>
@@ -109,14 +100,14 @@
       <h3>Ürün Yönetimi</h3>
       <div class="col3" style="margin-bottom:10px">
         <input id="prodName" placeholder="Ürün Adı">
-        <!-- fiyat artık serbest metin -->
-        <input id="prodPrice" placeholder="Fiyat / Yazı (örn: 150₺, 149.90, Yakında)" type="text">
+        <!-- Fiyat artık METİN; ör: 150, 150₺, 'yakında' -->
+        <input id="prodPrice" placeholder="Fiyat (metin: 150 | 150₺ | yakında)">
         <input id="prodDesc" placeholder="Açıklama (opsiyonel)">
       </div>
 
       <div class="row" style="gap:8px; align-items:flex-end; flex-wrap:wrap;">
         <div>
-          <div class="media-row">
+          <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
             <input id="prodImg" placeholder="Görsel URL (opsiyonel)">
             <span class="chip">veya</span>
             <input type="file" id="prodFile" accept="image/*">
@@ -155,15 +146,15 @@
       <div class="col3">
         <input id="couponCode" placeholder="Kod (örn: WELCOME10)" oninput="this.value=this.value.toUpperCase()">
         <input id="couponPercent" placeholder="% (1-90)" type="number" min="1" max="90">
-        <input id="couponExpires" type="datetime-local" placeholder="Bitiş (opsiyonel)">
-      </div>
-      <div class="col2" style="margin-top:10px">
         <input id="couponStarts" type="datetime-local" placeholder="Başlangıç (opsiyonel)">
-        <label class="row" style="gap:6px; align-items:center"><input type="checkbox" id="couponActive" checked> Aktif</label>
       </div>
-      <div class="row" style="margin-top:8px; gap:8px">
-        <button class="btn primary" onclick="addCoupon()">Kupon Ekle</button>
-        <button class="btn ghost" onclick="loadCoupons()">Yenile</button>
+      <div class="col3" style="margin-top:8px">
+        <input id="couponExpires" type="datetime-local" placeholder="Bitiş (opsiyonel)">
+        <label class="row" style="gap:6px"><input type="checkbox" id="couponActive" checked> Aktif</label>
+        <div class="row" style="justify-content:flex-end">
+          <button class="btn primary" onclick="addCoupon()">Kupon Ekle</button>
+          <button class="btn ghost" onclick="loadCoupons()">Yenile</button>
+        </div>
       </div>
       <div style="margin-top:12px; overflow:auto; border:1px solid var(--border); border-radius:12px">
         <table class="table">
@@ -180,12 +171,52 @@
   </section>
 </div>
 
+<!-- ÜRÜN DÜZENLE Modal -->
+<div class="modal" id="editModal" aria-hidden="true">
+  <div class="sheet">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h3>Ürünü Düzenle</h3>
+      <button class="btn ghost" onclick="closeEdit()">Kapat</button>
+    </div>
+    <div class="col2" style="margin-top:8px">
+      <div>
+        <label>Ürün Adı</label>
+        <input id="eName" placeholder="Ürün Adı">
+      </div>
+      <div>
+        <label>Fiyat (metin)</label>
+        <input id="ePrice" placeholder="150 | 150₺ | yakında">
+      </div>
+      <div class="col2">
+        <div>
+          <label>Görsel URL</label>
+          <input id="eImg" placeholder="/uploads/.. veya https://...">
+        </div>
+        <div>
+          <label>Görsel Yükle</label>
+          <input type="file" id="eFile" accept="image/*">
+        </div>
+      </div>
+      <div style="grid-column:1/-1">
+        <label>Açıklama</label>
+        <textarea id="eDesc" placeholder="Açıklama"></textarea>
+      </div>
+    </div>
+    <div class="row" style="gap:12px;align-items:center;margin-top:8px">
+      <div class="preview" id="ePreview"><span class="muted" style="font-size:.8rem;">Önizleme</span></div>
+      <span id="ePurchPill" class="pill">—</span>
+      <div style="flex:1"></div>
+      <button class="btn primary" onclick="saveEdit()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
 <script>
-  // ---- Yardımcılar ----
-  const $ = s=>document.querySelector(s);
-  const fmtDate = iso=> iso ? new Date(iso).toLocaleString('tr-TR') : '-';
-  const nowTs = ()=> Date.now();
-  let ADMIN_TOKEN = localStorage.getItem('MAVERN_ADMIN_TOKEN') || '';
+  var $ = function(s){ return document.querySelector(s); };
+  var nowTs = function(){ return Date.now(); };
+  var fmtDate = function(iso){ return iso ? new Date(iso).toLocaleString('tr-TR') : '-'; };
+  var ADMIN_TOKEN = localStorage.getItem('MAVERN_ADMIN_TOKEN') || '';
+  var EDIT_ID = null;
 
   function setLoggedInUI(on){
     $('#btnLogout').style.display = on ? '' : 'none';
@@ -193,33 +224,31 @@
     $('#panel').classList.toggle('hidden', !on);
   }
 
-  // ---- Sekmeler ----
-  document.addEventListener('click', (e)=>{
-    const t = e.target.closest('.tab');
+  document.addEventListener('click', function(e){
+    var t = e.target.closest('.tab');
     if(!t) return;
-    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('active'); });
     t.classList.add('active');
-    const key = t.dataset.tab;
-    ['products','orders','mails','coupons'].forEach(k=>{
+    var key = t.dataset.tab;
+    ['products','orders','mails','coupons'].forEach(function(k){
       $('#tab-'+k).classList.toggle('hidden', k!==key);
     });
     if(key==='products') loadProducts();
     if(key==='orders') loadOrders();
-    if(key==='mails') loadMails();
-    if(key==='coupons') loadCoupons();
+    if(key==='mails')  loadMails();
+    if(key==='coupons')loadCoupons();
   });
 
-  // ---- Auth ----
   async function adminLogin(){
     $('#loginInfo').textContent = 'Giriş yapılıyor...';
-    const username = $('#adminUser').value.trim();
-    const password = $('#adminPass').value.trim();
+    var username = $('#adminUser').value.trim();
+    var password = $('#adminPass').value.trim();
     try{
-      const r = await fetch('/api/login', {
+      var r = await fetch('/api/login', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username: username, password: password })
       });
-      const data = await r.json();
+      var data = await r.json();
       if(data.success && data.token){
         ADMIN_TOKEN = data.token;
         localStorage.setItem('MAVERN_ADMIN_TOKEN', ADMIN_TOKEN);
@@ -239,60 +268,58 @@
     setLoggedInUI(false);
   }
 
-  // ---- Görsel Yükleme ----
-  $('#prodFile')?.addEventListener('change', async (ev)=>{
-    const f = ev.target.files?.[0];
-    if(!f) return;
-    // Önizleme
-    const reader = new FileReader();
-    reader.onload = ()=> { $('#imgPreview').innerHTML = `<img src="${reader.result}">`; };
-    reader.readAsDataURL(f);
+  // Ürün eklerken dosya önizleme/yükleme (opsiyonel zincirleme yok)
+  (function(){
+    var pf = document.querySelector('#prodFile');
+    if(!pf) return;
+    pf.addEventListener('change', async function(ev){
+      var f = ev.target.files && ev.target.files[0];
+      if(!f) return;
+      var reader = new FileReader();
+      reader.onload = function(){ $('#imgPreview').innerHTML = '<img src="'+ reader.result +'">'; };
+      reader.readAsDataURL(f);
+      var fd = new FormData(); fd.append('file', f);
+      try{
+        var r = await fetch('/api/admin/upload', { method:'POST', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }, body:fd });
+        var data = await r.json();
+        if(data.success && data.path){ $('#prodImg').value = data.path; } else { alert(data.message || 'Yükleme başarısız'); }
+      }catch(e){ alert('Yükleme hatası'); }
+    });
+  })();
 
-    // Upload
-    const fd = new FormData();
-    fd.append('file', f);
-    try{
-      const r = await fetch('/api/admin/upload', {
-        method:'POST', headers: { 'Authorization':'Bearer '+ADMIN_TOKEN }, body: fd
-      });
-      const data = await r.json();
-      if(data.success && data.path){
-        $('#prodImg').value = data.path; // /uploads/.. otomatik doldur
-      }else{
-        alert(data.message || 'Yükleme başarısız');
-      }
-    }catch(err){ alert('Yükleme hatası'); }
-  });
-
-  // ---- Ürün Yönetimi ----
+  // Ürün listesi
   async function loadProducts(){
     try{
-      const r = await fetch('/api/products');
-      const list = await r.json();
-      const wrap = $('#adminProducts');
+      var r = await fetch('/api/products');
+      var list = await r.json();
+      var wrap = $('#adminProducts');
       if(!list.length){ wrap.innerHTML = '<p class="muted">Ürün yok</p>'; return; }
-      wrap.innerHTML = list.map(p => {
-        const priceLabel = (p.priceText ?? (Number.isFinite(p?.price) ? (Number(p.price).toLocaleString('tr-TR') + ' ₺') : '—'));
-        const purchLabel = p.purchasable ? '<span class="chip">Satılabilir</span>' : '<span class="chip">Satılamaz</span>';
-        return `
-        <div class="product-card">
-          <div class="media-row">
-            <img class="thumb" src="${p.image || 'logo.png'}" alt="">
-            <div>
-              <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
-              <div class="muted" style="overflow:hidden; text-overflow:ellipsis;">${p.desc || ''}</div>
-              <div class="row-wrap" style="margin-top:6px">
-                <span class="chip">${priceLabel}</span>
-                ${p.image ? `<span class="chip">${p.image}</span>` : ''}
-                ${purchLabel}
-              </div>
-            </div>
-          </div>
-          <div class="row" style="gap:8px">
-            <button class="btn ghost" onclick="editProductPrompt('${p.id}')">Düzenle</button>
-            <button class="btn danger" onclick="delProduct('${p.id}')">Sil</button>
-          </div>
-        </div>`;
+      wrap.innerHTML = list.map(function(p){
+        var priceTag = (typeof p.price === 'number' && isFinite(p.price))
+          ? p.price.toLocaleString('tr-TR') + ' ₺'
+          : (p.priceText || '—');
+        var purch = p.purchasable ? '<span class="badge ok">Satılabilir</span>' : '<span class="badge err">Satılamaz</span>';
+        var imgSrc = (p && p.image) ? p.image : 'logo.png';
+        var imgShort = (p && p.image) ? (p.image.slice(0,40) + (p.image.length>40?'…':'')) : '';
+        return (
+        '<div class="product-card">'+
+          '<div class="row" style="gap:10px;align-items:center;min-width:0">'+
+            '<img class="thumb" src="'+imgSrc+'" alt="">'+
+            '<div style="min-width:0">'+
+              '<div style="font-weight:600;overflow:hidden;text-overflow:ellipsis">'+ (p.name||'') +'</div>'+
+              '<div class="muted" style="overflow:hidden;text-overflow:ellipsis">'+ (p.desc||'') +'</div>'+
+              '<div class="row" style="gap:8px;margin-top:6px;flex-wrap:wrap">'+
+                '<span class="chip">'+ priceTag +'</span>'+
+                (p.image ? ('<span class="chip" title="'+p.image+'">'+ imgShort +'</span>') : '')+
+                purch+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+          '<div class="row" style="gap:8px">'+
+            '<button class="btn ghost" onclick="openEdit(\''+p.id+'\')">Düzenle</button>'+
+            '<button class="btn danger" onclick="delProduct(\''+p.id+'\')">Sil</button>'+
+          '</div>'+
+        '</div>');
       }).join('');
     }catch(e){
       $('#adminProducts').innerHTML = '<p class="muted">Liste alınamadı</p>';
@@ -300,78 +327,97 @@
   }
 
   async function addProduct(){
-    const name = $('#prodName').value.trim();
-    const price= $('#prodPrice').value.trim(); // serbest metin
-    const image= $('#prodImg').value.trim();
-    const desc = $('#prodDesc').value.trim();
-    if(!name){ alert('Ürün adı gerekli'); return; }
-    if(!price){ alert('Fiyat/yazı gerekli'); return; }
-
+    var name = $('#prodName').value.trim();
+    var price = $('#prodPrice').value.trim(); // metin
+    var image = $('#prodImg').value.trim();
+    var desc  = $('#prodDesc').value.trim();
+    if(!name){ alert('Ad gerekli'); return; }
     try{
-      const r = await fetch('/api/admin/products', {
+      var r = await fetch('/api/admin/products', {
         method:'POST',
-        headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+ADMIN_TOKEN },
-        body: JSON.stringify({ name, price, image, desc })
+        headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+ADMIN_TOKEN },
+        body: JSON.stringify({ name:name, price:price, image:image, desc:desc })
       });
-      const data = await r.json();
+      var data = await r.json();
       if(data.success){
         $('#prodName').value=''; $('#prodPrice').value=''; $('#prodImg').value=''; $('#prodDesc').value='';
         $('#imgPreview').innerHTML = '<span class="muted" style="font-size:.8rem;">Önizleme</span>';
         loadProducts();
-      }else{
-        alert(data.message||'Eklenemedi');
-      }
+      }else alert(data.message||'Eklenemedi');
     }catch(e){ alert('Sunucu hatası'); }
   }
 
   async function delProduct(id){
     if(!confirm('Ürün silinsin mi?')) return;
     try{
-      const r = await fetch('/api/admin/products/'+encodeURIComponent(id), {
-        method:'DELETE', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }
-      });
-      const data = await r.json();
+      var r = await fetch('/api/admin/products/'+encodeURIComponent(id), { method:'DELETE', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      var data = await r.json();
       if(data.success) loadProducts(); else alert('Silinemedi');
     }catch(e){ alert('Sunucu hatası'); }
   }
 
-  async function editProductPrompt(id){
-    const payload = {};
-    const name = prompt('Yeni ürün adı (boş = değiştirme):');
-    if (name && name.trim()!=='') payload.name = name.trim();
+  // Düzenleme modal
+  function openEdit(id){ EDIT_ID = id; fillEdit(id); $('#editModal').classList.add('show'); }
+  function closeEdit(){ EDIT_ID = null; $('#editModal').classList.remove('show'); var ef = $('#eFile'); if (ef) ef.value=''; }
 
-    const price = prompt('Yeni fiyat / yazı (örn 150₺, Yakında) (boş = değiştirme):');
-    if (price && price.trim()!=='') payload.price = price.trim();
+  async function fillEdit(id){
+    var r = await fetch('/api/products'); var list = await r.json();
+    var p = list.find(function(x){ return x.id===id; }); if(!p){ alert('Ürün bulunamadı'); closeEdit(); return; }
+    $('#eName').value = p.name || '';
+    $('#ePrice').value = (p.priceText!=null ? p.priceText : (typeof p.price==='number' ? String(p.price) : ''));
+    $('#eImg').value = p.image || '';
+    $('#eDesc').value = p.desc || '';
+    $('#ePreview').innerHTML = p.image ? ('<img src="'+p.image+'">') : '<span class="muted" style="font-size:.8rem;">Önizleme</span>';
+    $('#ePurchPill').className = 'pill '+(p.purchasable?'yes':'no');
+    $('#ePurchPill').textContent = p.purchasable ? 'Satılabilir' : 'Satılamaz';
+  }
 
-    const image = prompt('Yeni görsel yolu (boş = değiştirme):');
-    if (image && image.trim()!=='') payload.image = image.trim();
+  // modal içi dosya yükleme (opsiyonel zincirleme yok)
+  (function(){
+    var ef = document.querySelector('#eFile');
+    if(!ef) return;
+    ef.addEventListener('change', async function(ev){
+      var f = ev.target.files && ev.target.files[0];
+      if(!f) return;
+      var reader = new FileReader();
+      reader.onload = function(){ $('#ePreview').innerHTML = '<img src="'+ reader.result +'">'; };
+      reader.readAsDataURL(f);
+      var fd = new FormData(); fd.append('file', f);
+      try{
+        var r = await fetch('/api/admin/upload', { method:'POST', headers:{ 'Authorization': 'Bearer '+ADMIN_TOKEN }, body: fd });
+        var data = await r.json();
+        if(data.success && data.path){ $('#eImg').value = data.path; } else { alert(data.message || 'Yükleme başarısız'); }
+      }catch(e){ alert('Yükleme hatası'); }
+    });
+  })();
 
-    const desc  = prompt('Açıklama (boş = değiştirme):');
-    if (desc && desc.trim()!=='') payload.desc = desc.trim();
-
-    if (Object.keys(payload).length===0) return;
-
+  async function saveEdit(){
+    if(!EDIT_ID) return;
+    var name  = $('#eName').value.trim();
+    var price = $('#ePrice').value.trim(); // METİN
+    var image = $('#eImg').value.trim();
+    var desc  = $('#eDesc').value.trim();
     try{
-      const r = await fetch('/api/admin/products/'+encodeURIComponent(id), {
+      var r = await fetch('/api/admin/products/'+encodeURIComponent(EDIT_ID), {
         method:'PUT',
         headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+ADMIN_TOKEN },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ name:name, price:price, image:image, desc:desc })
       });
-      const data = await r.json();
-      if(data.success) loadProducts(); else alert(data.message||'Güncellenemedi');
+      var data = await r.json();
+      if(data.success){ closeEdit(); loadProducts(); } else { alert(data.message||'Güncellenemedi'); }
     }catch(e){ alert('Sunucu hatası'); }
   }
 
-  // ---- Kupon Yönetimi ----
+  // Kuponlar
   function statusOf(c){
+    var now = Date.now();
     if(c.active === false) return {label:'Pasif', cls:'warn'};
-    const now = nowTs();
     if(c.startsAt){
-      const st = Date.parse(c.startsAt);
-      if(!Number.isNaN(st) && now < st) return {label:'Henüz Başlamadı', cls:'warn'};
+      var st = Date.parse(c.startsAt);
+      if(!Number.isNaN(st) && now < st) return {label:'Başlamadı', cls:'warn'};
     }
     if(c.expiresAt){
-      const exp = Date.parse(c.expiresAt);
+      var exp = Date.parse(c.expiresAt);
       if(!Number.isNaN(exp) && now > exp) return {label:'Süresi Doldu', cls:'err'};
     }
     return {label:'Aktif', cls:'ok'};
@@ -379,217 +425,188 @@
 
   async function loadCoupons(){
     try{
-      const r = await fetch('/api/admin/coupons', { headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
-      const data = await r.json();
-      const body = $('#couponBody');
-      const info = $('#couponInfo');
+      var r = await fetch('/api/admin/coupons', { headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      var data = await r.json();
+      var body = $('#couponBody'); var info = $('#couponInfo');
       if(!data.success){ body.innerHTML = '<tr><td colspan="7">Liste alınamadı</td></tr>'; return; }
       if(!data.items.length){ body.innerHTML = '<tr><td colspan="7" class="muted">Kupon yok</td></tr>'; info.textContent=''; return; }
-
-      body.innerHTML = data.items.map(c=>{
-        const st = statusOf(c);
-        return `
-          <tr>
-            <td><b>${c.code}</b></td>
-            <td>%${c.percent}</td>
-            <td>${fmtDate(c.startsAt)}</td>
-            <td>${fmtDate(c.expiresAt)}</td>
-            <td><span class="badge ${st.cls}">${st.label}</span></td>
-            <td>${fmtDate(c.createdAt)}</td>
-            <td class="right">
-              <button class="btn ghost" onclick="delCoupon('${c.code}')">Sil</button>
-            </td>
-          </tr>
-        `;
+      body.innerHTML = data.items.map(function(c){
+        var st = statusOf(c);
+        return (
+          '<tr>'+
+            '<td><b>'+c.code+'</b></td>'+
+            '<td>%'+c.percent+'</td>'+
+            '<td>'+fmtDate(c.startsAt)+'</td>'+
+            '<td>'+fmtDate(c.expiresAt)+'</td>'+
+            '<td><span class="badge '+st.cls+'">'+st.label+'</span></td>'+
+            '<td>'+fmtDate(c.createdAt)+'</td>'+
+            '<td class="right"><button class="btn ghost" onclick="delCoupon(\''+c.code+'\')">Sil</button></td>'+
+          '</tr>'
+        );
       }).join('');
-      info.textContent = 'Toplam: ' + data.items.length;
+      info.textContent = 'Toplam: '+data.items.length;
     }catch(e){
       $('#couponBody').innerHTML = '<tr><td colspan="7">Sunucu hatası</td></tr>';
     }
   }
 
   async function addCoupon(){
-    const code = $('#couponCode').value.trim().toUpperCase();
-    const percent = Number($('#couponPercent').value);
-    const expiresVal = $('#couponExpires').value;
-    const startsVal  = $('#couponStarts').value;
-    const active = $('#couponActive').checked;
+    var code   = $('#couponCode').value.trim().toUpperCase();
+    var percent= Number($('#couponPercent').value);
+    var starts = $('#couponStarts').value || null;
+    var expires= $('#couponExpires').value || null;
+    var active = $('#couponActive').checked;
     if(!code || !(percent>0 && percent<=90)){ alert('Kod ve yüzde (1-90) gerekli'); return; }
     try{
-      const r = await fetch('/api/admin/coupons', {
+      var r = await fetch('/api/admin/coupons', {
         method:'POST',
         headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+ADMIN_TOKEN },
-        body: JSON.stringify({
-          code, percent, active,
-          startsAt: startsVal || null,
-          expiresAt: expiresVal || null
-        })
+        body: JSON.stringify({ code:code, percent:percent, active:active, startsAt: starts, expiresAt: expires })
       });
-      const data = await r.json();
+      var data = await r.json();
       if(data.success){
-        $('#couponCode').value=''; $('#couponPercent').value=''; $('#couponExpires').value=''; $('#couponStarts').value='';
+        $('#couponCode').value=''; $('#couponPercent').value='';
+        $('#couponStarts').value=''; $('#couponExpires').value='';
         loadCoupons();
-      }else{
-        alert(data.message||'Eklenemedi');
-      }
+      }else alert(data.message||'Eklenemedi');
     }catch(e){ alert('Sunucu hatası'); }
   }
   async function delCoupon(code){
     if(!confirm(code+' silinsin mi?')) return;
     try{
-      const r = await fetch('/api/admin/coupons/'+encodeURIComponent(code), {
-        method:'DELETE', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }
-      });
-      const data = await r.json();
+      var r = await fetch('/api/admin/coupons/'+encodeURIComponent(code), { method:'DELETE', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      var data = await r.json();
       if(data.success) loadCoupons(); else alert('Silinemedi');
     }catch(e){ alert('Sunucu hatası'); }
   }
 
-  // ---- Siparişler & Mailler ----
+  // Siparişler & Mailler
   function mailStatusPill(sent){
-    return sent
-      ? '<span class="pill sent">Mail: Gönderildi</span>'
-      : '<span class="pill nosent">Mail: Gönderilemedi</span>';
+    return sent ? '<span class="pill yes">Mail: Gönderildi</span>' : '<span class="pill no">Mail: Gönderilemedi</span>';
   }
   async function resendMail(id, kind){
     try{
-      const r = await fetch('/api/admin/messages/'+encodeURIComponent(id)+'/resend', {
-        method:'POST', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }
-      });
-      const data = await r.json();
-      if(data.success){
-        if(kind==='order') loadOrders(); else loadMails();
-        alert('Mail yeniden gönderildi.');
-      }else{
-        alert(data.message || 'Yeniden gönderilemedi');
-      }
+      var r = await fetch('/api/admin/messages/'+encodeURIComponent(id)+'/resend', { method:'POST', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      var data = await r.json();
+      if(data.success){ if(kind==='order') loadOrders(); else loadMails(); alert('Mail yeniden gönderildi.'); }
+      else alert(data.message || 'Yeniden gönderilemedi');
     }catch(e){ alert('Sunucu hatası'); }
   }
 
   async function loadOrders(){
-    const [prodsResp, msgsResp] = await Promise.all([
-      fetch('/api/products'),
-      fetch('/api/admin/messages?type=order', { headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }})
-    ]);
-    const products = await prodsResp.json();
-    const data = await msgsResp.json();
-    const wrap = $('#ordersList');
+    var prodsResp = await fetch('/api/products');
+    var msgsResp  = await fetch('/api/admin/messages?type=order', { headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+    var products  = await prodsResp.json();
+    var data      = await msgsResp.json();
+    var wrap = $('#ordersList');
     if(!data.success){ wrap.innerHTML = '<p class="muted">Liste alınamadı</p>'; return; }
-    const mapByName = new Map(products.map(p=>[String(p.name).toLowerCase(), p]));
+    var mapByName = new Map(products.map(function(p){ return [String(p.name).toLowerCase(), p]; }));
     if(!data.items.length){ wrap.innerHTML = '<p class="muted">Sipariş yok</p>'; return; }
 
-    wrap.innerHTML = data.items.map(o=>{
-      const itemsHTML = (o.items||[]).map(it=>{
-        const key = String(it.name||'').toLowerCase();
-        const p = mapByName.get(key);
-        const img = p?.image || 'logo.png';
-        const qty = Number(it.qty||1);
-        const price = Number(it.price||0);
-        return `
-          <div class="row" style="justify-content:space-between; border:1px solid var(--border); border-radius:10px; padding:6px 8px;">
-            <div class="media-row" style="gap:10px">
-              <img class="mini" src="${img}" alt="">
-              <div style="min-width:0">
-                <div style="overflow:hidden;text-overflow:ellipsis;"><b>${it.name}</b> × ${qty}</div>
-                <div class="muted" style="font-size:.85rem">${price.toLocaleString('tr-TR')} ₺</div>
-              </div>
-            </div>
-            <span class="chip">${(qty*price).toLocaleString('tr-TR')} ₺</span>
-          </div>
-        `;
+    wrap.innerHTML = data.items.map(function(o){
+      var itemsHTML = (o.items||[]).map(function(it){
+        var key = String(it.name||'').toLowerCase();
+        var pp  = mapByName.get(key);
+        var img = (pp && pp.image) ? pp.image : 'logo.png';
+        var qty = Number(it.qty||1);
+        var price = Number(it.price||0);
+        return (
+          '<div class="row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;padding:6px 8px">'+
+            '<div class="row" style="gap:10px">'+
+              '<img class="mini" src="'+img+'" alt="">'+
+              '<div>'+
+                '<div><b>'+it.name+'</b> × '+qty+'</div>'+
+                '<div class="muted" style="font-size:.85rem">'+price.toLocaleString('tr-TR')+' ₺</div>'+
+              '</div>'+
+            '</div>'+
+            '<span class="chip">'+(qty*price).toLocaleString('tr-TR')+' ₺</span>'+
+          '</div>'
+        );
       }).join('');
 
-      return `
-        <div class="card">
-          <div class="row" style="justify-content:space-between; align-items:flex-start">
-            <div style="min-width:0">
-              <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis;">#${o.id}</div>
-              <div class="muted">${fmtDate(o.createdAt)}</div>
-              <div class="row-wrap" style="margin-top:6px">
-                <span class="chip">Müşteri: ${o.name||'-'}</span>
-                <span class="chip">${o.email||'-'}</span>
-                ${o.coupon ? `<span class="chip">Kupon: ${o.coupon}</span>`:''}
-                ${mailStatusPill(!!o.mailSent)}
-              </div>
-            </div>
-            <div class="row" style="gap:8px; flex-wrap:wrap">
-              ${o.read ? '<span class="badge ok">Okundu</span>' : '<span class="badge warn">Yeni</span>'}
-              <button class="btn ghost" onclick="markMsgRead('${o.id}')">Okundu</button>
-              <button class="btn ghost" onclick="resendMail('${o.id}','order')">Maili Tekrar Dene</button>
-              <button class="btn danger" onclick="delMsg('${o.id}', 'order')">Sil</button>
-            </div>
-          </div>
-
-          <div class="list" style="margin-top:10px">${itemsHTML}</div>
-          <div class="divider"></div>
-          <div class="row" style="justify-content:flex-end; gap:12px; flex-wrap:wrap">
-            <span class="chip">İndirim: ${(o.discount||0).toLocaleString('tr-TR')} ₺</span>
-            <span class="chip">Toplam: ${(o.total||0).toLocaleString('tr-TR')} ₺</span>
-            <span class="tag" style="border-color:#3a5c2a;color:#b8ffb0;">Ödenecek: ${(o.payable||0).toLocaleString('tr-TR')} ₺</span>
-          </div>
-        </div>
-      `;
+      return (
+        '<div class="card">'+
+          '<div class="row" style="justify-content:space-between;align-items:flex-start">'+
+            '<div>'+
+              '<div style="font-weight:600">#'+o.id+'</div>'+
+              '<div class="muted">'+fmtDate(o.createdAt)+'</div>'+
+              '<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">'+
+                '<span class="chip">Müşteri: '+(o.name||'-')+'</span>'+
+                '<span class="chip">'+(o.email||'-')+'</span>'+
+                (o.coupon ? '<span class="chip">Kupon: '+o.coupon+'</span>' : '')+
+                mailStatusPill(!!o.mailSent)+
+              '</div>'+
+            '</div>'+
+            '<div class="row" style="gap:8px;flex-wrap:wrap">'+
+              (o.read ? '<span class="badge ok">Okundu</span>' : '<span class="badge warn">Yeni</span>')+
+              '<button class="btn ghost" onclick="markMsgRead(\''+o.id+'\')">Okundu</button>'+
+              '<button class="btn ghost" onclick="resendMail(\''+o.id+'\',\'order\')">Maili Tekrar Dene</button>'+
+              '<button class="btn danger" onclick="delMsg(\''+o.id+'\',\'order\')">Sil</button>'+
+            '</div>'+
+          '</div>'+
+          '<div class="list" style="margin-top:10px">'+itemsHTML+'</div>'+
+          '<div class="divider"></div>'+
+          '<div class="row" style="justify-content:flex-end;gap:12px;flex-wrap:wrap">'+
+            '<span class="chip">İndirim: '+(o.discount||0).toLocaleString('tr-TR')+' ₺</span>'+
+            '<span class="chip">Toplam: '+(o.total||0).toLocaleString('tr-TR')+' ₺</span>'+
+            '<span class="tag" style="border-color:#3a5c2a;color:#b8ffb0;">Ödenecek: '+(o.payable||0).toLocaleString('tr-TR')+' ₺</span>'+
+          '</div>'+
+        '</div>'
+      );
     }).join('');
   }
 
   async function loadMails(){
-    const r = await fetch('/api/admin/messages?type=contact', { headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
-    const data = await r.json();
-    const wrap = $('#mailsList');
+    var r = await fetch('/api/admin/messages?type=contact', { headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+    var data = await r.json();
+    var wrap = $('#mailsList');
     if(!data.success){ wrap.innerHTML = '<p class="muted">Liste alınamadı</p>'; return; }
     if(!data.items.length){ wrap.innerHTML = '<p class="muted">Mesaj yok</p>'; return; }
 
-    wrap.innerHTML = data.items.map(m=>`
-      <div class="card">
-        <div class="row" style="justify-content:space-between; align-items:flex-start">
-          <div style="min-width:0">
-            <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis;">${m.name}</div>
-            <div class="muted">${m.email||'-'} • ${fmtDate(m.createdAt)}</div>
-            <div class="row-wrap" style="margin-top:6px">
-              ${mailStatusPill(!!m.mailSent)}
-            </div>
-          </div>
-          <div class="row" style="gap:8px; flex-wrap:wrap">
-            ${m.read ? '<span class="badge ok">Okundu</span>' : '<span class="badge warn">Yeni</span>'}
-            <button class="btn ghost" onclick="markMsgRead('${m.id}')">Okundu</button>
-            <button class="btn ghost" onclick="resendMail('${m.id}','contact')">Maili Tekrar Dene</button>
-            <button class="btn danger" onclick="delMsg('${m.id}', 'contact')">Sil</button>
-          </div>
-        </div>
-        <div class="pre" style="margin-top:8px">${(m.message||'').replace(/</g,'&lt;')}</div>
-      </div>
-    `).join('');
+    wrap.innerHTML = data.items.map(function(m){
+      return (
+        '<div class="card">'+
+          '<div class="row" style="justify-content:space-between;align-items:flex-start">'+
+            '<div>'+
+              '<div style="font-weight:600">'+m.name+'</div>'+
+              '<div class="muted">'+(m.email||'-')+' • '+fmtDate(m.createdAt)+'</div>'+
+              '<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">'+mailStatusPill(!!m.mailSent)+'</div>'+
+            '</div>'+
+            '<div class="row" style="gap:8px;flex-wrap:wrap">'+
+              (m.read ? '<span class="badge ok">Okundu</span>' : '<span class="badge warn">Yeni</span>')+
+              '<button class="btn ghost" onclick="markMsgRead(\''+m.id+'\')">Okundu</button>'+
+              '<button class="btn ghost" onclick="resendMail(\''+m.id+'\',\'contact\')">Maili Tekrar Dene</button>'+
+              '<button class="btn danger" onclick="delMsg(\''+m.id+'\',\'contact\')">Sil</button>'+
+            '</div>'+
+          '</div>'+
+          '<div style="margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere">'+( (m.message||'').replace(/</g,'&lt;') )+'</div>'+
+        '</div>'
+      );
+    }).join('');
   }
 
   async function markMsgRead(id){
     try{
-      const r = await fetch('/api/admin/messages/'+encodeURIComponent(id)+'/read', {
-        method:'PATCH', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }
-      });
-      const data = await r.json();
+      var r = await fetch('/api/admin/messages/'+encodeURIComponent(id)+'/read', { method:'PATCH', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      var data = await r.json();
       if(data.success){
-        const active = document.querySelector('.tab.active')?.dataset.tab;
-        if(active==='orders') loadOrders();
-        if(active==='mails')  loadMails();
+        var activeTabEl = document.querySelector('.tab.active');
+        var tab = activeTabEl ? activeTabEl.dataset.tab : '';
+        if(tab==='orders') loadOrders(); else if(tab==='mails') loadMails();
       }
     }catch(e){ alert('Sunucu hatası'); }
   }
   async function delMsg(id, type){
     if(!confirm('Silinsin mi?')) return;
     try{
-      const r = await fetch('/api/admin/messages/'+encodeURIComponent(id), {
-        method:'DELETE', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }
-      });
-      const data = await r.json();
-      if(data.success){
-        if(type==='order') loadOrders();
-        else loadMails();
-      }
+      var r = await fetch('/api/admin/messages/'+encodeURIComponent(id), { method:'DELETE', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      var data = await r.json();
+      if(data.success){ if(type==='order') loadOrders(); else loadMails(); }
     }catch(e){ alert('Sunucu hatası'); }
   }
 
-  // ---- Init ----
-  (async ()=>{
+  // INIT
+  (function(){
     setLoggedInUI(!!ADMIN_TOKEN);
     if(ADMIN_TOKEN){ loadProducts(); }
   })();

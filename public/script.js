@@ -2,9 +2,8 @@
 const qs  = (sel) => document.querySelector(sel);
 const qsa = (sel) => document.querySelectorAll(sel);
 const hasTr = (s = "") => /[çğıöşüÇĞİÖŞÜ]/.test(s);
-const fmt = (n) => `${Number(n || 0).toFixed(0)} ₺`;
+const fmtMoney = (n) => `${Number(n || 0).toFixed(0)} ₺`;
 
-// Token: sadece eski mini admin için; gerçek admin sayfası kendi JS'ini kullanıyor
 let TOKEN = localStorage.getItem("mavern_token") || null;
 
 let PRODUCTS = [];
@@ -18,12 +17,26 @@ function openCart(){ qs("#cartPanel")?.classList.add("open"); renderCart(); }
 function closeCart(){ qs("#cartPanel")?.classList.remove("open"); }
 function openProductsPanel(){ qs("#productsPanel")?.classList.add("open"); renderProductsFull(); }
 function closeProductsPanel(){ qs("#productsPanel")?.classList.remove("open"); }
+
+// Checkout overlay
+function openCheckout(){
+  const items = Object.values(CART);
+  if(!items.length){ const m=qs("#checkoutMsg"); if(m) m.textContent="Sepet boş."; return; }
+  // ödenecek tutarı modala yansıt
+  const payable = getPayable();
+  const out = qs("#chPayable"); if(out) out.textContent = fmtMoney(payable);
+  qs("#chStatus") && (qs("#chStatus").textContent = "");
+  qs("#checkoutOverlay")?.classList.add("show");
+}
+function closeCheckout(){
+  qs("#checkoutOverlay")?.classList.remove("show");
+}
 function scrollToSection(id){
   const el = qs("#" + id);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-// ===== API (güçlü sarmalayıcı) =====
+// ===== API =====
 async function api(path, opts = {}) {
   const headers = {
     "Content-Type": "application/json",
@@ -32,7 +45,7 @@ async function api(path, opts = {}) {
   };
   const res = await fetch(path, { ...opts, headers });
   let data = null;
-  try { data = await res.json(); } catch { /* boş/HTML olabilir */ }
+  try { data = await res.json(); } catch {}
   if (!res.ok) {
     const msg = data && (data.message || data.error);
     throw new Error(msg || `İstek başarısız: ${res.status}`);
@@ -49,6 +62,12 @@ async function loadProducts() {
     PRODUCTS = [];
   }
   renderProductsPreview();
+}
+
+function displayPriceTag(p) {
+  // backend artık priceText/purchasable veriyor
+  const isNum = typeof p.price === "number" && isFinite(p.price);
+  return isNum ? fmtMoney(p.price) : (p.priceText || "—");
 }
 
 function renderProductsPreview() {
@@ -77,14 +96,16 @@ function renderProductsFull() {
 function productCard(p) {
   const el = document.createElement("div");
   el.className = "product-card";
+  const priceTag = displayPriceTag(p);
+  const canBuy = !!(p && p.purchasable && typeof p.price === "number" && isFinite(p.price));
   el.innerHTML = `
     <img class="prod" src="${sanitize(p.image || "logo.png")}" alt="${esc(p.name)}"
          style="width:100%;height:180px;object-fit:cover;border-radius:12px;border:1px solid #26324a;background:#0a0f1b"
          onerror="this.src='logo.png'">
     <h4 style="margin:.5rem 0 0">${esc(p.name)}</h4>
-    <div class="price" style="margin:.25rem 0 .5rem">${fmt(p.price)}</div>
+    <div class="price muted" style="margin:.25rem 0 .5rem">${esc(priceTag)}</div>
     ${p.desc ? `<p style="margin:0 0 .5rem" class="muted">${esc(p.desc)}</p>` : ""}
-    <button class="btn" onclick="addToCart('${p.id}')">Sepete Ekle</button>
+    <button class="btn" ${canBuy ? `onclick="addToCart('${p.id}')"` : "disabled title='Satın alınamaz'"}>${canBuy ? "Sepete Ekle" : "Satın Alınamaz"}</button>
   `;
   return el;
 }
@@ -93,7 +114,9 @@ function productCard(p) {
 function addToCart(id) {
   const p = PRODUCTS.find((x) => x.id === id);
   if (!p) return alert("Ürün bulunamadı");
-  if (!CART[id]) CART[id] = { ...p, qty: 0 };
+  const canBuy = !!(p.purchasable && typeof p.price === "number" && isFinite(p.price));
+  if (!canBuy) { alert("Bu ürün şu anda satılabilir değil."); return; }
+  if (!CART[id]) CART[id] = { id: p.id, name: p.name, price: p.price, image: p.image, qty: 0 };
   CART[id].qty += 1;
   renderCart();
   openCart();
@@ -104,11 +127,20 @@ function changeQty(id, delta) {
   CART[id].qty += delta;
   if (CART[id].qty <= 0) delete CART[id];
   renderCart();
+  // overlay açıksa tutarı güncelle
+  const el = qs("#checkoutOverlay");
+  if(el?.classList.contains("show")){
+    const out = qs("#chPayable"); if(out) out.textContent = fmtMoney(getPayable());
+  }
 }
 
 function removeFromCart(id) {
   if (CART[id]) delete CART[id];
   renderCart();
+  const el = qs("#checkoutOverlay");
+  if(el?.classList.contains("show")){
+    const out = qs("#chPayable"); if(out) out.textContent = fmtMoney(getPayable());
+  }
 }
 
 function clearCart() {
@@ -117,26 +149,33 @@ function clearCart() {
   qs("#couponInput") && (qs("#couponInput").value = "");
   qs("#couponMsg") && (qs("#couponMsg").textContent = "");
   renderCart();
+  const out = qs("#chPayable"); if(out) out.textContent = fmtMoney(0);
 }
+
+function getTotals(){
+  const items = Object.values(CART);
+  const subtotal = items.reduce((s, i) => s + (Number(i.price) * i.qty), 0);
+  let discount = 0;
+  if (COUPON?.percent) discount = Math.round(subtotal * (COUPON.percent / 100));
+  const payable = Math.max(0, subtotal - discount);
+  return { items, subtotal, discount, payable };
+}
+function getPayable(){ return getTotals().payable; }
 
 function renderCart() {
   const list = qs("#cartItems");
   if (!list) return;
 
   list.innerHTML = "";
-  const items = Object.values(CART);
+  const { items, subtotal, discount, payable } = getTotals();
   const count = items.reduce((s, i) => s + i.qty, 0);
-  const subtotal = items.reduce((s, i) => s + (Number(i.price) * i.qty), 0);
-  let discount = 0;
-  if (COUPON?.percent) discount = Math.round(subtotal * (COUPON.percent / 100));
-  const payable = Math.max(0, subtotal - discount);
 
   const badge = qs("#cartCount");
   if (badge) badge.textContent = count > 0 ? count : "";
 
-  qs("#subtotal") && (qs("#subtotal").textContent = fmt(subtotal));
-  qs("#discount") && (qs("#discount").textContent = fmt(discount));
-  qs("#payable") && (qs("#payable").textContent = fmt(payable));
+  qs("#subtotal") && (qs("#subtotal").textContent = fmtMoney(subtotal));
+  qs("#discount") && (qs("#discount").textContent = fmtMoney(discount));
+  qs("#payable") && (qs("#payable").textContent = fmtMoney(payable));
 
   if (!items.length) {
     list.innerHTML = `<div class="muted">Sepetiniz boş.</div>`;
@@ -152,7 +191,7 @@ function renderCart() {
            onerror="this.src='logo.png'">
       <div class="meta" style="min-width:0">
         <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.name)}</div>
-        <div class="muted small">${fmt(it.price)}</div>
+        <div class="muted small">${fmtMoney(it.price)}</div>
       </div>
       <div>
         <div class="qty">
@@ -196,57 +235,62 @@ async function applyCoupon() {
       msgEl.textContent = res.message || "Geçersiz kod.";
     }
     renderCart();
+    // overlay açıksa güncelle
+    const el = qs("#checkoutOverlay");
+    if(el?.classList.contains("show")){
+      const out = qs("#chPayable"); if(out) out.textContent = fmtMoney(getPayable());
+    }
   } catch (e) {
     msgEl.textContent = "Sunucu hatası.";
   }
 }
 
-// ===== Checkout (mail) =====
-async function checkout() {
-  const nameEl = qs("#coName");
-  const emailEl = qs("#coEmail");
-  const msg = qs("#checkoutMsg");
-  if (!msg) return;
+// ===== Checkout (overlay -> server.js /api/checkout) =====
+function isValidEmail(e=""){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function isValidPhone(t=""){ return /^[+0-9()\-\s]{6,}$/.test(String(t).trim()); }
 
-  const name = (nameEl?.value || "").trim();
-  const email = (emailEl?.value || "").trim();
-  const items = Object.values(CART).map((i) => ({
-    id: i.id,
-    name: i.name,
-    price: Number(i.price),
-    qty: i.qty,
-  }));
+async function submitCheckout(){
+  const st = qs("#chStatus");
+  const name   = (qs("#chName")?.value || "").trim();
+  const email  = (qs("#chEmail")?.value || "").trim();
+  const phone  = (qs("#chPhone")?.value || "").trim();
+  const addr   = (qs("#chAddress")?.value || "").trim();
+  const kvkkOk = qs("#chKvkk")?.checked;
 
-  if (!items.length) {
-    msg.textContent = "Sepet boş.";
-    return;
-  }
-  if (email) {
-    if (hasTr(email)) {
-      msg.textContent = "E-posta adresinde Türkçe karakter kullanmayın.";
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      msg.textContent = "Geçerli bir e-posta girin.";
-      return;
-    }
-  }
+  const { items } = getTotals();
+  if(!items.length){ st.textContent="Sepet boş."; return; }
 
-  msg.textContent = "Gönderiliyor...";
-  try {
-    const res = await api("/api/checkout", {
-      method: "POST",
-      body: JSON.stringify({ items, name, email, coupon: COUPON?.code || null }),
-    });
+  // Zorunlu alanlar
+  if(!name || !email || !phone || !addr){ st.textContent="Lütfen tüm alanları doldurun."; return; }
+  if(hasTr(email)){ st.textContent="E-posta adresinde Türkçe karakter kullanmayın."; return; }
+  if(!isValidEmail(email)){ st.textContent="Geçerli bir e-posta girin."; return; }
+  if(!isValidPhone(phone)){ st.textContent="Geçerli bir telefon girin."; return; }
+  if(addr.length < 10){ st.textContent="Adres çok kısa (min 10 karakter)."; return; }
+  if(addr.length > 600){ st.textContent="Adres çok uzun (max 600 karakter)."; return; }
+  if(!kvkkOk){ st.textContent="KVKK onayı zorunludur."; return; }
 
-    if (res.success) {
-      msg.textContent = "Sipariş iletildi. Teşekkürler!";
+  // İstek gövdesi
+  const payload = {
+    items: items.map(i => ({ id:i.id, name:i.name, price:Number(i.price), qty:i.qty })),
+    name, email, phone, address: addr,
+    coupon: COUPON?.code || null
+  };
+
+  st.textContent = "Gönderiliyor...";
+  try{
+    const res = await api("/api/checkout", { method:"POST", body: JSON.stringify(payload) });
+    if(res.success){
+      st.textContent = "Sipariş iletildi. Teşekkürler!";
       clearCart();
-    } else {
-      msg.textContent = res.message || "Gönderilemedi.";
+      // modalı kapatalım
+      setTimeout(()=>{ closeCheckout(); }, 600);
+      // sepet mesajını da güncelleyelim
+      const msg = qs("#checkoutMsg"); if(msg) msg.textContent = "Sipariş iletildi. Teşekkürler!";
+    }else{
+      st.textContent = res.message || "Gönderilemedi.";
     }
-  } catch (e) {
-    msg.textContent = e.message || "Sunucu hatası.";
+  }catch(e){
+    st.textContent = e.message || "Sunucu hatası.";
   }
 }
 
@@ -258,28 +302,14 @@ async function sendMessage() {
   const status = qs("#contactStatus");
   if (!status) return;
 
-  if (!name || !email || !message) {
-    status.textContent = "Lütfen tüm alanları doldurun.";
-    return;
-  }
-  if (hasTr(email)) {
-    status.textContent = "E-posta adresinde Türkçe karakter kullanmayın.";
-    return;
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    status.textContent = "Geçerli bir e-posta girin.";
-    return;
-  }
+  if (!name || !email || !message) { status.textContent = "Lütfen tüm alanları doldurun."; return; }
+  if (hasTr(email)) { status.textContent = "E-posta adresinde Türkçe karakter kullanmayın."; return; }
+  if (!isValidEmail(email)) { status.textContent = "Geçerli bir e-posta girin."; return; }
 
   status.textContent = "Gönderiliyor...";
   try {
-    const res = await api("/api/contact", {
-      method: "POST",
-      body: JSON.stringify({ name, email, message }),
-    });
-    status.textContent = res.success
-      ? "Mesaj alındı. Teşekkürler!"
-      : res.message || "Gönderilemedi.";
+    const res = await api("/api/contact", { method: "POST", body: JSON.stringify({ name, email, message }) });
+    status.textContent = res.success ? "Mesaj alındı. Teşekkürler!" : res.message || "Gönderilemedi.";
     if (res.success) {
       qs("#contactName").value = "";
       qs("#contactEmail").value = "";
@@ -290,96 +320,6 @@ async function sendMessage() {
   }
 }
 
-// ===== (Eski) Mini Admin — yalnızca ilgili elemanlar varsa çalışır =====
-async function adminLogin() {
-  const u = qs("#adminUser")?.value.trim();
-  const p = qs("#adminPass")?.value.trim();
-  const info = qs("#adminLoginStatus");
-  if (!u || !p) {
-    if (info) info.textContent = "Bilgileri doldurun.";
-    return;
-  }
-  try {
-    const res = await api("/api/login", { method: "POST", body: JSON.stringify({ username: u, password: p }) });
-    TOKEN = res.token;
-    localStorage.setItem("mavern_token", TOKEN);
-    if (qs("#loginPanel")) qs("#loginPanel").style.display = "none";
-    if (qs("#adminPanel")) qs("#adminPanel").style.display = "block";
-    await loadProducts();
-    renderAdminProducts();
-    if (info) info.textContent = "Giriş başarılı ✅";
-  } catch (e) {
-    if (info) info.textContent = "Yanlış giriş";
-  }
-}
-
-function adminLogout() {
-  TOKEN = null;
-  localStorage.removeItem("mavern_token");
-  if (qs("#adminPanel")) qs("#adminPanel").style.display = "none";
-  if (qs("#loginPanel")) qs("#loginPanel").style.display = "block";
-}
-
-async function addProduct() {
-  // yalnızca mini admin kullanıyorsa
-  if (!qs("#adminProducts")) return;
-  const name = qs("#prodName")?.value.trim();
-  const price = parseFloat(qs("#prodPrice")?.value);
-  const image = qs("#prodImg")?.value.trim();
-  const desc = qs("#prodDesc")?.value.trim();
-  if (!name || isNaN(price)) {
-    alert("İsim ve geçerli fiyat girin.");
-    return;
-  }
-  try {
-    await api("/api/admin/products", { method: "POST", body: JSON.stringify({ name, price, image, desc }) });
-    await loadProducts();
-    renderAdminProducts();
-    if (qs("#prodName")) qs("#prodName").value = "";
-    if (qs("#prodPrice")) qs("#prodPrice").value = "";
-    if (qs("#prodImg")) qs("#prodImg").value = "";
-    if (qs("#prodDesc")) qs("#prodDesc").value = "";
-    alert("Ürün eklendi.");
-  } catch (e) {
-    alert(e.message);
-  }
-}
-
-async function delProduct(id) {
-  if (!qs("#adminProducts")) return;
-  if (!confirm("Silinsin mi?")) return;
-  try {
-    await api("/api/admin/products/" + encodeURIComponent(id), { method: "DELETE" });
-    await loadProducts();
-    renderAdminProducts();
-  } catch (e) {
-    alert(e.message);
-  }
-}
-
-function renderAdminProducts() {
-  const box = qs("#adminProducts");
-  if (!box) return;
-  box.innerHTML = "";
-  if (!PRODUCTS.length) {
-    box.innerHTML = `<p class="muted">Ürün yok</p>`;
-    return;
-  }
-  PRODUCTS.forEach((p) => {
-    const card = document.createElement("div");
-    card.className = "product-card";
-    card.innerHTML = `
-      <img src="${sanitize(p.image || "logo.png")}" alt=""
-           style="width:100%;height:120px;object-fit:cover;border-radius:8px;border:1px solid #26324a;background:#0a0f1b"
-           onerror="this.src='logo.png'">
-      <h4 style="margin:.5rem 0 0">${esc(p.name)}</h4>
-      <div class="price" style="margin:.25rem 0 .5rem">${fmt(p.price)}</div>
-      <button class="btn" onclick="delProduct('${p.id}')">Sil</button>
-    `;
-    box.appendChild(card);
-  });
-}
-
 // ===== utils =====
 function esc(s) {
   return String(s).replace(
@@ -387,29 +327,19 @@ function esc(s) {
     (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])
   );
 }
-function sanitize(s) {
-  return String(s || "").replace(/"/g, "&quot;");
-}
+function sanitize(s) { return String(s || "").replace(/"/g, "&quot;"); }
 
 // ===== init =====
 window.addEventListener("DOMContentLoaded", async () => {
-  // Ürünleri yükle
   await loadProducts();
-  renderCart(); // boş başlat
+  renderCart();
 
-  // ESC ile açık panelleri kapat
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       closeCart();
       closeProductsPanel();
       closeSidebar();
+      closeCheckout();
     }
   });
-
-  // Mini admin’de otomatik panel göster
-  if (location.pathname.endsWith("/admin.html") && TOKEN) {
-    if (qs("#loginPanel")) qs("#loginPanel").style.display = "none";
-    if (qs("#adminPanel")) qs("#adminPanel").style.display = "block";
-    renderAdminProducts();
-  }
 });
