@@ -1,0 +1,56 @@
+name: Auto Deploy to Render
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "server.js"
+      - "public/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: render-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Trigger Render Deploy
+        shell: bash
+        env:
+          RENDER_DEPLOY_HOOK_URL: "https://api.render.com/deploy/srv-d47l8m3e5dus73b1pkgg?key=TRqwC-yd_aU"
+        run: |
+          set -euo pipefail
+          echo "🚀 Render deploy başlatılıyor..."
+
+          if [[ -z "${RENDER_DEPLOY_HOOK_URL:-}" ]]; then
+            echo "❌ Render URL tanımlı değil."
+            exit 1
+          fi
+
+          URL="$(printf '%s' "$RENDER_DEPLOY_HOOK_URL" | tr -d '\r' | tr -d ' ')"
+
+          echo "🌐 Render Hook çağrılıyor..."
+          HTTP_CODE=$(curl -fsS -X POST \
+            --retry 3 --retry-delay 2 \
+            --connect-timeout 10 --max-time 25 \
+            -o /tmp/render_resp.json -w '%{http_code}' \
+            "$URL" || true)
+
+          echo "HTTP_CODE=$HTTP_CODE"
+          cat /tmp/render_resp.json || true
+
+          if [[ "$HTTP_CODE" -lt 200 || "$HTTP_CODE" -ge 300 ]]; then
+            echo "❌ Render deploy başarısız (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+
+          echo "✅ Render deploy başarıyla tetiklendi!"
