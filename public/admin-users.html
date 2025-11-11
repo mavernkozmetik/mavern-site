@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="tr">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Admin • Kullanıcılar</title>
+<style>body{background:#0b1220;color:#e6edf3;font-family:system-ui} input,button{padding:8px;border:1px solid #2b3a57;background:#0f1629;color:#e6edf3;border-radius:8px} table{width:100%;border-collapse:collapse;margin-top:10px} td,th{border:1px solid #26324a;padding:8px;vertical-align:top}</style>
+</head>
+<body>
+  <div style="max-width:900px;margin:20px auto">
+    <h2>Kullanıcı Yönetimi</h2>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="user" placeholder="Admin kullanıcı">
+      <input id="pass" placeholder="Admin şifre" type="password">
+      <button id="loginBtn">Giriş</button>
+      <span id="loginOut" style="margin-left:8px;color:#9aa4b2"></span>
+    </div>
+    <div><button id="loadBtn" style="margin-top:10px">Listeyi Yükle</button></div>
+    <div id="out"></div>
+  </div>
+
+<script>
+let TOKEN=null;
+const qs=s=>document.querySelector(s);
+
+async function api(path, opts={}){
+  const headers={"Content-Type":"application/json", ...(TOKEN?{Authorization:`Bearer ${TOKEN}`}:{}) , ...(opts.headers||{})};
+  const res = await fetch(path,{...opts, headers});
+  let data=null;try{data=await res.json();}catch{}
+  if(!res.ok){const msg=data&&(data.message||data.error);throw new Error(msg||("HTTP "+res.status));}
+  return data;
+}
+
+qs("#loginBtn").onclick=async()=>{
+  const u=qs("#user").value.trim(), p=qs("#pass").value;
+  const out=qs("#loginOut"); out.textContent="...";
+  try{
+    const r = await api("/api/login",{method:"POST",body:JSON.stringify({username:u,password:p})});
+    if(r.success){ TOKEN=r.token; out.textContent="Giriş OK"; }
+  }catch(e){ out.textContent=e.message||"Hata"; }
+};
+
+qs("#loadBtn").onclick=loadAll;
+
+async function loadAll(){
+  if(!TOKEN){ alert("Önce giriş."); return; }
+  const r = await api("/api/admin/users");
+  const rows = (r.items||[]).map(u=>`
+    <tr>
+      <td>${u.id}</td>
+      <td>${u.email}<br><span style="color:#9aa4b2">${u.displayName||""}</span></td>
+      <td>${u.isApproved?"Onaylı":"Bekliyor"} / ${u.isAdmin?"Admin":"Üye"}</td>
+      <td>
+        <button onclick="setApprove('${u.id}', true)">Onayla</button>
+        <button onclick="setApprove('${u.id}', false)">Onayı Kaldır</button>
+        <button onclick="setAdmin('${u.id}', true)">Admin Yap</button>
+        <button onclick="setAdmin('${u.id}', false)">Admin Kaldır</button>
+        <button onclick="delUser('${u.id}')">Sil</button>
+      </td>
+    </tr>
+  `).join("");
+  qs("#out").innerHTML = `<table><thead><tr><th>ID</th><th>E-posta</th><th>Durum</th><th>İşlem</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+window.setApprove = async function(id, ok){
+  await api(`/api/admin/users/${id}/approve`, {method:"PATCH", body: JSON.stringify({approved: ok})});
+  loadAll();
+}
+window.setAdmin = async function(id, ok){
+  await api(`/api/admin/users/${id}/approve`, {method:"PATCH", body: JSON.stringify({makeAdmin: ok})});
+  loadAll();
+}
+window.delUser = async function(id){
+  if(!confirm("Silinsin mi?")) return;
+  await api(`/api/admin/users/${id}`, {method:"DELETE"});
+  loadAll();
+}
+</script>
+</body>
+</html>

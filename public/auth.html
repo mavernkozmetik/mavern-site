@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Mavern • Giriş / Kayıt</title>
+  <style>
+    body{background:#0b1220;color:#e6edf3;font-family:system-ui,Segoe UI,Roboto,Arial}
+    .card{max-width:440px;margin:40px auto;background:#0a0f1b;border:1px solid #26324a;border-radius:12px;padding:16px}
+    input,button{width:100%;padding:10px;border-radius:8px;border:1px solid #2b3a57;background:#0f1629;color:#e6edf3;margin:6px 0}
+    .muted{color:#9aa4b2}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2 style="margin:0 0 8px">Kayıt Ol</h2>
+    <input id="rName" placeholder="Görünen ad (opsiyonel)">
+    <input id="rMail" placeholder="E-posta">
+    <input id="rPass" placeholder="Şifre (min 6)" type="password">
+    <button id="rBtn">Kayıt</button>
+    <div id="rOut" class="muted"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin:0 0 8px">Giriş Yap</h2>
+    <input id="lMail" placeholder="E-posta">
+    <input id="lPass" placeholder="Şifre" type="password">
+    <button id="lBtn">Giriş</button>
+    <div id="lOut" class="muted"></div>
+  </div>
+
+  <script>
+    const qs=(s)=>document.querySelector(s);
+    async function api(path,opts={}){
+      const headers={"Content-Type":"application/json",...(opts.headers||{})};
+      const res=await fetch(path,{...opts,headers});
+      let data=null; try{data=await res.json();}catch{}
+      if(!res.ok){const msg=data&&(data.message||data.error); throw new Error(msg||("HTTP "+res.status));}
+      return data;
+    }
+    qs("#rBtn").onclick=async()=>{
+      const displayName = qs("#rName").value.trim();
+      const email = qs("#rMail").value.trim();
+      const password = qs("#rPass").value;
+      const out = qs("#rOut");
+      out.textContent="Gönderiliyor...";
+      try{
+        const r = await api("/api/auth/register",{method:"POST",body:JSON.stringify({displayName,email,password})});
+        if(r.success){ out.textContent="Kayıt alındı. Admin onayından sonra giriş yapabilirsiniz.";}
+        else{ out.textContent=r.message||"Kayıt olmadı."; }
+      }catch(e){ out.textContent = e.message || "Hata"; }
+    };
+    qs("#lBtn").onclick=async()=>{
+      const email = qs("#lMail").value.trim();
+      const password = qs("#lPass").value;
+      const out = qs("#lOut");
+      out.textContent="Gönderiliyor...";
+      try{
+        const r = await api("/api/auth/login",{method:"POST",body:JSON.stringify({email,password})});
+        if(r.success){
+          localStorage.setItem("mavern_jwt", r.token);
+          out.textContent="Giriş başarılı.";
+        }else{ out.textContent=r.message||"Olmadı."; }
+      }catch(e){ out.textContent = e.message || "Hata"; }
+    };
+  </script>
+</body>
+</html>

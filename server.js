@@ -1,4 +1,4 @@
-// server.js — Mavern (SMTP + Kupon startsAt + Mesaj Kutusu + Güvenli Upload + Rate Limit + Helmet + HTTPS + 20s Idempotency + Products Normalize + Persistent DATA_DIR)
+// server.js — Mavern (Auth + Reviews + SMTP + Coupons + Messages + Secure Upload + Rate Limit + Helmet + HTTPS + 20s Idempotency + Products Normalize + Persistent DATA_DIR)
 
 require("dotenv").config();
 const express = require("express");
@@ -12,6 +12,8 @@ const nodemailer = require("nodemailer");
 const multer = require("multer");
 const mime = require("mime-types");
 const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const app = express();
 
@@ -58,14 +60,15 @@ app.use((req, res, next) => {
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
 
-// ⬇ Kalıcı disk için ENV ile değiştirilebilir
+// Kalıcı disk (ENV ile değiştirilebilir)
 const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(ROOT, "data");
-// Upload klasörü de istenirse ENV ile taşınabilir
 const UPLOAD_DIR = process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : path.join(PUBLIC_DIR, "uploads");
 
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
 const MESSAGES_FILE = path.join(DATA_DIR, "messages.json");
 const COUPONS_FILE  = path.join(DATA_DIR, "coupons.json");
+const USERS_FILE    = path.join(DATA_DIR, "users.json");
+const REVIEWS_FILE  = path.join(DATA_DIR, "reviews.json");
 
 // Klasör/JSON başlangıcı (overwrite yapmaz)
 for (const [p, init] of [
@@ -74,7 +77,9 @@ for (const [p, init] of [
   [UPLOAD_DIR],
   [PRODUCTS_FILE, "[]"],
   [MESSAGES_FILE, "[]"],
-  [COUPONS_FILE,  "[]"]
+  [COUPONS_FILE,  "[]"],
+  [USERS_FILE,    "[]"],
+  [REVIEWS_FILE,  "[]"],
 ]) {
   const isFile = typeof init === "string";
   if (isFile) {
@@ -109,10 +114,7 @@ const isValidEmail = (e = "") => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 const nowTS        = () => Date.now();
 const clientIP     = (req) => (req.headers["x-forwarded-for"]?.split(",")[0] || req.ip || "").trim();
 
-function isValidPhone(s = "") {
-  const x = String(s).trim();
-  return /^[+0-9()\-\s]{6,}$/.test(x);
-}
+function isValidPhone(s = "") { return /^[+0-9()\-\s]{6,}$/.test(String(s).trim()); }
 function uploadAbsPathFromPublic(p) {
   if (!p || !p.startsWith("/uploads/")) return null;
   const base = path.basename(p);
@@ -138,22 +140,16 @@ function todayISODateStart() {
   return d.toISOString();
 }
 
-// Ürün normalize/tamir (deploy sonrası "satılamaz"ı düzeltir)
+/* -------------------- Ürün normalize/tamir (deploy koruması) -------------- */
 function normalizeProduct(p) {
   const out = { ...p };
-
-  // Güvenli alanlar
   out.id   = String(out.id || `p${Date.now()}`);
   out.name = String(out.name || "").trim();
   out.desc = String(out.desc || "");
   out.image = out.image || "logo.png";
 
-  // price/priceText uyumu
   const hasNumericPrice = Number.isFinite(Number(out.price));
-  if (!out.priceText && hasNumericPrice) {
-    out.priceText = String(out.price);
-  }
-  // Sadece priceText varsa ve sayısalsa price'a çevir
+  if (!out.priceText && hasNumericPrice) out.priceText = String(out.price);
   if (!hasNumericPrice && out.priceText) {
     const parsed = parsePrice(out.priceText);
     if (parsed.purchasable) {
@@ -162,33 +158,33 @@ function normalizeProduct(p) {
       out.purchasable = true;
     }
   }
-
-  // purchasable = fiyat sayısal ise true; değilse false
   const isNumPrice = Number.isFinite(Number(out.price));
   out.purchasable = !!isNumPrice;
-
   return out;
 }
 
-// Okurken her zaman normalize edilmiş ürün listesi ver
-function readProductsRaw() {
-  return readJSON(PRODUCTS_FILE, []);
-}
+function readProductsRaw() { return readJSON(PRODUCTS_FILE, []); }
 function readProductsNormalized() {
   const raw = readProductsRaw();
   return Array.isArray(raw) ? raw.map(normalizeProduct) : [];
 }
-// Yazarken listeyi normalize edip yazar
 function writeProducts(list) {
   const fixed = Array.isArray(list) ? list.map(normalizeProduct) : [];
   writeJSON(PRODUCTS_FILE, fixed);
 }
 
-// Mesaj/kuponlar
+// Mesaj/kupon/kullanıcı/yorum
 const readMessages  = () => readJSON(MESSAGES_FILE, []);
 const writeMessages = (list) => writeJSON(MESSAGES_FILE, Array.isArray(list) ? list : []);
+
 const readCoupons   = () => readJSON(COUPONS_FILE, []);
 const writeCoupons  = (list) => writeJSON(COUPONS_FILE, Array.isArray(list) ? list : []);
+
+const readUsers     = () => readJSON(USERS_FILE, []);
+const writeUsers    = (list) => writeJSON(USERS_FILE, Array.isArray(list) ? list : []);
+
+const readReviews   = () => readJSON(REVIEWS_FILE, []);
+const writeReviews  = (list) => writeJSON(REVIEWS_FILE, Array.isArray(list) ? list : []);
 
 /* ---------------------------- Idempotency (20s) --------------------------- */
 const INFLIGHT = new Map(); // key -> ts
@@ -222,9 +218,7 @@ function idempGuard(keys) {
         return res.status(429).json({ success:false, message:"İşleminiz alınıyor, lütfen tekrarlamayın." });
       }
       INFLIGHT.set(key, now);
-      res.on("finish", () => {
-        setTimeout(() => INFLIGHT.delete(key), IDEMP_TTL_MS);
-      });
+      res.on("finish", () => { setTimeout(() => INFLIGHT.delete(key), IDEMP_TTL_MS); });
       next();
     } catch (_e) {
       next();
@@ -233,33 +227,22 @@ function idempGuard(keys) {
 }
 
 /* -------------------------------- Rate Limit ------------------------------ */
-const apiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 60,
-  standardHeaders: "draft-7",
-  legacyHeaders: false
-});
+const apiLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: "draft-7", legacyHeaders: false });
 app.use("/api/", apiLimiter);
 
-const tightLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 10,
-  standardHeaders: "draft-7",
-  legacyHeaders: false
-});
+const tightLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: "draft-7", legacyHeaders: false });
 
-/* --------------------------------- Admin Auth ----------------------------- */
-const ADMIN_USER = "EDE";
-const ADMIN_PASS = "M@v3rn!2025@Kozm0tik";
+/* ----------------------------- Admin (eski panel) -------------------------- */
+// ENV’e taşındı (fallback’ler var ama ENV girmen önerilir)
+const ADMIN_USER = process.env.ADMIN_USER || "EDE";
+const ADMIN_PASS = process.env.ADMIN_PASS || "M@v3rn!2025@Kozm0tik";
 let CURRENT_TOKEN = null;
 
-function requireAuth(req, res, next) {
+function requireLegacyAdmin(req, res, next) {
   const hdr = req.headers.authorization || "";
   const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
-  if (!token || token !== CURRENT_TOKEN) {
-    return res.status(401).json({ success: false, message: "Yetkisiz işlem" });
-  }
-  next();
+  if (token && token === CURRENT_TOKEN) return next();
+  return res.status(401).json({ success: false, message: "Yetkisiz işlem" });
 }
 
 app.post("/api/login", (req, res) => {
@@ -269,6 +252,121 @@ app.post("/api/login", (req, res) => {
     return res.json({ success: true, token: CURRENT_TOKEN });
   }
   return res.status(401).json({ success: false, message: "Kullanıcı adı veya şifre hatalı" });
+});
+
+/* ----------------------------- Auth (JWT tabanlı) ------------------------- */
+const JWT_SECRET = process.env.JWT_SECRET || "CHANGE_THIS_SECRET_STRONG";
+
+function signToken(payload) { return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" }); }
+
+function requireJWT(req, res, next) {
+  const auth = req.headers.authorization || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+  if (!token) return res.status(401).json({ success: false, message: "Giriş gerekli" });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded; // { uid, isAdmin }
+    next();
+  } catch {
+    return res.status(401).json({ success: false, message: "Geçersiz oturum" });
+  }
+}
+
+// Admin kontrolü: önce eski token, yoksa JWT admin
+function requireAdmin(req, res, next) {
+  const hdr = req.headers.authorization || "";
+  const bearer = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
+
+  // eski panel token'ı
+  if (bearer && bearer === CURRENT_TOKEN) return next();
+
+  // jwt admin
+  if (bearer) {
+    try {
+      const dec = jwt.verify(bearer, JWT_SECRET);
+      if (dec?.isAdmin) { req.user = dec; return next(); }
+    } catch {}
+  }
+  return res.status(401).json({ success: false, message: "Admin yetkisi gerekli" });
+}
+
+// Register (rate limited)
+app.post("/api/auth/register", tightLimiter, async (req, res) => {
+  const { email, password, displayName } = req.body || {};
+  const e = String(email || "").trim().toLowerCase();
+  if (!e || containsTR(e) || !isValidEmail(e)) return res.status(400).json({ success:false, message:"Geçerli e-posta gerekli" });
+  if (!password || String(password).length < 6) return res.status(400).json({ success:false, message:"Şifre en az 6 karakter" });
+
+  const users = readUsers();
+  if (users.find(u => u.email === e)) return res.status(400).json({ success:false, message:"Bu e-posta zaten kayıtlı" });
+
+  const hash = await bcrypt.hash(String(password), 10);
+  const user = {
+    id: "u" + Date.now(),
+    email: e,
+    passHash: hash,
+    displayName: String(displayName || "").trim() || e.split("@")[0],
+    isApproved: false,  // admin onayı gerekir
+    isAdmin: false,
+    createdAt: new Date().toISOString()
+  };
+  users.push(user);
+  writeUsers(users);
+  return res.json({ success:true, pendingApproval:true });
+});
+
+// Login (rate limited)
+app.post("/api/auth/login", tightLimiter, async (req, res) => {
+  const { email, password } = req.body || {};
+  const e = String(email || "").trim().toLowerCase();
+  const users = readUsers();
+  const u = users.find(x => x.email === e);
+  if (!u) return res.status(400).json({ success:false, message:"Kullanıcı bulunamadı" });
+  const ok = await bcrypt.compare(String(password || ""), u.passHash || "");
+  if (!ok) return res.status(400).json({ success:false, message:"Şifre hatalı" });
+  if (!u.isApproved) return res.status(403).json({ success:false, message:"Hesabınız onay bekliyor" });
+  const token = signToken({ uid: u.id, isAdmin: !!u.isAdmin });
+  return res.json({ success:true, token, user:{ id:u.id, email:u.email, displayName:u.displayName, isAdmin:!!u.isAdmin } });
+});
+
+// Me
+app.get("/api/auth/me", requireJWT, (req, res) => {
+  const users = readUsers();
+  const u = users.find(x => x.id === req.user.uid);
+  if (!u) return res.status(404).json({ success:false, message:"Kullanıcı yok" });
+  return res.json({ success:true, user:{ id:u.id, email:u.email, displayName:u.displayName, isAdmin:!!u.isAdmin, isApproved:!!u.isApproved } });
+});
+
+/* ----------------------------- Admin: Users -------------------------------- */
+app.get("/api/admin/users", requireAdmin, (_req, res) => {
+  const users = readUsers().map(u => ({ id:u.id, email:u.email, displayName:u.displayName, isApproved:u.isApproved, isAdmin:u.isAdmin, createdAt:u.createdAt }));
+  res.json({ success:true, items: users });
+});
+
+app.patch("/api/admin/users/:id/approve", requireAdmin, (req, res) => {
+  const id = String(req.params.id || "");
+  const { approved, makeAdmin } = req.body || {};
+  const users = readUsers();
+  const idx = users.findIndex(u => u.id === id);
+  if (idx === -1) return res.status(404).json({ success:false, message:"Kullanıcı bulunamadı" });
+  if (typeof approved === "boolean") users[idx].isApproved = approved;
+  if (typeof makeAdmin === "boolean") users[idx].isAdmin = makeAdmin;
+  writeUsers(users);
+  res.json({ success:true, user:{ id:users[idx].id, email:users[idx].email, isApproved:users[idx].isApproved, isAdmin:users[idx].isAdmin }});
+});
+
+app.delete("/api/admin/users/:id", requireAdmin, (req, res) => {
+  const id = String(req.params.id || "");
+  let users = readUsers();
+  const before = users.length;
+  users = users.filter(u => u.id !== id);
+  if (users.length === before) return res.status(404).json({ success:false, message:"Kullanıcı bulunamadı" });
+  writeUsers(users);
+  // kullanıcının yorumlarını da silelim
+  let revs = readReviews();
+  const newRevs = revs.filter(r => r.userId !== id);
+  if (newRevs.length !== revs.length) writeReviews(newRevs);
+  res.json({ success:true });
 });
 
 /* --------------------------------- SMTP (Brevo) --------------------------- */
@@ -291,7 +389,7 @@ const transporter = nodemailer.createTransport({
 });
 
 app.get("/api/mail/health", (_req, res) => res.json({ ok: true, app: "alive" }));
-app.post("/api/admin/test-send", requireAuth, async (_req, res) => {
+app.post("/api/admin/test-send", requireLegacyAdmin, async (_req, res) => {
   try {
     await transporter.sendMail({
       from: `"${process.env.FROM_NAME || "Mavern"}" <${process.env.FROM_EMAIL || process.env.BREVO_USER}>`,
@@ -314,7 +412,6 @@ app.get("/api/mail/verify", async (_req, res) => {
 });
 
 /* ---------------------------- ÜRÜNLER (müşteri) --------------------------- */
-// Müşteriye her zaman normalize edilmiş liste dön
 app.get("/api/products", (_req, res) => res.json(readProductsNormalized()));
 
 /* ------------------------------- Upload (multer) -------------------------- */
@@ -323,10 +420,8 @@ const storage = multer.diskStorage({
   filename: (_req, file, cb) => {
     const ext = mime.extension(file.mimetype) || "bin";
     const safeBase = (file.originalname || "file")
-      .replace(/\s+/g, "_")
-      .replace(/[^a-zA-Z0-9_\-\.]/g, "")
-      .replace(/\.[^\.]+$/, "")
-      .slice(0, 40);
+      .replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_\-\.]/g, "")
+      .replace(/\.[^\.]+$/, "").slice(0, 40);
     cb(null, `${Date.now()}_${safeBase}.${ext}`);
   }
 });
@@ -339,13 +434,20 @@ const upload = multer({
   }
 });
 
-app.post("/api/admin/upload", requireAuth, upload.single("file"), (req, res) => {
+// Admin upload (eski panel)
+app.post("/api/admin/upload", requireLegacyAdmin, upload.single("file"), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: "Dosya yok" });
+  res.json({ success: true, path: "/uploads/" + req.file.filename });
+});
+
+// Üye upload (yorum fotoğrafları)
+app.post("/api/reviews/upload", requireJWT, upload.single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ success: false, message: "Dosya yok" });
   res.json({ success: true, path: "/uploads/" + req.file.filename });
 });
 
 /* ------------------------------- Ürünler (admin) -------------------------- */
-app.post("/api/admin/products", requireAuth, (req, res) => {
+app.post("/api/admin/products", requireLegacyAdmin, (req, res) => {
   const { name, price, image, desc } = req.body || {};
   if (!name) return res.status(400).json({ success: false, message: "İsim gerekli" });
 
@@ -366,7 +468,7 @@ app.post("/api/admin/products", requireAuth, (req, res) => {
   res.json({ success: true, item });
 });
 
-app.put("/api/admin/products/:id", requireAuth, (req, res) => {
+app.put("/api/admin/products/:id", requireLegacyAdmin, (req, res) => {
   const id = req.params.id;
   const { name, price, image, desc } = req.body || {};
   const list = readProductsNormalized();
@@ -385,11 +487,9 @@ app.put("/api/admin/products/:id", requireAuth, (req, res) => {
   if (image !== undefined) list[idx].image = String(image || "logo.png");
   if (desc  !== undefined) list[idx].desc  = String(desc);
 
-  // Son kez normalize et
   list[idx] = normalizeProduct(list[idx]);
   writeProducts(list);
 
-  // Eski görseli başka ürün kullanmıyorsa sil
   if (image !== undefined && oldImage && oldImage.startsWith("/uploads/") && oldImage !== list[idx].image) {
     const stillUsed = readProductsNormalized().some(p => p.image === oldImage);
     const abs = uploadAbsPathFromPublic(oldImage);
@@ -400,7 +500,7 @@ app.put("/api/admin/products/:id", requireAuth, (req, res) => {
   res.json({ success: true, item: list[idx] });
 });
 
-app.delete("/api/admin/products/:id", requireAuth, (req, res) => {
+app.delete("/api/admin/products/:id", requireLegacyAdmin, (req, res) => {
   const id = req.params.id;
   let list = readProductsNormalized();
   const idx = list.findIndex(p => p.id === id);
@@ -457,11 +557,11 @@ app.post("/api/coupon/check", (req, res) => {
   });
 });
 
-app.get("/api/admin/coupons", requireAuth, (_req, res) => {
+app.get("/api/admin/coupons", requireLegacyAdmin, (_req, res) => {
   res.json({ success: true, items: readCoupons() });
 });
 
-app.post("/api/admin/coupons", requireAuth, (req, res) => {
+app.post("/api/admin/coupons", requireLegacyAdmin, (req, res) => {
   let { code, percent, active, startsAt, expiresAt } = req.body || {};
   code = String(code || "").trim().toUpperCase();
   const p = Number(percent);
@@ -488,7 +588,7 @@ app.post("/api/admin/coupons", requireAuth, (req, res) => {
   res.json({ success: true, item });
 });
 
-app.delete("/api/admin/coupons/:code", requireAuth, (req, res) => {
+app.delete("/api/admin/coupons/:code", requireLegacyAdmin, (req, res) => {
   const code = String(req.params.code || "").trim().toUpperCase();
   let list = readCoupons();
   const before = list.length;
@@ -499,14 +599,14 @@ app.delete("/api/admin/coupons/:code", requireAuth, (req, res) => {
 });
 
 /* ------------------------------ Mesaj Kutusu -------------------------------- */
-app.get("/api/admin/messages", requireAuth, (req, res) => {
+app.get("/api/admin/messages", requireLegacyAdmin, (req, res) => {
   const type = String(req.query.type || "").trim();
   let list = readMessages().sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
   if (type === "contact" || type === "order") list = list.filter(m => m.type === type);
   res.json({ success: true, items: list });
 });
 
-app.patch("/api/admin/messages/:id/read", requireAuth, (req, res) => {
+app.patch("/api/admin/messages/:id/read", requireLegacyAdmin, (req, res) => {
   const id = String(req.params.id || "");
   const list = readMessages();
   const idx = list.findIndex(m => m.id === id);
@@ -516,7 +616,7 @@ app.patch("/api/admin/messages/:id/read", requireAuth, (req, res) => {
   res.json({ success: true, item: list[idx] });
 });
 
-app.delete("/api/admin/messages/:id", requireAuth, (req, res) => {
+app.delete("/api/admin/messages/:id", requireLegacyAdmin, (req, res) => {
   const id = String(req.params.id || "");
   let list = readMessages();
   const before = list.length;
@@ -526,7 +626,7 @@ app.delete("/api/admin/messages/:id", requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
-app.post("/api/admin/messages/:id/resend", requireAuth, async (req, res) => {
+app.post("/api/admin/messages/:id/resend", requireLegacyAdmin, async (req, res) => {
   const id = String(req.params.id || "");
   const list = readMessages();
   const idx = list.findIndex(m => m.id === id);
@@ -626,7 +726,6 @@ app.post("/api/checkout", tightLimiter, idempGuard(["items","email","name","phon
   if (addr.length < 10) return res.status(400).json({ success: false, message: "Adres çok kısa (min 10 karakter)." });
   if (addr.length > 600) return res.status(400).json({ success: false, message: "Adres çok uzun (max 600 karakter)." });
 
-  // Normalize edilmiş ürünlerle kontrol
   const all = readProductsNormalized();
   const notBuyable = [];
   const normalizedItems = [];
@@ -721,6 +820,88 @@ Kupon: ${appliedCoupon || "-"}
   }
 });
 
+/* ------------------------------- Reviews ----------------------------------- */
+// Public: bir ürünün onaylı yorumları
+app.get("/api/products/:pid/reviews", (req, res) => {
+  const pid = String(req.params.pid || "");
+  const revs = readReviews().filter(r => r.productId === pid && r.approved === true)
+    .sort((a,b) => (a.createdAt > b.createdAt ? -1 : 1));
+  res.json({ success:true, items: revs });
+});
+
+// Üye: yorum ekle (JWT gerekli)
+app.post("/api/products/:pid/reviews", requireJWT, async (req, res) => {
+  const pid = String(req.params.pid || "");
+  const { rating, comment, photos, anonymous } = req.body || {};
+
+  // Ürün var mı?
+  const prod = readProductsNormalized().find(p => p.id === pid);
+  if (!prod) return res.status(404).json({ success:false, message:"Ürün bulunamadı" });
+
+  // Kullanıcı
+  const users = readUsers();
+  const me = users.find(u => u.id === req.user.uid);
+  if (!me || !me.isApproved) return res.status(403).json({ success:false, message:"Hesabınız onaylı değil" });
+
+  // Puan 1..5
+  const r = Number(rating);
+  if (!(r >= 1 && r <= 5)) return res.status(400).json({ success:false, message:"Puan 1-5 arası olmalı" });
+
+  // Fotoğraflar: /uploads/... listesi
+  let ph = [];
+  if (Array.isArray(photos)) {
+    ph = photos
+      .map(p => String(p || ""))
+      .filter(p => p.startsWith("/uploads/"))
+      .slice(0, 5);
+  }
+
+  const revs = readReviews();
+  const rec = {
+    id: "r" + Date.now(),
+    productId: pid,
+    userId: me.id,
+    displayName: anonymous ? "Gizli Kullanıcı" : (me.displayName || me.email),
+    anonymous: !!anonymous,
+    rating: r,
+    comment: String(comment || "").trim(),
+    photos: ph,
+    approved: false, // admin onayı
+    createdAt: new Date().toISOString()
+  };
+  revs.push(rec);
+  writeReviews(revs);
+
+  res.json({ success:true, pendingApproval:true, itemId: rec.id });
+});
+
+// Admin: yorumlar
+app.get("/api/admin/reviews", requireAdmin, (req, res) => {
+  const pid = String(req.query.productId || "");
+  let items = readReviews().sort((a,b)=> (a.createdAt > b.createdAt ? -1 : 1));
+  if (pid) items = items.filter(r => r.productId === pid);
+  res.json({ success:true, items });
+});
+app.patch("/api/admin/reviews/:id/approve", requireAdmin, (req, res) => {
+  const id = String(req.params.id || "");
+  const { approved } = req.body || {};
+  let revs = readReviews();
+  const idx = revs.findIndex(r => r.id === id);
+  if (idx === -1) return res.status(404).json({ success:false, message:"Yorum bulunamadı" });
+  if (typeof approved === "boolean") revs[idx].approved = approved;
+  writeReviews(revs);
+  res.json({ success:true, item: revs[idx] });
+});
+app.delete("/api/admin/reviews/:id", requireAdmin, (req, res) => {
+  const id = String(req.params.id || "");
+  let revs = readReviews();
+  const before = revs.length;
+  revs = revs.filter(r => r.id !== id);
+  if (revs.length === before) return res.status(404).json({ success:false, message:"Yorum bulunamadı" });
+  writeReviews(revs);
+  res.json({ success:true });
+});
+
 /* ------------------------------- Fallback/Server --------------------------- */
 app.get("/api/version", (_req, res) => res.json({ name: "mavern", version: "1.0.0" }));
 
@@ -733,7 +914,6 @@ app.get("*", (_req, res) => {
   try {
     const raw = readProductsRaw();
     const fixed = Array.isArray(raw) ? raw.map(normalizeProduct) : [];
-    // Fark varsa yaz (sessiz tamir)
     if (JSON.stringify(raw) !== JSON.stringify(fixed)) {
       writeJSON(PRODUCTS_FILE, fixed);
       console.log("🛠  products.json normalize edildi (boot-repair).");

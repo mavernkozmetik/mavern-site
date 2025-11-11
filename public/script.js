@@ -6,6 +6,9 @@ const fmtMoney = (n) => `${Number(n || 0).toFixed(0)} ₺`;
 
 let TOKEN = localStorage.getItem("mavern_token") || null;
 
+// ==== Sepet kalıcılık anahtarı ====
+const CART_KEY = "mavern_cart";
+
 let PRODUCTS = [];
 let CART = {};        // { id: {id,name,price,image,qty} }
 let COUPON = null;    // { code, percent, expiresAt? }
@@ -90,7 +93,6 @@ async function loadProducts() {
   try {
     const data = await api("/api/products");
     const list = Array.isArray(data) ? data : [];
-    // İstemci fallback normalize
     PRODUCTS = list.map(normalizeProductClient);
   } catch {
     PRODUCTS = [];
@@ -99,7 +101,6 @@ async function loadProducts() {
 }
 
 function displayPriceTag(p) {
-  // backend artık priceText/purchasable veriyor, fakat fallback de var
   const isNum = typeof p.price === "number" && isFinite(p.price);
   return isNum ? fmtMoney(p.price) : (p.priceText || "—");
 }
@@ -132,11 +133,16 @@ function productCard(p) {
   el.className = "product-card";
   const priceTag = displayPriceTag(p);
   const canBuy = !!(p && p.purchasable && typeof p.price === "number" && isFinite(p.price));
+  const link = `product.html?id=${encodeURIComponent(p.id)}`;
   el.innerHTML = `
-    <img class="prod" src="${sanitize(p.image || "logo.png")}" alt="${esc(p.name)}"
-         style="width:100%;height:180px;object-fit:cover;border-radius:12px;border:1px solid #26324a;background:#0a0f1b"
-         onerror="this.src='logo.png'">
-    <h4 style="margin:.5rem 0 0">${esc(p.name)}</h4>
+    <a href="${link}" style="display:block">
+      <img class="prod" src="${sanitize(p.image || "logo.png")}" alt="${esc(p.name)}"
+           style="width:100%;height:180px;object-fit:cover;border-radius:12px;border:1px solid #26324a;background:#0a0f1b"
+           onerror="this.src='logo.png'">
+    </a>
+    <h4 style="margin:.5rem 0 0">
+      <a href="${link}" style="color:#e6edf3;text-decoration:none">${esc(p.name)}</a>
+    </h4>
     <div class="price muted" style="margin:.25rem 0 .5rem">${esc(priceTag)}</div>
     ${p.desc ? `<p style="margin:0 0 .5rem" class="muted">${esc(p.desc)}</p>` : ""}
     <button class="btn" ${canBuy ? `onclick="addToCart('${p.id}')"` : "disabled title='Satın alınamaz'"}>${canBuy ? "Sepete Ekle" : "Satın Alınamaz"}</button>
@@ -144,7 +150,20 @@ function productCard(p) {
   return el;
 }
 
-// ===== Sepet =====
+// ===== Sepet (localStorage kalıcılık) =====
+function loadCartFromStorage(){
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    CART = raw ? JSON.parse(raw) : {};
+    if (typeof CART !== "object" || Array.isArray(CART) || CART === null) CART = {};
+  } catch {
+    CART = {};
+  }
+}
+function saveCartToStorage(){
+  try { localStorage.setItem(CART_KEY, JSON.stringify(CART)); } catch {}
+}
+
 function addToCart(id) {
   const p = PRODUCTS.find((x) => x.id === id);
   if (!p) return alert("Ürün bulunamadı");
@@ -152,6 +171,7 @@ function addToCart(id) {
   if (!canBuy) { alert("Bu ürün şu anda satılabilir değil."); return; }
   if (!CART[id]) CART[id] = { id: p.id, name: p.name, price: p.price, image: p.image, qty: 0 };
   CART[id].qty += 1;
+  saveCartToStorage();
   renderCart();
   openCart();
 }
@@ -160,6 +180,7 @@ function changeQty(id, delta) {
   if (!CART[id]) return;
   CART[id].qty += delta;
   if (CART[id].qty <= 0) delete CART[id];
+  saveCartToStorage();
   renderCart();
   const el = qs("#checkoutOverlay");
   if(el?.classList.contains("show")){
@@ -169,6 +190,7 @@ function changeQty(id, delta) {
 
 function removeFromCart(id) {
   if (CART[id]) delete CART[id];
+  saveCartToStorage();
   renderCart();
   const el = qs("#checkoutOverlay");
   if(el?.classList.contains("show")){
@@ -178,6 +200,7 @@ function removeFromCart(id) {
 
 function clearCart() {
   CART = {};
+  saveCartToStorage();
   COUPON = null;
   qs("#couponInput") && (qs("#couponInput").value = "");
   qs("#couponMsg") && (qs("#couponMsg").textContent = "");
@@ -332,7 +355,7 @@ async function submitCheckout(){
   }catch(e){
     st.textContent = e.message || "Sunucu hatası.";
   }finally{
-    // Sunucuda idempotency var; yine de form yeniden denenebilsin diye kilidi 20s sonra açıyoruz (zaten timer kurduk)
+    // sunucuda idempotency var; kilit 20sn sonra otomatik kalkıyor (timer yukarıda)
   }
 }
 
@@ -373,6 +396,9 @@ function sanitize(s) { return String(s || "").replace(/"/g, "&quot;"); }
 
 // ===== init =====
 window.addEventListener("DOMContentLoaded", async () => {
+  // sepeti localStorage'dan yükle
+  loadCartFromStorage();
+
   await loadProducts();
   renderCart();
 

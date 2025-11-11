@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Mavern • Ürün</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    body{background:#0b1220;color:#e6edf3}
+    .wrap{max-width:1000px;margin:20px auto;padding:0 12px}
+    .prod-hero{display:grid;grid-template-columns:320px 1fr;gap:20px}
+    @media(max-width:800px){.prod-hero{grid-template-columns:1fr}}
+    .rev-form, .rev-list {background:#0a0f1b;border:1px solid #26324a;border-radius:12px;padding:14px;margin-top:16px}
+    .rev-item{border-top:1px solid #26324a;padding:12px 0}
+    .rev-item:first-child{border-top:0}
+    .stars{color:#ffd35a}
+    .muted{color:#9aa4b2}
+    .thumbs img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid #26324a;margin-right:6px}
+    button, input, textarea, select{background:#0f1629;color:#e6edf3;border:1px solid #2b3a57;border-radius:8px;padding:10px}
+    .btn{cursor:pointer}
+    .btn[disabled]{opacity:.55;cursor:not-allowed}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a href="index.html" class="muted">← Mağaza</a>
+    <div id="hero" class="prod-hero" style="margin-top:10px"></div>
+
+    <div class="rev-list">
+      <h3 style="margin:0 0 8px">Yorumlar</h3>
+      <div id="avgBlock" class="muted" style="margin-bottom:8px"></div>
+      <div id="reviews"></div>
+      <div id="noReviews" class="muted" style="display:none">Henüz yorum yok.</div>
+    </div>
+
+    <div class="rev-form" id="revFormBox">
+      <h3 style="margin:0 0 8px">Yorum Yaz</h3>
+      <div id="rfGate" class="muted" style="margin-bottom:8px">
+        Yorum için giriş gerekir. <a href="auth.html">Giriş/Kayıt</a>
+      </div>
+
+      <div id="rfFields" style="display:none">
+        <label>Puan
+          <select id="rfRating">
+            <option value="5">5</option><option value="4">4</option>
+            <option value="3">3</option><option value="2">2</option><option value="1">1</option>
+          </select>
+        </label>
+        <div style="margin-top:8px">
+          <textarea id="rfComment" rows="4" placeholder="Yorumun..."></textarea>
+        </div>
+        <div style="margin-top:8px">
+          <input type="file" id="rfPhoto" accept="image/jpeg,image/png,image/webp" multiple>
+        </div>
+        <label style="display:block;margin-top:8px">
+          <input type="checkbox" id="rfAnon"> Gizli kullanıcı olarak yayınla
+        </label>
+        <div id="rfStatus" class="muted" style="margin-top:6px"></div>
+        <button class="btn" style="margin-top:10px" id="rfSend">Gönder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global yardımcılar + sepet + api burada -->
+  <script src="script.js"></script>
+  <script>
+    // ========= Yardımcılar (script.js ile ÇAKIŞMAYAN küçük yardımcılar) =========
+    // (script.js zaten qs, fmtMoney, api, normalizeProductClient, addToCart içeriyor)
+    const escLocal = (s)=>String(s).replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+    const getJWT = ()=>{ try{ return localStorage.getItem("mavern_jwt") || null; }catch{ return null; } };
+    const url = new URL(location.href);
+    const PID = url.searchParams.get("id");
+
+    // Yıldız yardımcıları
+    function starsRow(n){ n = Math.max(0, Math.min(5, Number(n||0))); return "★".repeat(n) + "☆".repeat(5-n); }
+
+    // ================ ÜRÜN =================
+    let PRODUCT = null;
+
+    async function loadProduct(){
+      let list = [];
+      try{
+        const raw = await api("/api/products");
+        list = Array.isArray(raw) ? raw.map(normalizeProductClient) : [];
+      }catch{}
+      PRODUCT = (list||[]).find(p=>p.id===PID);
+
+      const box = qs("#hero");
+      if(!PRODUCT){ box.innerHTML = "<div>Ürün bulunamadı.</div>"; return; }
+
+      const priceText = PRODUCT.purchasable ? fmtMoney(PRODUCT.price) : (PRODUCT.priceText||"—");
+
+      box.innerHTML = `
+        <div>
+          <img src="${escLocal(PRODUCT.image||'logo.png')}" alt=""
+               style="width:100%;height:auto;border-radius:12px;border:1px solid #26324a;background:#0a0f1b"
+               onerror="this.src='logo.png'">
+        </div>
+        <div>
+          <h2 style="margin:0 0 6px">${escLocal(PRODUCT.name)}</h2>
+          <div class="muted" style="margin-bottom:8px">${PRODUCT.desc?escLocal(PRODUCT.desc):""}</div>
+          <div style="font-size:20px;margin:6px 0 10px">${priceText}</div>
+          ${PRODUCT.purchasable
+            ? `<button class="btn" id="btnAddCart">Sepete Ekle</button>`
+            : `<button class="btn" disabled>Satın Alınamaz</button>`}
+        </div>`;
+
+      // Sepete ekle (script.js içindeki addToCart’u kullan)
+      const btn = qs("#btnAddCart");
+      if (btn) btn.onclick = () => addToCart(PRODUCT.id);
+    }
+
+    // ================ YORUMLAR (public) ================
+    async function loadReviews(){
+      const out = qs("#reviews");
+      const none = qs("#noReviews");
+      out.innerHTML = ""; none.style.display = "none";
+      let items = [];
+      try{
+        const r = await api(`/api/products/${encodeURIComponent(PID)}/reviews`);
+        items = r && r.items ? r.items : [];
+      }catch{}
+
+      if(!items.length){
+        qs("#avgBlock").textContent="";
+        none.style.display = "block";
+        return;
+      }
+
+      const avg = (items.reduce((s,x)=>s+Number(x.rating||0),0)/items.length).toFixed(1);
+      qs("#avgBlock").innerHTML = `Ortalama: <span class="stars">★</span> ${avg} / 5 • ${items.length} yorum`;
+
+      items.forEach(rv=>{
+        const d = document.createElement("div");
+        d.className="rev-item";
+        const photos = (rv.photos||[]).map(p=>`<img src="${escLocal(p)}" alt="" onerror="this.src='logo.png'">`).join("");
+        d.innerHTML = `
+          <div style="display:flex;justify-content:space-between;gap:8px">
+            <div><strong>${escLocal(rv.displayName||"Kullanıcı")}</strong> • <span class="stars">${starsRow(rv.rating)}</span></div>
+            <div class="muted" style="font-size:12px">${new Date(rv.createdAt).toLocaleString("tr-TR")}</div>
+          </div>
+          ${rv.comment?`<div style="margin-top:6px">${escLocal(rv.comment)}</div>`:""}
+          ${photos?`<div class="thumbs" style="margin-top:6px">${photos}</div>`:""}
+        `;
+        out.appendChild(d);
+      });
+    }
+
+    // ================ YORUM FORMU (JWT) ================
+    async function checkAuthAndGate(){
+      const token = getJWT();
+      const gate = qs("#rfGate");
+      const fields = qs("#rfFields");
+      const status = qs("#rfStatus");
+      status.textContent = "";
+
+      if(!token){
+        gate.style.display = "block";
+        fields.style.display = "none";
+        gate.innerHTML = `Yorum için giriş gerekir. <a href="auth.html">Giriş/Kayıt</a>`;
+        return;
+      }
+
+      // me çağrısı ile onay kontrolü
+      try{
+        const res = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } });
+        const data = await res.json();
+        if(!data.success) throw new Error("Oturum doğrulanamadı");
+
+        if(!data.user || !data.user.isApproved){
+          gate.style.display = "block";
+          fields.style.display = "none";
+          gate.textContent = "Hesabınız onay bekliyor. Onaylandıktan sonra yorum bırakabilirsiniz.";
+          return;
+        }
+
+        // yetkili
+        gate.style.display = "none";
+        fields.style.display = "block";
+      }catch(e){
+        gate.style.display = "block";
+        fields.style.display = "none";
+        gate.innerHTML = `Oturum doğrulanamadı. <a href="auth.html">Tekrar giriş yapın</a>`;
+      }
+    }
+
+    async function uploadPhotos(files){
+      const token = getJWT();
+      if(!token) throw new Error("Giriş gerekli");
+      const urls = [];
+      for(const f of files){
+        const fd = new FormData();
+        fd.append("file", f);
+        const res = await fetch("/api/reviews/upload", {
+          method:"POST",
+          headers:{ Authorization:`Bearer ${token}` },
+          body: fd
+        });
+        const data = await res.json();
+        if(!data.success) throw new Error(data.message||"Yükleme hatası");
+        urls.push(data.path);
+      }
+      return urls;
+    }
+
+    async function sendReview(){
+      const st = qs("#rfStatus");
+      const token = getJWT();
+      if(!token){ st.textContent="Giriş gerekli (auth.html)."; return; }
+
+      const rating = Number(qs("#rfRating").value);
+      const comment = qs("#rfComment").value.trim();
+      const anonymous = qs("#rfAnon").checked;
+      const files = qs("#rfPhoto").files;
+
+      st.textContent = "Gönderiliyor...";
+      try{
+        let photos=[];
+        if(files && files.length){ photos = await uploadPhotos(files); }
+
+        const res = await fetch(`/api/products/${encodeURIComponent(PID)}/reviews`, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json", Authorization:`Bearer ${token}` },
+          body: JSON.stringify({ rating, comment, photos, anonymous })
+        });
+        const data = await res.json();
+        if(!data.success) throw new Error(data.message||"Gönderilemedi");
+
+        st.textContent = "Yorum alındı, admin onayı sonrası yayınlanacaktır.";
+        qs("#rfComment").value=""; qs("#rfPhoto").value="";
+      }catch(e){
+        st.textContent = e.message || "Hata";
+      }
+    }
+
+    // ================ INIT ================
+    qs("#rfSend").addEventListener("click", sendReview);
+
+    (async function init(){
+      if(!PID){ qs("#hero").innerHTML="<div>Geçersiz ürün.</div>"; return; }
+      await loadProduct();
+      await loadReviews();
+      await checkAuthAndGate();
+    })();
+  </script>
+</body>
+</html>

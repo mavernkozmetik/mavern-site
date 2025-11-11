@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="tr">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Admin • Yorumlar</title>
+<style>body{background:#0b1220;color:#e6edf3;font-family:system-ui} input,button{padding:8px;border:1px solid #2b3a57;background:#0f1629;color:#e6edf3;border-radius:8px} table{width:100%;border-collapse:collapse;margin-top:10px} td,th{border:1px solid #26324a;padding:8px;vertical-align:top}</style>
+</head>
+<body>
+  <div style="max-width:1100px;margin:20px auto">
+    <h2>Yorum Yönetimi</h2>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="user" placeholder="Admin kullanıcı">
+      <input id="pass" placeholder="Admin şifre" type="password">
+      <button id="loginBtn">Giriş</button>
+      <span id="loginOut" style="margin-left:8px;color:#9aa4b2"></span>
+    </div>
+
+    <div style="margin-top:10px">
+      <input id="filterPid" placeholder="Ürün ID (opsiyonel)">
+      <button id="loadBtn">Yükle</button>
+    </div>
+
+    <div id="out"></div>
+  </div>
+
+<script>
+let TOKEN=null;
+const qs=s=>document.querySelector(s);
+
+async function api(path, opts={}){
+  const headers={"Content-Type":"application/json", ...(TOKEN?{Authorization:`Bearer ${TOKEN}`}:{}) , ...(opts.headers||{})};
+  const res = await fetch(path,{...opts, headers});
+  let data=null;try{data=await res.json();}catch{}
+  if(!res.ok){const msg=data&&(data.message||data.error);throw new Error(msg||("HTTP "+res.status));}
+  return data;
+}
+
+qs("#loginBtn").onclick=async()=>{
+  const u=qs("#user").value.trim(), p=qs("#pass").value;
+  const out=qs("#loginOut"); out.textContent="...";
+  try{
+    const r = await api("/api/login",{method:"POST",body:JSON.stringify({username:u,password:p})});
+    if(r.success){ TOKEN=r.token; out.textContent="Giriş OK"; }
+  }catch(e){ out.textContent=e.message||"Hata"; }
+}
+
+qs("#loadBtn").onclick=loadAll;
+
+async function loadAll(){
+  if(!TOKEN){ alert("Önce giriş."); return; }
+  const pid = qs("#filterPid").value.trim();
+  const url = pid?(`/api/admin/reviews?productId=${encodeURIComponent(pid)}`):"/api/admin/reviews";
+  const r = await api(url);
+  const items = r.items||[];
+  const rows = items.map(x=>`
+    <tr>
+      <td>${x.id}<br><span style="color:#9aa4b2">${x.productId}</span></td>
+      <td>${x.displayName||"-"}<br><span style="color:#9aa4b2">${new Date(x.createdAt).toLocaleString("tr-TR")}</span></td>
+      <td>${"★".repeat(x.rating)}${"☆".repeat(5-x.rating)}<br>${x.comment?x.comment.replace(/</g,"&lt;"):""}</td>
+      <td>${(x.photos||[]).map(p=>`<img src="${p}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #26324a;margin:2px">`).join("")}</td>
+      <td>${x.approved?"Onaylı":"Bekliyor"}</td>
+      <td>
+        <button onclick="approve('${x.id}',true)">Onayla</button>
+        <button onclick="approve('${x.id}',false)">Reddet</button>
+        <button onclick="delRev('${x.id}')">Sil</button>
+      </td>
+    </tr>
+  `).join("");
+  qs("#out").innerHTML = `<table><thead><tr><th>ID</th><th>Kullanıcı</th><th>İçerik</th><th>Foto</th><th>Durum</th><th>İşlem</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+window.approve = async function(id, ok){
+  await api(`/api/admin/reviews/${id}/approve`, {method:"PATCH", body: JSON.stringify({approved: ok})});
+  loadAll();
+}
+window.delRev = async function(id){
+  if(!confirm("Silinsin mi?")) return;
+  await api(`/api/admin/reviews/${id}`, {method:"DELETE"});
+  loadAll();
+}
+</script>
+</body>
+</html>
