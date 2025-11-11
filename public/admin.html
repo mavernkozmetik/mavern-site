@@ -26,7 +26,7 @@
     .row{display:flex;gap:12px;align-items:center}
     .col2{display:grid;gap:10px;grid-template-columns:1fr 1fr}
     .col3{display:grid;gap:10px;grid-template-columns:1fr 1fr 1fr}
-    input,textarea{width:100%;background:#0f1220;border:1px solid #293246;color:#e5ecff;padding:.7rem .8rem;border-radius:10px;outline:none}
+    input,textarea,select{width:100%;background:#0f1220;border:1px solid #293246;color:#e5ecff;padding:.7rem .8rem;border-radius:10px;outline:none}
     textarea{min-height:100px}
     .btn{padding:.65rem 1rem;border-radius:10px;border:1px solid transparent;cursor:pointer;font-weight:600}
     .btn.primary{background:var(--btn);color:var(--btnText)}
@@ -49,7 +49,6 @@
     .mini{width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid #26324a;background:#0a0f1b}
     .list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
     .divider{height:1px;background:#1f2937;margin:10px 0}
-    /* Modal */
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px}
     .modal.show{display:flex}
     .sheet{max-width:720px;width:100%;background:#11151f;border:1px solid #27324a;border-radius:14px;box-shadow:var(--shadow);padding:16px}
@@ -58,6 +57,8 @@
     .pill{padding:.18rem .5rem;border-radius:999px;border:1px solid #2a3348;font-size:.72rem}
     .pill.no{background:#2a230f;color:#f2e19a;border-color:#5b4f1a}
     .pill.yes{background:#0f2a17;color:#9ff3b0;border-color:#1b5d32}
+    .stars{color:#ffd35a}
+    .photos img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid #26324a;margin-right:6px}
   </style>
 </head>
 <body>
@@ -70,7 +71,7 @@
   <div class="toolbar">
     <div class="row" style="gap:8px">
       <span class="tag">VIP Panel</span>
-      <span class="muted">Güvenli API · Görsel Yükleme · Kupon Başlangıç Tarihi</span>
+      <span class="muted">Güvenli API · Görsel Yükleme · Kupon Başlangıç Tarihi · Yorum/Üye Onayı</span>
     </div>
     <button class="btn ghost" id="btnLogout" onclick="adminLogout()" style="display:none">Çıkış</button>
   </div>
@@ -93,6 +94,8 @@
       <button class="tab" data-tab="orders">Gelen Siparişler</button>
       <button class="tab" data-tab="mails">Gelen Mailler</button>
       <button class="tab" data-tab="coupons">İndirim Kodları</button>
+      <button class="tab" data-tab="reviews">Yorumlar</button>
+      <button class="tab" data-tab="users">Üyeler</button>
     </div>
 
     <!-- ÜRÜNLER -->
@@ -100,7 +103,6 @@
       <h3>Ürün Yönetimi</h3>
       <div class="col3" style="margin-bottom:10px">
         <input id="prodName" placeholder="Ürün Adı">
-        <!-- Fiyat artık METİN; ör: 150, 150₺, 'yakında' -->
         <input id="prodPrice" placeholder="Fiyat (metin: 150 | 150₺ | yakında)">
         <input id="prodDesc" placeholder="Açıklama (opsiyonel)">
       </div>
@@ -151,7 +153,7 @@
       <div class="col3" style="margin-top:8px">
         <input id="couponExpires" type="datetime-local" placeholder="Bitiş (opsiyonel)">
         <label class="row" style="gap:6px"><input type="checkbox" id="couponActive" checked> Aktif</label>
-        <div class="row" style="justify-content:flex-end">
+        <div class="row" style="justify-content:flex-end;gap:8px">
           <button class="btn primary" onclick="addCoupon()">Kupon Ekle</button>
           <button class="btn ghost" onclick="loadCoupons()">Yenile</button>
         </div>
@@ -167,6 +169,47 @@
         </table>
       </div>
       <p id="couponInfo" class="muted" style="margin-top:8px"></p>
+    </div>
+
+    <!-- YORUMLAR -->
+    <div id="tab-reviews" class="hidden">
+      <div class="row" style="justify-content:space-between;">
+        <h3>Yorumlar</h3>
+        <div class="row" style="gap:8px;flex-wrap:wrap">
+          <select id="revFilter">
+            <option value="pending">Sadece Bekleyenler</option>
+            <option value="all">Tümü</option>
+          </select>
+          <input id="revProdId" placeholder="Ürün ID (opsiyonel)">
+          <button class="btn ghost" onclick="loadReviews()">Yenile</button>
+        </div>
+      </div>
+      <p id="revStatus" class="muted" style="margin:8px 0"></p>
+      <div id="revList" class="list"></div>
+    </div>
+
+    <!-- ÜYELER -->
+    <div id="tab-users" class="hidden">
+      <div class="row" style="justify-content:space-between;">
+        <h3>Üyeler</h3>
+        <button class="btn ghost" onclick="loadUsers()">Yenile</button>
+      </div>
+      <p id="uStatus" class="muted" style="margin:8px 0"></p>
+      <div style="overflow:auto;border:1px solid var(--border);border-radius:12px">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>E-posta</th>
+              <th>Görünen Ad</th>
+              <th>Durum</th>
+              <th>Yetki</th>
+              <th>Oluşturma</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="uTBody"></tbody>
+        </table>
+      </div>
     </div>
   </section>
 </div>
@@ -212,11 +255,14 @@
 </div>
 
 <script>
-  var $ = function(s){ return document.querySelector(s); };
-  var nowTs = function(){ return Date.now(); };
-  var fmtDate = function(iso){ return iso ? new Date(iso).toLocaleString('tr-TR') : '-'; };
-  var ADMIN_TOKEN = localStorage.getItem('MAVERN_ADMIN_TOKEN') || '';
-  var EDIT_ID = null;
+  // ===== Helpers =====
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (m) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[m]));
+  const fmtDate = (iso) => (iso ? new Date(iso).toLocaleString('tr-TR') : '-');
+
+  // ===== Admin session (legacy token) =====
+  let ADMIN_TOKEN = localStorage.getItem('MAVERN_ADMIN_TOKEN') || '';
+  let EDIT_ID = null;
 
   function setLoggedInUI(on){
     $('#btnLogout').style.display = on ? '' : 'none';
@@ -224,31 +270,33 @@
     $('#panel').classList.toggle('hidden', !on);
   }
 
-  document.addEventListener('click', function(e){
-    var t = e.target.closest('.tab');
+  document.addEventListener('click', (e)=>{
+    const t = e.target.closest('.tab');
     if(!t) return;
-    document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('active'); });
+    document.querySelectorAll('.tab').forEach((x)=> x.classList.remove('active'));
     t.classList.add('active');
-    var key = t.dataset.tab;
-    ['products','orders','mails','coupons'].forEach(function(k){
+    const key = t.dataset.tab;
+    ['products','orders','mails','coupons','reviews','users'].forEach((k)=>{
       $('#tab-'+k).classList.toggle('hidden', k!==key);
     });
     if(key==='products') loadProducts();
     if(key==='orders') loadOrders();
     if(key==='mails')  loadMails();
     if(key==='coupons')loadCoupons();
+    if(key==='reviews')loadReviews();
+    if(key==='users')  loadUsers();
   });
 
   async function adminLogin(){
     $('#loginInfo').textContent = 'Giriş yapılıyor...';
-    var username = $('#adminUser').value.trim();
-    var password = $('#adminPass').value.trim();
+    const username = $('#adminUser').value.trim();
+    const password = $('#adminPass').value.trim();
     try{
-      var r = await fetch('/api/login', {
+      const r = await fetch('/api/login', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ username: username, password: password })
+        body: JSON.stringify({ username, password })
       });
-      var data = await r.json();
+      const data = await r.json();
       if(data.success && data.token){
         ADMIN_TOKEN = data.token;
         localStorage.setItem('MAVERN_ADMIN_TOKEN', ADMIN_TOKEN);
@@ -256,9 +304,9 @@
         $('#loginInfo').textContent = 'Giriş başarılı ✅';
         loadProducts();
       }else{
-        $('#loginInfo').textContent = 'Hatalı bilgi';
+        $('#loginInfo').textContent = 'Kullanıcı adı veya şifre hatalı';
       }
-    }catch(e){
+    }catch(_){
       $('#loginInfo').textContent = 'Sunucu hatası';
     }
   }
@@ -268,344 +316,455 @@
     setLoggedInUI(false);
   }
 
-  // Ürün eklerken dosya önizleme/yükleme (opsiyonel zincirleme yok)
-  (function(){
-    var pf = document.querySelector('#prodFile');
+  // ===== Ürünler =====
+  (function bindCreatePreview(){
+    const pf = document.querySelector('#prodFile');
     if(!pf) return;
-    pf.addEventListener('change', async function(ev){
-      var f = ev.target.files && ev.target.files[0];
+    pf.addEventListener('change', async (ev)=>{
+      const f = ev.target.files && ev.target.files[0];
       if(!f) return;
-      var reader = new FileReader();
-      reader.onload = function(){ $('#imgPreview').innerHTML = '<img src="'+ reader.result +'">'; };
+      const reader = new FileReader();
+      reader.onload = ()=>{ $('#imgPreview').innerHTML = `<img src="${reader.result}">`; };
       reader.readAsDataURL(f);
-      var fd = new FormData(); fd.append('file', f);
+      const fd = new FormData(); fd.append('file', f);
       try{
-        var r = await fetch('/api/admin/upload', { method:'POST', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }, body:fd });
-        var data = await r.json();
+        const r = await fetch('/api/admin/upload', { method:'POST', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }, body: fd });
+        const data = await r.json();
         if(data.success && data.path){ $('#prodImg').value = data.path; } else { alert(data.message || 'Yükleme başarısız'); }
-      }catch(e){ alert('Yükleme hatası'); }
+      }catch(_){ alert('Yükleme hatası'); }
     });
   })();
 
-  // Ürün listesi
   async function loadProducts(){
     try{
-      var r = await fetch('/api/products');
-      var list = await r.json();
-      var wrap = $('#adminProducts');
-      if(!list.length){ wrap.innerHTML = '<p class="muted">Ürün yok</p>'; return; }
-      wrap.innerHTML = list.map(function(p){
-        var priceTag = (typeof p.price === 'number' && isFinite(p.price))
-          ? p.price.toLocaleString('tr-TR') + ' ₺'
-          : (p.priceText || '—');
-        var purch = p.purchasable ? '<span class="badge ok">Satılabilir</span>' : '<span class="badge err">Satılamaz</span>';
-        var imgSrc = (p && p.image) ? p.image : 'logo.png';
-        var imgShort = (p && p.image) ? (p.image.slice(0,40) + (p.image.length>40?'…':'')) : '';
-        return (
-        '<div class="product-card">'+
-          '<div class="row" style="gap:10px;align-items:center;min-width:0">'+
-            '<img class="thumb" src="'+imgSrc+'" alt="">'+
-            '<div style="min-width:0">'+
-              '<div style="font-weight:600;overflow:hidden;text-overflow:ellipsis">'+ (p.name||'') +'</div>'+
-              '<div class="muted" style="overflow:hidden;text-overflow:ellipsis">'+ (p.desc||'') +'</div>'+
-              '<div class="row" style="gap:8px;margin-top:6px;flex-wrap:wrap">'+
-                '<span class="chip">'+ priceTag +'</span>'+
-                (p.image ? ('<span class="chip" title="'+p.image+'">'+ imgShort +'</span>') : '')+
-                purch+
-              '</div>'+
-            '</div>'+
-          '</div>'+
-          '<div class="row" style="gap:8px">'+
-            '<button class="btn ghost" onclick="openEdit(\''+p.id+'\')">Düzenle</button>'+
-            '<button class="btn danger" onclick="delProduct(\''+p.id+'\')">Sil</button>'+
-          '</div>'+
-        '</div>');
+      const r = await fetch('/api/products');
+      const list = await r.json();
+      const wrap = $('#adminProducts');
+      if(!Array.isArray(list) || !list.length){ wrap.innerHTML = '<p class="muted">Ürün yok</p>'; return; }
+      wrap.innerHTML = list.map((p)=>{
+        const priceTag = (typeof p.price === 'number' && isFinite(p.price))
+          ? `${p.price.toLocaleString('tr-TR')} ₺`
+          : (p.priceText ?? '—');
+        const purch = p.purchasable ? '<span class="badge ok">Satılabilir</span>' : '<span class="badge err">Satılamaz</span>';
+        const imgSrc = p?.image || 'logo.png';
+        const imgShort = p?.image ? (p.image.slice(0,40) + (p.image.length>40?'…':'')) : '';
+        return `
+        <div class="product-card">
+          <div class="row" style="gap:10px;align-items:center;min-width:0">
+            <img class="thumb" src="${esc(imgSrc)}" alt="">
+            <div style="min-width:0">
+              <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis">${esc(p.name||'')}</div>
+              <div class="muted" style="overflow:hidden;text-overflow:ellipsis">${esc(p.desc||'')}</div>
+              <div class="row" style="gap:8px;margin-top:6px;flex-wrap:wrap">
+                <span class="chip">${esc(priceTag)}</span>
+                ${p.image ? `<span class="chip" title="${esc(p.image)}">${esc(imgShort)}</span>` : ''}
+                ${purch}
+              </div>
+            </div>
+          </div>
+          <div class="row" style="gap:8px">
+            <button class="btn ghost" onclick="openEdit('${p.id}')">Düzenle</button>
+            <button class="btn danger" onclick="delProduct('${p.id}')">Sil</button>
+          </div>
+        </div>`;
       }).join('');
-    }catch(e){
+    }catch(_){
       $('#adminProducts').innerHTML = '<p class="muted">Liste alınamadı</p>';
     }
   }
 
   async function addProduct(){
-    var name = $('#prodName').value.trim();
-    var price = $('#prodPrice').value.trim(); // metin
-    var image = $('#prodImg').value.trim();
-    var desc  = $('#prodDesc').value.trim();
+    const name = $('#prodName').value.trim();
+    const price = $('#prodPrice').value.trim();
+    const image = $('#prodImg').value.trim();
+    const desc  = $('#prodDesc').value.trim();
     if(!name){ alert('Ad gerekli'); return; }
     try{
-      var r = await fetch('/api/admin/products', {
+      const r = await fetch('/api/admin/products', {
         method:'POST',
         headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+ADMIN_TOKEN },
-        body: JSON.stringify({ name:name, price:price, image:image, desc:desc })
+        body: JSON.stringify({ name, price, image, desc })
       });
-      var data = await r.json();
+      const data = await r.json();
       if(data.success){
         $('#prodName').value=''; $('#prodPrice').value=''; $('#prodImg').value=''; $('#prodDesc').value='';
         $('#imgPreview').innerHTML = '<span class="muted" style="font-size:.8rem;">Önizleme</span>';
         loadProducts();
       }else alert(data.message||'Eklenemedi');
-    }catch(e){ alert('Sunucu hatası'); }
+    }catch(_){ alert('Sunucu hatası'); }
   }
 
   async function delProduct(id){
     if(!confirm('Ürün silinsin mi?')) return;
     try{
-      var r = await fetch('/api/admin/products/'+encodeURIComponent(id), { method:'DELETE', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
-      var data = await r.json();
+      const r = await fetch('/api/admin/products/'+encodeURIComponent(id), { method:'DELETE', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      const data = await r.json();
       if(data.success) loadProducts(); else alert('Silinemedi');
-    }catch(e){ alert('Sunucu hatası'); }
+    }catch(_){ alert('Sunucu hatası'); }
   }
 
-  // Düzenleme modal
   function openEdit(id){ EDIT_ID = id; fillEdit(id); $('#editModal').classList.add('show'); }
-  function closeEdit(){ EDIT_ID = null; $('#editModal').classList.remove('show'); var ef = $('#eFile'); if (ef) ef.value=''; }
+  function closeEdit(){ EDIT_ID = null; $('#editModal').classList.remove('show'); const ef = $('#eFile'); if (ef) ef.value=''; }
 
   async function fillEdit(id){
-    var r = await fetch('/api/products'); var list = await r.json();
-    var p = list.find(function(x){ return x.id===id; }); if(!p){ alert('Ürün bulunamadı'); closeEdit(); return; }
+    const r = await fetch('/api/products'); const list = await r.json();
+    const p = (list||[]).find((x)=> x.id===id); if(!p){ alert('Ürün bulunamadı'); closeEdit(); return; }
     $('#eName').value = p.name || '';
     $('#ePrice').value = (p.priceText!=null ? p.priceText : (typeof p.price==='number' ? String(p.price) : ''));
     $('#eImg').value = p.image || '';
     $('#eDesc').value = p.desc || '';
-    $('#ePreview').innerHTML = p.image ? ('<img src="'+p.image+'">') : '<span class="muted" style="font-size:.8rem;">Önizleme</span>';
+    $('#ePreview').innerHTML = p.image ? (`<img src="${esc(p.image)}">`) : '<span class="muted" style="font-size:.8rem;">Önizleme</span>';
     $('#ePurchPill').className = 'pill '+(p.purchasable?'yes':'no');
     $('#ePurchPill').textContent = p.purchasable ? 'Satılabilir' : 'Satılamaz';
   }
 
-  // modal içi dosya yükleme (opsiyonel zincirleme yok)
-  (function(){
-    var ef = document.querySelector('#eFile');
+  (function bindEditPreview(){
+    const ef = document.querySelector('#eFile');
     if(!ef) return;
-    ef.addEventListener('change', async function(ev){
-      var f = ev.target.files && ev.target.files[0];
+    ef.addEventListener('change', async (ev)=>{
+      const f = ev.target.files && ev.target.files[0];
       if(!f) return;
-      var reader = new FileReader();
-      reader.onload = function(){ $('#ePreview').innerHTML = '<img src="'+ reader.result +'">'; };
+      const reader = new FileReader();
+      reader.onload = ()=>{ $('#ePreview').innerHTML = `<img src="${reader.result}">`; };
       reader.readAsDataURL(f);
-      var fd = new FormData(); fd.append('file', f);
+      const fd = new FormData(); fd.append('file', f);
       try{
-        var r = await fetch('/api/admin/upload', { method:'POST', headers:{ 'Authorization': 'Bearer '+ADMIN_TOKEN }, body: fd });
-        var data = await r.json();
+        const r = await fetch('/api/admin/upload', { method:'POST', headers:{ 'Authorization': 'Bearer '+ADMIN_TOKEN }, body: fd });
+        const data = await r.json();
         if(data.success && data.path){ $('#eImg').value = data.path; } else { alert(data.message || 'Yükleme başarısız'); }
-      }catch(e){ alert('Yükleme hatası'); }
+      }catch(_){ alert('Yükleme hatası'); }
     });
   })();
 
   async function saveEdit(){
     if(!EDIT_ID) return;
-    var name  = $('#eName').value.trim();
-    var price = $('#ePrice').value.trim(); // METİN
-    var image = $('#eImg').value.trim();
-    var desc  = $('#eDesc').value.trim();
+    const name  = $('#eName').value.trim();
+    const price = $('#ePrice').value.trim();
+    const image = $('#eImg').value.trim();
+    const desc  = $('#eDesc').value.trim();
     try{
-      var r = await fetch('/api/admin/products/'+encodeURIComponent(EDIT_ID), {
+      const r = await fetch('/api/admin/products/'+encodeURIComponent(EDIT_ID), {
         method:'PUT',
         headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+ADMIN_TOKEN },
-        body: JSON.stringify({ name:name, price:price, image:image, desc:desc })
+        body: JSON.stringify({ name, price, image, desc })
       });
-      var data = await r.json();
+      const data = await r.json();
       if(data.success){ closeEdit(); loadProducts(); } else { alert(data.message||'Güncellenemedi'); }
-    }catch(e){ alert('Sunucu hatası'); }
+    }catch(_){ alert('Sunucu hatası'); }
   }
 
-  // Kuponlar
-  function statusOf(c){
-    var now = Date.now();
+  // ===== Kuponlar =====
+  function couponStatus(c){
+    const now = Date.now();
     if(c.active === false) return {label:'Pasif', cls:'warn'};
     if(c.startsAt){
-      var st = Date.parse(c.startsAt);
-      if(!Number.isNaN(st) && now < st) return {label:'Başlamadı', cls:'warn'};
+      const st = Date.parse(c.startsAt); if(!Number.isNaN(st) && now < st) return {label:'Başlamadı', cls:'warn'};
     }
     if(c.expiresAt){
-      var exp = Date.parse(c.expiresAt);
-      if(!Number.isNaN(exp) && now > exp) return {label:'Süresi Doldu', cls:'err'};
+      const exp = Date.parse(c.expiresAt); if(!Number.isNaN(exp) && now > exp) return {label:'Süresi Doldu', cls:'err'};
     }
     return {label:'Aktif', cls:'ok'};
   }
 
   async function loadCoupons(){
     try{
-      var r = await fetch('/api/admin/coupons', { headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
-      var data = await r.json();
-      var body = $('#couponBody'); var info = $('#couponInfo');
+      const r = await fetch('/api/admin/coupons', { headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      const data = await r.json();
+      const body = $('#couponBody'); const info = $('#couponInfo');
       if(!data.success){ body.innerHTML = '<tr><td colspan="7">Liste alınamadı</td></tr>'; return; }
-      if(!data.items.length){ body.innerHTML = '<tr><td colspan="7" class="muted">Kupon yok</td></tr>'; info.textContent=''; return; }
-      body.innerHTML = data.items.map(function(c){
-        var st = statusOf(c);
-        return (
-          '<tr>'+
-            '<td><b>'+c.code+'</b></td>'+
-            '<td>%'+c.percent+'</td>'+
-            '<td>'+fmtDate(c.startsAt)+'</td>'+
-            '<td>'+fmtDate(c.expiresAt)+'</td>'+
-            '<td><span class="badge '+st.cls+'">'+st.label+'</span></td>'+
-            '<td>'+fmtDate(c.createdAt)+'</td>'+
-            '<td class="right"><button class="btn ghost" onclick="delCoupon(\''+c.code+'\')">Sil</button></td>'+
-          '</tr>'
-        );
+      const items = data.items || [];
+      if(!items.length){ body.innerHTML = '<tr><td colspan="7" class="muted">Kupon yok</td></tr>'; info.textContent=''; return; }
+      body.innerHTML = items.map((c)=>{
+        const st = couponStatus(c);
+        return `
+          <tr>
+            <td><b>${esc(c.code)}</b></td>
+            <td>%${Number(c.percent||0)}</td>
+            <td>${fmtDate(c.startsAt)}</td>
+            <td>${fmtDate(c.expiresAt)}</td>
+            <td><span class="badge ${st.cls}">${st.label}</span></td>
+            <td>${fmtDate(c.createdAt)}</td>
+            <td class="right"><button class="btn ghost" onclick="delCoupon('${esc(c.code)}')">Sil</button></td>
+          </tr>`;
       }).join('');
-      info.textContent = 'Toplam: '+data.items.length;
-    }catch(e){
+      info.textContent = 'Toplam: '+items.length;
+    }catch(_){
       $('#couponBody').innerHTML = '<tr><td colspan="7">Sunucu hatası</td></tr>';
     }
   }
 
   async function addCoupon(){
-    var code   = $('#couponCode').value.trim().toUpperCase();
-    var percent= Number($('#couponPercent').value);
-    var starts = $('#couponStarts').value || null;
-    var expires= $('#couponExpires').value || null;
-    var active = $('#couponActive').checked;
+    const code   = $('#couponCode').value.trim().toUpperCase();
+    const percent= Number($('#couponPercent').value);
+    const starts = $('#couponStarts').value || null;
+    const expires= $('#couponExpires').value || null;
+    const active = $('#couponActive').checked;
     if(!code || !(percent>0 && percent<=90)){ alert('Kod ve yüzde (1-90) gerekli'); return; }
     try{
-      var r = await fetch('/api/admin/coupons', {
+      const r = await fetch('/api/admin/coupons', {
         method:'POST',
         headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+ADMIN_TOKEN },
-        body: JSON.stringify({ code:code, percent:percent, active:active, startsAt: starts, expiresAt: expires })
+        body: JSON.stringify({ code, percent, active, startsAt: starts, expiresAt: expires })
       });
-      var data = await r.json();
+      const data = await r.json();
       if(data.success){
         $('#couponCode').value=''; $('#couponPercent').value='';
         $('#couponStarts').value=''; $('#couponExpires').value='';
         loadCoupons();
       }else alert(data.message||'Eklenemedi');
-    }catch(e){ alert('Sunucu hatası'); }
+    }catch(_){ alert('Sunucu hatası'); }
   }
+
   async function delCoupon(code){
     if(!confirm(code+' silinsin mi?')) return;
     try{
-      var r = await fetch('/api/admin/coupons/'+encodeURIComponent(code), { method:'DELETE', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
-      var data = await r.json();
+      const r = await fetch('/api/admin/coupons/'+encodeURIComponent(code), { method:'DELETE', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      const data = await r.json();
       if(data.success) loadCoupons(); else alert('Silinemedi');
-    }catch(e){ alert('Sunucu hatası'); }
+    }catch(_){ alert('Sunucu hatası'); }
   }
 
-  // Siparişler & Mailler
-  function mailStatusPill(sent){
-    return sent ? '<span class="pill yes">Mail: Gönderildi</span>' : '<span class="pill no">Mail: Gönderilemedi</span>';
-  }
+  // ===== Mesajlar & Siparişler =====
+  const mailStatusPill = (sent) => sent ? '<span class="pill yes">Mail: Gönderildi</span>' : '<span class="pill no">Mail: Gönderilemedi</span>';
+
   async function resendMail(id, kind){
     try{
-      var r = await fetch('/api/admin/messages/'+encodeURIComponent(id)+'/resend', { method:'POST', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
-      var data = await r.json();
+      const r = await fetch('/api/admin/messages/'+encodeURIComponent(id)+'/resend', { method:'POST', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      const data = await r.json();
       if(data.success){ if(kind==='order') loadOrders(); else loadMails(); alert('Mail yeniden gönderildi.'); }
       else alert(data.message || 'Yeniden gönderilemedi');
-    }catch(e){ alert('Sunucu hatası'); }
+    }catch(_){ alert('Sunucu hatası'); }
   }
 
   async function loadOrders(){
-    var prodsResp = await fetch('/api/products');
-    var msgsResp  = await fetch('/api/admin/messages?type=order', { headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
-    var products  = await prodsResp.json();
-    var data      = await msgsResp.json();
-    var wrap = $('#ordersList');
+    const prodsResp = await fetch('/api/products');
+    const msgsResp  = await fetch('/api/admin/messages?type=order', { headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+    const products  = await prodsResp.json();
+    const data      = await msgsResp.json();
+    const wrap = $('#ordersList');
     if(!data.success){ wrap.innerHTML = '<p class="muted">Liste alınamadı</p>'; return; }
-    var mapByName = new Map(products.map(function(p){ return [String(p.name).toLowerCase(), p]; }));
-    if(!data.items.length){ wrap.innerHTML = '<p class="muted">Sipariş yok</p>'; return; }
+    const mapByName = new Map((products||[]).map((p)=> [String(p.name||'').toLowerCase(), p]));
+    const items = data.items || [];
+    if(!items.length){ wrap.innerHTML = '<p class="muted">Sipariş yok</p>'; return; }
 
-    wrap.innerHTML = data.items.map(function(o){
-      var itemsHTML = (o.items||[]).map(function(it){
-        var key = String(it.name||'').toLowerCase();
-        var pp  = mapByName.get(key);
-        var img = (pp && pp.image) ? pp.image : 'logo.png';
-        var qty = Number(it.qty||1);
-        var price = Number(it.price||0);
-        return (
-          '<div class="row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;padding:6px 8px">'+
-            '<div class="row" style="gap:10px">'+
-              '<img class="mini" src="'+img+'" alt="">'+
-              '<div>'+
-                '<div><b>'+it.name+'</b> × '+qty+'</div>'+
-                '<div class="muted" style="font-size:.85rem">'+price.toLocaleString('tr-TR')+' ₺</div>'+
-              '</div>'+
-            '</div>'+
-            '<span class="chip">'+(qty*price).toLocaleString('tr-TR')+' ₺</span>'+
-          '</div>'
-        );
+    wrap.innerHTML = items.map((o)=>{
+      const itemsHTML = (o.items||[]).map((it)=>{
+        const key = String(it.name||'').toLowerCase();
+        const pp  = mapByName.get(key);
+        const img = (pp && pp.image) ? pp.image : 'logo.png';
+        const qty = Number(it.qty||1);
+        const price = Number(it.price||0);
+        return `
+          <div class="row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;padding:6px 8px">
+            <div class="row" style="gap:10px">
+              <img class="mini" src="${esc(img)}" alt="">
+              <div>
+                <div><b>${esc(it.name)}</b> × ${qty}</div>
+                <div class="muted" style="font-size:.85rem">${price.toLocaleString('tr-TR')} ₺</div>
+              </div>
+            </div>
+            <span class="chip">${(qty*price).toLocaleString('tr-TR')} ₺</span>
+          </div>`;
       }).join('');
 
-      return (
-        '<div class="card">'+
-          '<div class="row" style="justify-content:space-between;align-items:flex-start">'+
-            '<div>'+
-              '<div style="font-weight:600">#'+o.id+'</div>'+
-              '<div class="muted">'+fmtDate(o.createdAt)+'</div>'+
-              '<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">'+
-                '<span class="chip">Müşteri: '+(o.name||'-')+'</span>'+
-                '<span class="chip">'+(o.email||'-')+'</span>'+
-                (o.coupon ? '<span class="chip">Kupon: '+o.coupon+'</span>' : '')+
-                mailStatusPill(!!o.mailSent)+
-              '</div>'+
-            '</div>'+
-            '<div class="row" style="gap:8px;flex-wrap:wrap">'+
-              (o.read ? '<span class="badge ok">Okundu</span>' : '<span class="badge warn">Yeni</span>')+
-              '<button class="btn ghost" onclick="markMsgRead(\''+o.id+'\')">Okundu</button>'+
-              '<button class="btn ghost" onclick="resendMail(\''+o.id+'\',\'order\')">Maili Tekrar Dene</button>'+
-              '<button class="btn danger" onclick="delMsg(\''+o.id+'\',\'order\')">Sil</button>'+
-            '</div>'+
-          '</div>'+
-          '<div class="list" style="margin-top:10px">'+itemsHTML+'</div>'+
-          '<div class="divider"></div>'+
-          '<div class="row" style="justify-content:flex-end;gap:12px;flex-wrap:wrap">'+
-            '<span class="chip">İndirim: '+(o.discount||0).toLocaleString('tr-TR')+' ₺</span>'+
-            '<span class="chip">Toplam: '+(o.total||0).toLocaleString('tr-TR')+' ₺</span>'+
-            '<span class="tag" style="border-color:#3a5c2a;color:#b8ffb0;">Ödenecek: '+(o.payable||0).toLocaleString('tr-TR')+' ₺</span>'+
-          '</div>'+
-        '</div>'
-      );
+      return `
+        <div class="card">
+          <div class="row" style="justify-content:space-between;align-items:flex-start">
+            <div>
+              <div style="font-weight:600">#${esc(o.id)}</div>
+              <div class="muted">${fmtDate(o.createdAt)}</div>
+              <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">
+                <span class="chip">Müşteri: ${esc(o.name||'-')}</span>
+                <span class="chip">${esc(o.email||'-')}</span>
+                ${o.coupon ? `<span class="chip">Kupon: ${esc(o.coupon)}</span>` : ''}
+                ${mailStatusPill(!!o.mailSent)}
+              </div>
+            </div>
+            <div class="row" style="gap:8px;flex-wrap:wrap">
+              ${o.read ? '<span class="badge ok">Okundu</span>' : '<span class="badge warn">Yeni</span>'}
+              <button class="btn ghost" onclick="markMsgRead('${o.id}')">Okundu</button>
+              <button class="btn ghost" onclick="resendMail('${o.id}','order')">Maili Tekrar Dene</button>
+              <button class="btn danger" onclick="delMsg('${o.id}','order')">Sil</button>
+            </div>
+          </div>
+          <div class="list" style="margin-top:10px">${itemsHTML}</div>
+          <div class="divider"></div>
+          <div class="row" style="justify-content:flex-end;gap:12px;flex-wrap:wrap">
+            <span class="chip">İndirim: ${(o.discount||0).toLocaleString('tr-TR')} ₺</span>
+            <span class="chip">Toplam: ${(o.total||0).toLocaleString('tr-TR')} ₺</span>
+            <span class="tag" style="border-color:#3a5c2a;color:#b8ffb0;">Ödenecek: ${(o.payable||0).toLocaleString('tr-TR')} ₺</span>
+          </div>
+        </div>`;
     }).join('');
   }
 
   async function loadMails(){
-    var r = await fetch('/api/admin/messages?type=contact', { headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
-    var data = await r.json();
-    var wrap = $('#mailsList');
+    const r = await fetch('/api/admin/messages?type=contact', { headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+    const data = await r.json();
+    const wrap = $('#mailsList');
     if(!data.success){ wrap.innerHTML = '<p class="muted">Liste alınamadı</p>'; return; }
-    if(!data.items.length){ wrap.innerHTML = '<p class="muted">Mesaj yok</p>'; return; }
+    const items = data.items || [];
+    if(!items.length){ wrap.innerHTML = '<p class="muted">Mesaj yok</p>'; return; }
 
-    wrap.innerHTML = data.items.map(function(m){
-      return (
-        '<div class="card">'+
-          '<div class="row" style="justify-content:space-between;align-items:flex-start">'+
-            '<div>'+
-              '<div style="font-weight:600">'+m.name+'</div>'+
-              '<div class="muted">'+(m.email||'-')+' • '+fmtDate(m.createdAt)+'</div>'+
-              '<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">'+mailStatusPill(!!m.mailSent)+'</div>'+
-            '</div>'+
-            '<div class="row" style="gap:8px;flex-wrap:wrap">'+
-              (m.read ? '<span class="badge ok">Okundu</span>' : '<span class="badge warn">Yeni</span>')+
-              '<button class="btn ghost" onclick="markMsgRead(\''+m.id+'\')">Okundu</button>'+
-              '<button class="btn ghost" onclick="resendMail(\''+m.id+'\',\'contact\')">Maili Tekrar Dene</button>'+
-              '<button class="btn danger" onclick="delMsg(\''+m.id+'\',\'contact\')">Sil</button>'+
-            '</div>'+
-          '</div>'+
-          '<div style="margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere">'+( (m.message||'').replace(/</g,'&lt;') )+'</div>'+
-        '</div>'
-      );
-    }).join('');
+    wrap.innerHTML = items.map((m)=>`
+      <div class="card">
+        <div class="row" style="justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-weight:600">${esc(m.name)}</div>
+            <div class="muted">${esc(m.email||'-')} • ${fmtDate(m.createdAt)}</div>
+            <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">${mailStatusPill(!!m.mailSent)}</div>
+          </div>
+          <div class="row" style="gap:8px;flex-wrap:wrap">
+            ${m.read ? '<span class="badge ok">Okundu</span>' : '<span class="badge warn">Yeni</span>'}
+            <button class="btn ghost" onclick="markMsgRead('${m.id}')">Okundu</button>
+            <button class="btn ghost" onclick="resendMail('${m.id}','contact')">Maili Tekrar Dene</button>
+            <button class="btn danger" onclick="delMsg('${m.id}','contact')">Sil</button>
+          </div>
+        </div>
+        <div style="margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere">${esc(m.message||'')}</div>
+      </div>
+    `).join('');
   }
 
   async function markMsgRead(id){
     try{
-      var r = await fetch('/api/admin/messages/'+encodeURIComponent(id)+'/read', { method:'PATCH', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
-      var data = await r.json();
+      const r = await fetch('/api/admin/messages/'+encodeURIComponent(id)+'/read', { method:'PATCH', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      const data = await r.json();
       if(data.success){
-        var activeTabEl = document.querySelector('.tab.active');
-        var tab = activeTabEl ? activeTabEl.dataset.tab : '';
-        if(tab==='orders') loadOrders(); else if(tab==='mails') loadMails();
+        const key = document.querySelector('.tab.active')?.dataset.tab || '';
+        if(key==='orders') loadOrders(); else if(key==='mails') loadMails();
       }
-    }catch(e){ alert('Sunucu hatası'); }
+    }catch(_){ alert('Sunucu hatası'); }
   }
   async function delMsg(id, type){
     if(!confirm('Silinsin mi?')) return;
     try{
-      var r = await fetch('/api/admin/messages/'+encodeURIComponent(id), { method:'DELETE', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
-      var data = await r.json();
+      const r = await fetch('/api/admin/messages/'+encodeURIComponent(id), { method:'DELETE', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      const data = await r.json();
       if(data.success){ if(type==='order') loadOrders(); else loadMails(); }
-    }catch(e){ alert('Sunucu hatası'); }
+    }catch(_){ alert('Sunucu hatası'); }
   }
 
-  // INIT
+  // ===== Yorumlar =====
+  const starHTML = (n)=>{ n=Number(n||0); return `<span class="stars">${'★'.repeat(n)}${'☆'.repeat(5-n)}</span>`; };
+
+  async function loadReviews(){
+    const st = $('#revStatus'); const listEl = $('#revList');
+    st.textContent = 'Yükleniyor...'; listEl.innerHTML = '';
+    try{
+      const pid = $('#revProdId').value.trim();
+      const q   = pid ? ('?productId='+encodeURIComponent(pid)) : '';
+      const r   = await fetch('/api/admin/reviews'+q, { headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      const data= await r.json();
+      if(!data.success){ st.textContent='Liste alınamadı'; return; }
+      let items = data.items || [];
+      if($('#revFilter').value === 'pending'){ items = items.filter((x)=> x.approved !== true); }
+      if(!items.length){ st.textContent='Gösterilecek yorum yok.'; return; }
+      st.textContent = items.length+' kayıt listelendi.';
+
+      listEl.innerHTML = items.map((rv)=>{
+        const pht = (rv.photos||[]).map((p)=> `<img src="${esc(p)}" alt="">`).join('');
+        return `
+          <div class="card">
+            <div class="row" style="justify-content:space-between;align-items:flex-start">
+              <div>
+                <div><strong>${esc(rv.displayName||'Kullanıcı')}</strong> • ${starHTML(rv.rating)} ${rv.approved?'<span class="chip">Onaylı</span>':'<span class="chip">Bekliyor</span>'}</div>
+                <div class="muted" style="font-size:12px">Ürün: <code>${esc(rv.productId)}</code> • ${fmtDate(rv.createdAt)}</div>
+              </div>
+              <div class="row" style="gap:8px;flex-wrap:wrap">
+                <button class="btn ghost" onclick="approveReview('${rv.id}',true)">Onayla</button>
+                <button class="btn ghost" onclick="approveReview('${rv.id}',false)">Onayı Kaldır</button>
+                <button class="btn danger" onclick="deleteReview('${rv.id}')">Sil</button>
+              </div>
+            </div>
+            ${rv.comment?`<div style="margin-top:6px">${esc(rv.comment||'')}</div>`:''}
+            ${pht?`<div class="photos" style="margin-top:6px">${pht}</div>`:''}
+          </div>`;
+      }).join('');
+    }catch(_){
+      st.textContent='Sunucu hatası';
+    }
+  }
+
+  async function approveReview(id, ok){
+    try{
+      const r = await fetch('/api/admin/reviews/'+encodeURIComponent(id)+'/approve', {
+        method:'PATCH', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+ADMIN_TOKEN },
+        body: JSON.stringify({ approved: !!ok })
+      });
+      const data = await r.json();
+      if(data.success) loadReviews(); else alert('Güncellenemedi');
+    }catch(_){ alert('Sunucu hatası'); }
+  }
+  async function deleteReview(id){
+    if(!confirm('Yorum silinsin mi?')) return;
+    try{
+      const r = await fetch('/api/admin/reviews/'+encodeURIComponent(id), { method:'DELETE', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      const data = await r.json();
+      if(data.success) loadReviews(); else alert('Silinemedi');
+    }catch(_){ alert('Sunucu hatası'); }
+  }
+
+  // ===== Üyeler =====
+  async function loadUsers(){
+    const st = $('#uStatus'); const tb = $('#uTBody');
+    st.textContent='Yükleniyor...'; tb.innerHTML='';
+    try{
+      const r = await fetch('/api/admin/users', { headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      const data = await r.json();
+      if(!data.success){ st.textContent='Liste alınamadı'; return; }
+      const items = data.items || [];
+      if(!items.length){ st.textContent='Kayıt yok.'; return; }
+      st.textContent = items.length+' kullanıcı listelendi.';
+      tb.innerHTML = items.map((u)=>`
+        <tr>
+          <td>${esc(u.email)}</td>
+          <td>${esc(u.displayName||'')}</td>
+          <td>${u.isApproved?'<span class="ok badge">Onaylı</span>':'<span class="warn badge">Bekliyor</span>'}</td>
+          <td>${u.isAdmin?'<span class="chip">Admin</span>':'<span class="chip">Üye</span>'}</td>
+          <td class="muted" style="font-size:12px">${u.createdAt?fmtDate(u.createdAt):''}</td>
+          <td class="row" style="gap:8px;flex-wrap:wrap">
+            <button class="btn ghost" onclick="toggleApproveUser('${u.id}',${!!u.isApproved})">${u.isApproved?'Onayı Kaldır':'Onayla'}</button>
+            <button class="btn ghost" onclick="toggleAdminUser('${u.id}',${!!u.isAdmin})">${u.isAdmin?'Adminden Al':'Admin Yap'}</button>
+            <button class="btn danger" onclick="deleteUser('${u.id}')">Sil</button>
+          </td>
+        </tr>
+      `).join('');
+    }catch(_){
+      st.textContent='Sunucu hatası';
+    }
+  }
+
+  async function toggleApproveUser(id, curr){
+    try{
+      const r = await fetch('/api/admin/users/'+encodeURIComponent(id)+'/approve', {
+        method:'PATCH', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+ADMIN_TOKEN },
+        body: JSON.stringify({ approved: !curr })
+      });
+      const data = await r.json();
+      if(data.success) loadUsers(); else alert('Güncellenemedi');
+    }catch(_){ alert('Sunucu hatası'); }
+  }
+  async function toggleAdminUser(id, curr){
+    try{
+      const r = await fetch('/api/admin/users/'+encodeURIComponent(id)+'/approve', {
+        method:'PATCH', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+ADMIN_TOKEN },
+        body: JSON.stringify({ makeAdmin: !curr })
+      });
+      const data = await r.json();
+      if(data.success) loadUsers(); else alert('Güncellenemedi');
+    }catch(_){ alert('Sunucu hatası'); }
+  }
+  async function deleteUser(id){
+    if(!confirm('Kullanıcı silinsin mi?')) return;
+    try{
+      const r = await fetch('/api/admin/users/'+encodeURIComponent(id), { method:'DELETE', headers:{ 'Authorization':'Bearer '+ADMIN_TOKEN }});
+      const data = await r.json();
+      if(data.success) loadUsers(); else alert('Silinemedi');
+    }catch(_){ alert('Sunucu hatası'); }
+  }
+
+  // ===== Init =====
   (function(){
     setLoggedInUI(!!ADMIN_TOKEN);
     if(ADMIN_TOKEN){ loadProducts(); }
