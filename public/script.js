@@ -22,7 +22,6 @@ function closeProductsPanel(){ qs("#productsPanel")?.classList.remove("open"); }
 function openCheckout(){
   const items = Object.values(CART);
   if(!items.length){ const m=qs("#checkoutMsg"); if(m) m.textContent="Sepet boş."; return; }
-  // ödenecek tutarı modala yansıt
   const payable = getPayable();
   const out = qs("#chPayable"); if(out) out.textContent = fmtMoney(payable);
   qs("#chStatus") && (qs("#chStatus").textContent = "");
@@ -53,11 +52,46 @@ async function api(path, opts = {}) {
   return data;
 }
 
+// ===== Ürün normalize (istemci fallback) =====
+function parsePriceTextToNumber(text){
+  const t = String(text ?? "").trim();
+  if(!t) return null;
+  const num = Number(t.replace(/[₺\s]/g,"").replace(",","."));
+  return Number.isFinite(num) ? num : null;
+}
+function normalizeProductClient(p){
+  const out = { ...p };
+  out.id = String(out.id || "");
+  out.name = String(out.name || "").trim();
+  out.desc = String(out.desc || "");
+  out.image = out.image || "logo.png";
+
+  const priceIsNum = typeof out.price === "number" && isFinite(out.price);
+  const parsedFromText = !priceIsNum ? parsePriceTextToNumber(out.priceText) : null;
+
+  if (priceIsNum) {
+    out.price = Number(out.price);
+    if (!out.priceText) out.priceText = String(out.price);
+    out.purchasable = true;
+  } else if (parsedFromText !== null) {
+    out.price = parsedFromText;
+    out.priceText = out.priceText ?? String(parsedFromText);
+    out.purchasable = true;
+  } else {
+    out.price = null;
+    out.priceText = out.priceText || "—";
+    out.purchasable = false;
+  }
+  return out;
+}
+
 // ===== Ürünler =====
 async function loadProducts() {
   try {
     const data = await api("/api/products");
-    PRODUCTS = Array.isArray(data) ? data : [];
+    const list = Array.isArray(data) ? data : [];
+    // İstemci fallback normalize
+    PRODUCTS = list.map(normalizeProductClient);
   } catch {
     PRODUCTS = [];
   }
@@ -65,7 +99,7 @@ async function loadProducts() {
 }
 
 function displayPriceTag(p) {
-  // backend artık priceText/purchasable veriyor
+  // backend artık priceText/purchasable veriyor, fakat fallback de var
   const isNum = typeof p.price === "number" && isFinite(p.price);
   return isNum ? fmtMoney(p.price) : (p.priceText || "—");
 }
@@ -127,7 +161,6 @@ function changeQty(id, delta) {
   CART[id].qty += delta;
   if (CART[id].qty <= 0) delete CART[id];
   renderCart();
-  // overlay açıksa tutarı güncelle
   const el = qs("#checkoutOverlay");
   if(el?.classList.contains("show")){
     const out = qs("#chPayable"); if(out) out.textContent = fmtMoney(getPayable());
@@ -235,7 +268,6 @@ async function applyCoupon() {
       msgEl.textContent = res.message || "Geçersiz kod.";
     }
     renderCart();
-    // overlay açıksa güncelle
     const el = qs("#checkoutOverlay");
     if(el?.classList.contains("show")){
       const out = qs("#chPayable"); if(out) out.textContent = fmtMoney(getPayable());
@@ -249,6 +281,10 @@ async function applyCoupon() {
 function isValidEmail(e=""){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 function isValidPhone(t=""){ return /^[+0-9()\-\s]{6,}$/.test(String(t).trim()); }
 
+// 20s client-side kilit (sunucu idempotency’ye ek)
+let CHECKOUT_LOCK = false;
+let CHECKOUT_LOCK_TIMER = null;
+
 async function submitCheckout(){
   const st = qs("#chStatus");
   const name   = (qs("#chName")?.value || "").trim();
@@ -256,6 +292,8 @@ async function submitCheckout(){
   const phone  = (qs("#chPhone")?.value || "").trim();
   const addr   = (qs("#chAddress")?.value || "").trim();
   const kvkkOk = qs("#chKvkk")?.checked;
+
+  if (CHECKOUT_LOCK) { st && (st.textContent = "İşleminiz alınıyor, lütfen bekleyin."); return; }
 
   const { items } = getTotals();
   if(!items.length){ st.textContent="Sepet boş."; return; }
@@ -269,12 +307,16 @@ async function submitCheckout(){
   if(addr.length > 600){ st.textContent="Adres çok uzun (max 600 karakter)."; return; }
   if(!kvkkOk){ st.textContent="KVKK onayı zorunludur."; return; }
 
-  // İstek gövdesi
   const payload = {
     items: items.map(i => ({ id:i.id, name:i.name, price:Number(i.price), qty:i.qty })),
     name, email, phone, address: addr,
     coupon: COUPON?.code || null
   };
+
+  // Kilidi aç
+  CHECKOUT_LOCK = true;
+  if (CHECKOUT_LOCK_TIMER) clearTimeout(CHECKOUT_LOCK_TIMER);
+  CHECKOUT_LOCK_TIMER = setTimeout(()=>{ CHECKOUT_LOCK = false; }, 20000);
 
   st.textContent = "Gönderiliyor...";
   try{
@@ -282,15 +324,15 @@ async function submitCheckout(){
     if(res.success){
       st.textContent = "Sipariş iletildi. Teşekkürler!";
       clearCart();
-      // modalı kapatalım
       setTimeout(()=>{ closeCheckout(); }, 600);
-      // sepet mesajını da güncelleyelim
       const msg = qs("#checkoutMsg"); if(msg) msg.textContent = "Sipariş iletildi. Teşekkürler!";
     }else{
       st.textContent = res.message || "Gönderilemedi.";
     }
   }catch(e){
     st.textContent = e.message || "Sunucu hatası.";
+  }finally{
+    // Sunucuda idempotency var; yine de form yeniden denenebilsin diye kilidi 20s sonra açıyoruz (zaten timer kurduk)
   }
 }
 
