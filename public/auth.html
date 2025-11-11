@@ -5,64 +5,225 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Mavern • Giriş / Kayıt</title>
   <style>
-    body{background:#0b1220;color:#e6edf3;font-family:system-ui,Segoe UI,Roboto,Arial}
-    .card{max-width:440px;margin:40px auto;background:#0a0f1b;border:1px solid #26324a;border-radius:12px;padding:16px}
-    input,button{width:100%;padding:10px;border-radius:8px;border:1px solid #2b3a57;background:#0f1629;color:#e6edf3;margin:6px 0}
-    .muted{color:#9aa4b2}
+    :root{
+      --bg:#0b1220; --card:#0a0f1b; --border:#26324a; --muted:#9aa4b2; --text:#e6edf3;
+      --input:#0f1629; --ok:#1e3a2f; --okText:#b8ffb0; --err:#3a1717; --errText:#ffb3b3;
+      --btn:#e6edf3; --btnText:#0b1220;
+    }
+    *{box-sizing:border-box}
+    body{background:#0b1220;color:var(--text);font-family:system-ui,Segoe UI,Roboto,Arial;margin:0;padding:24px}
+    .wrap{max-width:920px;margin:0 auto;display:grid;gap:16px;grid-template-columns:1fr;align-items:start}
+    @media(min-width:900px){.wrap{grid-template-columns:1fr 1fr}}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+    h2{margin:0 0 12px}
+    label{display:block;font-size:.9rem;margin:8px 0 4px;color:#cdd7e5}
+    input[type="text"],input[type="email"],input[type="password"]{
+      width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--input);color:var(--text);
+    }
+    .row{display:flex;gap:8px;align-items:center}
+    .end{justify-content:flex-end}
+    .between{justify-content:space-between}
+    .muted{color:var(--muted)}
+    .btn{width:100%;padding:10px;border-radius:8px;border:1px solid transparent;font-weight:600;cursor:pointer}
+    .btn.primary{background:var(--btn);color:var(--btnText)}
+    .btn.ghost{background:transparent;border-color:var(--border);color:#cfe0ff}
+    .inline-btn{padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:#cfe0ff;cursor:pointer}
+    .out{min-height:20px;margin-top:6px;font-size:.95rem}
+    .ok{background:var(--ok);color:var(--okText);padding:6px 10px;border-radius:8px;border:1px solid #2a6a52;display:inline-block}
+    .err{background:var(--err);color:var(--errText);padding:6px 10px;border-radius:8px;border:1px solid #5d1b1b;display:inline-block}
+    .hint{font-size:.85rem;margin-top:6px}
+    .split{
+      display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center
+    }
+    .link{color:#b6c7ff;text-decoration:none}
+    .link:hover{text-decoration:underline}
+    .topbar{max-width:920px;margin:0 auto 16px;display:flex;justify-content:space-between;align-items:center}
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2 style="margin:0 0 8px">Kayıt Ol</h2>
-    <input id="rName" placeholder="Görünen ad (opsiyonel)">
-    <input id="rMail" placeholder="E-posta">
-    <input id="rPass" placeholder="Şifre (min 6)" type="password">
-    <button id="rBtn">Kayıt</button>
-    <div id="rOut" class="muted"></div>
+  <div class="topbar">
+    <div class="row" style="gap:10px">
+      <img src="logo.png" alt="Mavern" style="width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:#091021">
+      <strong>Mavern Hesap</strong>
+      <span id="sess" class="muted"></span>
+    </div>
+    <div class="row" style="gap:8px">
+      <a class="inline-btn link" href="index.html">Ana Sayfa</a>
+      <button id="btnLogout" class="inline-btn" style="display:none">Çıkış</button>
+    </div>
   </div>
 
-  <div class="card">
-    <h2 style="margin:0 0 8px">Giriş Yap</h2>
-    <input id="lMail" placeholder="E-posta">
-    <input id="lPass" placeholder="Şifre" type="password">
-    <button id="lBtn">Giriş</button>
-    <div id="lOut" class="muted"></div>
+  <div class="wrap">
+    <!-- KAYIT -->
+    <div class="card" aria-labelledby="regTitle">
+      <h2 id="regTitle">Kayıt Ol</h2>
+
+      <label for="rName">Görünen ad (opsiyonel)</label>
+      <input id="rName" type="text" placeholder="Adınız (site içinde görünecek)">
+
+      <label for="rMail">E-posta</label>
+      <input id="rMail" type="email" inputmode="email" autocomplete="email" placeholder="ornek@mail.com">
+
+      <label for="rPass">Şifre (min 6)</label>
+      <div class="split">
+        <input id="rPass" type="password" autocomplete="new-password" placeholder="Şifreniz">
+        <button type="button" class="inline-btn" data-toggle="#rPass">Göster</button>
+      </div>
+
+      <div class="row end" style="margin-top:8px">
+        <button id="rBtn" class="btn primary">Kayıt</button>
+      </div>
+
+      <div id="rOut" class="out muted"></div>
+      <div class="hint muted">Kayıttan sonra admin onayı gereklidir. Onaylanınca giriş yapabilirsiniz.</div>
+    </div>
+
+    <!-- GİRİŞ -->
+    <div class="card" aria-labelledby="logTitle">
+      <h2 id="logTitle">Giriş Yap</h2>
+
+      <label for="lMail">E-posta</label>
+      <input id="lMail" type="email" inputmode="email" autocomplete="email" placeholder="ornek@mail.com">
+
+      <label for="lPass">Şifre</label>
+      <div class="split">
+        <input id="lPass" type="password" autocomplete="current-password" placeholder="Şifreniz">
+        <button type="button" class="inline-btn" data-toggle="#lPass">Göster</button>
+      </div>
+
+      <div class="row end" style="margin-top:8px">
+        <button id="lBtn" class="btn primary">Giriş</button>
+      </div>
+
+      <div id="lOut" class="out muted"></div>
+      <div class="hint muted">Girişte sorun yaşıyorsanız hesabınız henüz onaylanmamış olabilir.</div>
+    </div>
   </div>
 
   <script>
-    const qs=(s)=>document.querySelector(s);
-    async function api(path,opts={}){
-      const headers={"Content-Type":"application/json",...(opts.headers||{})};
-      const res=await fetch(path,{...opts,headers});
-      let data=null; try{data=await res.json();}catch{}
-      if(!res.ok){const msg=data&&(data.message||data.error); throw new Error(msg||("HTTP "+res.status));}
+    // ===== Helpers =====
+    const qs = (s)=>document.querySelector(s);
+    const hasTr = (s="")=>/[çğıöşüÇĞİÖŞÜ]/.test(s);
+    const isValidEmail = (e="")=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+    const setText = (el, html, cls) => { el.className = 'out ' + (cls||'muted'); el.innerHTML = html; };
+    const togglePwd = (btn) => {
+      const sel = btn.getAttribute('data-toggle');
+      const inp = qs(sel);
+      if(!inp) return;
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      btn.textContent = inp.type === 'password' ? 'Göster' : 'Gizle';
+    };
+    document.querySelectorAll('[data-toggle]').forEach(btn=>{
+      btn.addEventListener('click', ()=>togglePwd(btn));
+    });
+
+    async function api(path, opts = {}) {
+      const headers = { "Content-Type":"application/json", ...(opts.headers||{}) };
+      const res = await fetch(path, { ...opts, headers });
+      let data = null; try { data = await res.json(); } catch {}
+      if (!res.ok) {
+        const msg = data && (data.message || data.error);
+        throw new Error(msg || ("HTTP " + res.status));
+      }
       return data;
     }
-    qs("#rBtn").onclick=async()=>{
-      const displayName = qs("#rName").value.trim();
-      const email = qs("#rMail").value.trim();
-      const password = qs("#rPass").value;
-      const out = qs("#rOut");
-      out.textContent="Gönderiliyor...";
+
+    // ===== Session badge =====
+    (function initSession(){
+      const jwt = localStorage.getItem('mavern_jwt');
+      if(jwt){
+        qs('#sess').textContent = '• Oturum açık';
+        qs('#btnLogout').style.display = '';
+      }else{
+        qs('#sess').textContent = '• Oturum kapalı';
+      }
+    })();
+
+    qs('#btnLogout')?.addEventListener('click', ()=>{
+      localStorage.removeItem('mavern_jwt');
+      location.reload();
+    });
+
+    // ===== Register =====
+    const rBtn = qs('#rBtn');
+    rBtn.addEventListener('click', submitRegister);
+    // Enter ile gönder
+    ['#rName','#rMail','#rPass'].forEach(sel=>{
+      qs(sel).addEventListener('keydown', (e)=>{ if(e.key==='Enter') submitRegister(); });
+    });
+
+    async function submitRegister(){
+      const displayName = qs('#rName').value.trim();
+      const email = qs('#rMail').value.trim().toLowerCase();
+      const password = qs('#rPass').value;
+      const out = qs('#rOut');
+
+      // Client-side validasyon (sunucu kuralları ile uyumlu)
+      if(!email){ setText(out,'E-posta gerekli.','err'); return; }
+      if(hasTr(email)){ setText(out,'E-posta adresinde Türkçe karakter kullanmayın.','err'); return; }
+      if(!isValidEmail(email)){ setText(out,'Geçerli bir e-posta girin.','err'); return; }
+      if(!password || password.length < 6){ setText(out,'Şifre en az 6 karakter olmalı.','err'); return; }
+
+      rBtn.disabled = true; rBtn.textContent = 'Gönderiliyor…';
+      setText(out,'Gönderiliyor…','muted');
       try{
-        const r = await api("/api/auth/register",{method:"POST",body:JSON.stringify({displayName,email,password})});
-        if(r.success){ out.textContent="Kayıt alındı. Admin onayından sonra giriş yapabilirsiniz.";}
-        else{ out.textContent=r.message||"Kayıt olmadı."; }
-      }catch(e){ out.textContent = e.message || "Hata"; }
-    };
-    qs("#lBtn").onclick=async()=>{
-      const email = qs("#lMail").value.trim();
-      const password = qs("#lPass").value;
-      const out = qs("#lOut");
-      out.textContent="Gönderiliyor...";
-      try{
-        const r = await api("/api/auth/login",{method:"POST",body:JSON.stringify({email,password})});
+        const r = await api('/api/auth/register',{
+          method:'POST',
+          body: JSON.stringify({ displayName, email, password })
+        });
         if(r.success){
-          localStorage.setItem("mavern_jwt", r.token);
-          out.textContent="Giriş başarılı.";
-        }else{ out.textContent=r.message||"Olmadı."; }
-      }catch(e){ out.textContent = e.message || "Hata"; }
-    };
+          setText(out,'Kayıt alındı. <b>Admin onayı</b> sonrası giriş yapabilirsiniz.','ok');
+          // formu temizle
+          qs('#rPass').value = '';
+        }else{
+          setText(out, (r.message||'Kayıt olmadı.'), 'err');
+        }
+      }catch(e){
+        setText(out, e.message || 'Hata', 'err');
+      }finally{
+        rBtn.disabled = false; rBtn.textContent = 'Kayıt';
+      }
+    }
+
+    // ===== Login =====
+    const lBtn = qs('#lBtn');
+    lBtn.addEventListener('click', submitLogin);
+    ['#lMail','#lPass'].forEach(sel=>{
+      qs(sel).addEventListener('keydown', (e)=>{ if(e.key==='Enter') submitLogin(); });
+    });
+
+    async function submitLogin(){
+      const email = qs('#lMail').value.trim().toLowerCase();
+      const password = qs('#lPass').value;
+      const out = qs('#lOut');
+
+      if(!email){ setText(out,'E-posta gerekli.','err'); return; }
+      if(hasTr(email)){ setText(out,'E-posta adresinde Türkçe karakter kullanmayın.','err'); return; }
+      if(!isValidEmail(email)){ setText(out,'Geçerli bir e-posta girin.','err'); return; }
+      if(!password){ setText(out,'Şifre gerekli.','err'); return; }
+
+      lBtn.disabled = true; lBtn.textContent = 'Gönderiliyor…';
+      setText(out,'Gönderiliyor…','muted');
+      try{
+        const r = await api('/api/auth/login',{
+          method:'POST',
+          body: JSON.stringify({ email, password })
+        });
+        if(r.success){
+          localStorage.setItem('mavern_jwt', r.token);
+          setText(out,'Giriş başarılı. Yönlendiriliyor…','ok');
+          // İstersen burada nereye gideceğini değiştir:
+          setTimeout(()=>{ window.location.href = 'index.html'; }, 600);
+        }else{
+          setText(out, (r.message||'Giriş olmadı.'), 'err');
+        }
+      }catch(e){
+        // Sunucu onaysız kullanıcıya 403 / mesaj döndürüyor
+        setText(out, e.message || 'Hata', 'err');
+      }finally{
+        lBtn.disabled = false; lBtn.textContent = 'Giriş';
+      }
+    }
   </script>
 </body>
 </html>

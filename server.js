@@ -62,7 +62,10 @@ const PUBLIC_DIR = path.join(ROOT, "public");
 
 // Kalıcı disk (ENV ile değiştirilebilir)
 const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(ROOT, "data");
-const UPLOAD_DIR = process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : path.join(PUBLIC_DIR, "uploads");
+
+// **DEĞİŞTİ:** Varsayılan UPLOAD_DIR kalıcı diske alındı (DATA_DIR/uploads)
+const DEFAULT_UPLOAD_DIR = path.join(DATA_DIR, "uploads");
+const UPLOAD_DIR = process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : DEFAULT_UPLOAD_DIR;
 
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
 const MESSAGES_FILE = path.join(DATA_DIR, "messages.json");
@@ -70,23 +73,44 @@ const COUPONS_FILE  = path.join(DATA_DIR, "coupons.json");
 const USERS_FILE    = path.join(DATA_DIR, "users.json");
 const REVIEWS_FILE  = path.join(DATA_DIR, "reviews.json");
 
-// Klasör/JSON başlangıcı (overwrite yapmaz)
-for (const [p, init] of [
-  [DATA_DIR],
-  [PUBLIC_DIR],
-  [UPLOAD_DIR],
-  [PRODUCTS_FILE, "[]"],
-  [MESSAGES_FILE, "[]"],
-  [COUPONS_FILE,  "[]"],
-  [USERS_FILE,    "[]"],
-  [REVIEWS_FILE,  "[]"],
-]) {
-  const isFile = typeof init === "string";
-  if (isFile) {
-    if (!fs.existsSync(p)) fs.writeFileSync(p, init, "utf8");
-  } else {
-    if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+/* ----- Yardımcı: dizin/ dosya oluşturma ve yazılabilirlik testi ----- */
+function ensureDir(p) {
+  if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+}
+function ensureFile(p, init = "[]") {
+  if (!fs.existsSync(p)) fs.writeFileSync(p, init, "utf8");
+}
+function testWritable(dirOrFilePath) {
+  try {
+    const testPath = fs.lstatSync(dirOrFilePath).isDirectory()
+      ? path.join(dirOrFilePath, ".rw-test-" + Date.now())
+      : dirOrFilePath + ".rw-test-" + Date.now();
+    fs.writeFileSync(testPath, "ok", "utf8");
+    fs.unlinkSync(testPath);
+    return true;
+  } catch {
+    return false;
   }
+}
+
+// Klasör/JSON başlangıcı (overwrite yapmaz)
+ensureDir(DATA_DIR);
+ensureDir(PUBLIC_DIR);
+ensureDir(UPLOAD_DIR);
+ensureFile(PRODUCTS_FILE, "[]");
+ensureFile(MESSAGES_FILE, "[]");
+ensureFile(COUPONS_FILE,  "[]");
+ensureFile(USERS_FILE,    "[]");
+ensureFile(REVIEWS_FILE,  "[]");
+
+// Yazılabilirlik logları
+const writableData = testWritable(DATA_DIR);
+const writableUploads = testWritable(UPLOAD_DIR);
+if (!writableData) {
+  console.warn("⚠️  DATA_DIR yazılabilir değil:", DATA_DIR, " (ENV ile kalıcı dizin vermen gerekir; örn: DATA_DIR=/data)");
+}
+if (!writableUploads) {
+  console.warn("⚠️  UPLOAD_DIR yazılabilir değil:", UPLOAD_DIR, " (ENV ile kalıcı dizin vermen gerekir; örn: UPLOAD_DIR=/data/uploads)");
 }
 
 /* ---------------------------- Statik servisleme --------------------------- */
@@ -412,7 +436,11 @@ app.get("/api/mail/verify", async (_req, res) => {
 });
 
 /* ---------------------------- ÜRÜNLER (müşteri) --------------------------- */
-app.get("/api/products", (_req, res) => res.json(readProductsNormalized()));
+app.get("/api/products", (_req, res) => {
+  // **DEĞİŞTİ:** cache kapat — her seferinde taze liste
+  res.set("Cache-Control", "no-store");
+  res.json(readProductsNormalized());
+});
 
 /* ------------------------------- Upload (multer) -------------------------- */
 const storage = multer.diskStorage({
@@ -927,9 +955,9 @@ app.get("*", (_req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Mavern sunucusu çalışıyor: http://localhost:${PORT}`);
-  if (process.env.DATA_DIR) {
-    console.log(`📦 DATA_DIR: ${DATA_DIR}`);
-  } else {
-    console.log(`📦 DATA_DIR (default): ${DATA_DIR}  (Render'da kalıcı disk için DATA_DIR ENV kullan)`);
+  console.log(`📦 DATA_DIR:   ${DATA_DIR}  ${writableData ? "(yazılabilir)" : "(YAZILAMAZ!)"}`);
+  console.log(`🖼  UPLOAD_DIR: ${UPLOAD_DIR}  ${writableUploads ? "(yazılabilir)" : "(YAZILAMAZ!)"}`);
+  if (!process.env.DATA_DIR) {
+    console.log("ℹ️  DATA_DIR ENV tanımlı değil. Varsayılan yerel ./data kullanılıyor. Prod ortamda kalıcılık için DATA_DIR=/data ver.");
   }
 });
