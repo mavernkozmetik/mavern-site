@@ -1,78 +1,394 @@
 <!doctype html>
 <html lang="tr">
-<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Admin • Kullanıcılar</title>
-<style>body{background:#0b1220;color:#e6edf3;font-family:system-ui} input,button{padding:8px;border:1px solid #2b3a57;background:#0f1629;color:#e6edf3;border-radius:8px} table{width:100%;border-collapse:collapse;margin-top:10px} td,th{border:1px solid #26324a;padding:8px;vertical-align:top}</style>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Mavern • Kullanıcı Yönetimi</title>
+  <style>
+    :root{
+      --bg:#050815;
+      --card:#0b1220;
+      --ink:#e6edf3;
+      --muted:#9aa4b2;
+      --border:#26324a;
+      --accent:#cfd6ff;
+      --ok:#0f2a17;
+      --ok-border:#1b5d32;
+      --warn:#2a230f;
+      --warn-border:#5b4f1a;
+      --danger:#2a0f0f;
+      --danger-border:#5d1b1b;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:radial-gradient(1200px 600px at 20% -10%, #15192b 0%, #050815 50%, #020308 100%);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    h1,h2,h3{margin:0}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:980px;margin:20px auto;padding:0 16px}
+    .top-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+    .brand{display:flex;align-items:center;gap:8px}
+    .brand-dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#f0f2ff,#7e8fff);box-shadow:0 0 18px #8ea2ff}
+    .muted{color:var(--muted)}
+    .card{
+      background:linear-gradient(180deg,rgba(10,15,35,.95),rgba(5,8,20,.98));
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px 16px;
+      box-shadow:0 18px 50px rgba(0,0,0,.55);
+      margin-top:14px;
+    }
+    input,button,select{
+      padding:8px 10px;
+      border-radius:8px;
+      border:1px solid #2b3a57;
+      background:#0f1629;
+      color:var(--ink);
+      font-family:inherit;
+      font-size:14px;
+    }
+    input::placeholder{color:#657087}
+    button{cursor:pointer}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .btn{border-radius:10px}
+    .btn.primary{background:var(--accent);color:#050815;border-color:transparent;font-weight:600}
+    .btn.ghost{background:transparent;border-color:#2b3a57;color:var(--accent)}
+    .btn.danger{background:#3a1717;border-color:var(--danger-border);color:#ffb3b3}
+    .row{display:flex;gap:8px;align-items:center}
+    .row.wrap{flex-wrap:wrap}
+    .grow{flex:1}
+    .pill{
+      display:inline-flex;align-items:center;gap:4px;
+      padding:2px 8px;border-radius:999px;border:1px solid #2b3a57;
+      font-size:12px;
+    }
+    .pill.ok{background:var(--ok);border-color:var(--ok-border);color:#9ff3b0}
+    .pill.warn{background:var(--warn);border-color:var(--warn-border);color:#f2e19a}
+    .pill.danger{background:var(--danger);border-color:var(--danger-border);color:#ffb3b3}
+    .pill.tag{background:#111827;border-color:#1f2937;color:#cfd6ff}
+    table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
+    th,td{border-bottom:1px solid #1f2937;padding:8px 6px;vertical-align:top;text-align:left}
+    th{font-weight:600;color:#cbd5f5;background:rgba(15,23,42,.8);position:sticky;top:0;z-index:1}
+    tr:hover td{background:rgba(15,23,42,.55)}
+    code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+    .status-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px;font-size:13px}
+    .filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .table-wrap{max-height:520px;overflow:auto;border-radius:10px;border:1px solid var(--border);margin-top:8px}
+    .badge-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#4ade80}
+    @media(max-width:700px){
+      .top-row{flex-direction:column;align-items:flex-start}
+      .row.responsive{flex-direction:column;align-items:stretch}
+      .table-wrap{max-height:none}
+      th,td{font-size:13px}
+      .filters{flex-direction:column;align-items:stretch}
+    }
+  </style>
 </head>
 <body>
-  <div style="max-width:900px;margin:20px auto">
-    <h2>Kullanıcı Yönetimi</h2>
-    <div style="display:flex;gap:8px;align-items:center">
-      <input id="user" placeholder="Admin kullanıcı">
-      <input id="pass" placeholder="Admin şifre" type="password">
-      <button id="loginBtn">Giriş</button>
-      <span id="loginOut" style="margin-left:8px;color:#9aa4b2"></span>
+<div class="wrap">
+  <div class="top-row">
+    <div class="brand">
+      <span class="brand-dot" aria-hidden="true"></span>
+      <div>
+        <h2>Mavern Admin • Kullanıcılar</h2>
+        <div class="muted" style="font-size:13px">JWT üyeler + yorum yetkisi · Güvenli yönetim ekranı</div>
+      </div>
     </div>
-    <div><button id="loadBtn" style="margin-top:10px">Listeyi Yükle</button></div>
-    <div id="out"></div>
+    <div class="row">
+      <button class="btn ghost" id="btnLogout" style="display:none">Çıkış</button>
+    </div>
   </div>
 
+  <!-- LOGIN -->
+  <div class="card" id="loginBox">
+    <h3 style="margin-bottom:8px">Yönetici Girişi</h3>
+    <div class="row responsive">
+      <input id="user" class="grow" placeholder="Admin kullanıcı (ENV: ADMIN_USER)">
+      <input id="pass" class="grow" placeholder="Admin şifre (ENV: ADMIN_PASS)" type="password">
+      <button id="loginBtn" class="btn primary">Giriş</button>
+    </div>
+    <div class="status-bar">
+      <span id="loginOut" class="muted"></span>
+      <span class="muted" style="font-size:12px">Bu sayfa <code>/api/login</code> &amp; <code>/api/admin/users</code> kullanır.</span>
+    </div>
+  </div>
+
+  <!-- PANEL -->
+  <div class="card" id="panelBox" style="display:none">
+    <div class="row" style="justify-content:space-between;align-items:center;gap:8px">
+      <h3 style="margin:0">Kullanıcı Listesi</h3>
+      <div class="row wrap">
+        <button id="reloadBtn" class="btn ghost">Yenile</button>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="row grow">
+        <input id="searchEmail" class="grow" placeholder="E-posta veya görünen ad ile ara">
+      </div>
+      <div class="row">
+        <select id="filterStatus">
+          <option value="all">Tümü</option>
+          <option value="pending">Onay Bekleyenler</option>
+          <option value="approved">Onaylı</option>
+        </select>
+        <select id="filterRole">
+          <option value="all">Tümü</option>
+          <option value="admins">Sadece Adminler</option>
+          <option value="members">Sadece Üyeler</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <span id="listInfo" class="muted"></span>
+      <span class="muted" style="font-size:12px">
+        <span class="badge-dot"></span> Onaylı •
+        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#facc15;margin:0 2px"></span> Bekleyen
+      </span>
+    </div>
+
+    <div class="table-wrap" id="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>E-posta</th>
+            <th>Durum</th>
+            <th>Oluşturma</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <script>
-let TOKEN=null;
-const qs=s=>document.querySelector(s);
+  // ===== Yardımcılar =====
+  const qs  = (s) => document.querySelector(s);
+  const esc = (s="") => String(s).replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[m]));
+  const fmtDate = (iso) => iso ? new Date(iso).toLocaleString("tr-TR") : "-";
 
-async function api(path, opts={}){
-  const headers={"Content-Type":"application/json", ...(TOKEN?{Authorization:`Bearer ${TOKEN}`}:{}) , ...(opts.headers||{})};
-  const res = await fetch(path,{...opts, headers});
-  let data=null;try{data=await res.json();}catch{}
-  if(!res.ok){const msg=data&&(data.message||data.error);throw new Error(msg||("HTTP "+res.status));}
-  return data;
-}
+  const STORAGE_KEY = "MAVERN_ADMIN_TOKEN"; // ana panel ile aynı key istersen değiştirmene gerek yok
+  let TOKEN = null;
+  let USERS = [];
 
-qs("#loginBtn").onclick=async()=>{
-  const u=qs("#user").value.trim(), p=qs("#pass").value;
-  const out=qs("#loginOut"); out.textContent="...";
-  try{
-    const r = await api("/api/login",{method:"POST",body:JSON.stringify({username:u,password:p})});
-    if(r.success){ TOKEN=r.token; out.textContent="Giriş OK"; }
-  }catch(e){ out.textContent=e.message||"Hata"; }
-};
+  function setToken(t){
+    TOKEN = t || null;
+    try{
+      if(TOKEN) localStorage.setItem(STORAGE_KEY, TOKEN);
+      else localStorage.removeItem(STORAGE_KEY);
+    }catch{}
+  }
 
-qs("#loadBtn").onclick=loadAll;
+  async function api(path, opts={}) {
+    const headers = {
+      "Content-Type":"application/json",
+      ...(TOKEN ? { Authorization:`Bearer ${TOKEN}` } : {}),
+      ...(opts.headers || {})
+    };
+    const res = await fetch(path, { ...opts, headers });
+    let data = null;
+    try{ data = await res.json(); }catch{}
 
-async function loadAll(){
-  if(!TOKEN){ alert("Önce giriş."); return; }
-  const r = await api("/api/admin/users");
-  const rows = (r.items||[]).map(u=>`
-    <tr>
-      <td>${u.id}</td>
-      <td>${u.email}<br><span style="color:#9aa4b2">${u.displayName||""}</span></td>
-      <td>${u.isApproved?"Onaylı":"Bekliyor"} / ${u.isAdmin?"Admin":"Üye"}</td>
-      <td>
-        <button onclick="setApprove('${u.id}', true)">Onayla</button>
-        <button onclick="setApprove('${u.id}', false)">Onayı Kaldır</button>
-        <button onclick="setAdmin('${u.id}', true)">Admin Yap</button>
-        <button onclick="setAdmin('${u.id}', false)">Admin Kaldır</button>
-        <button onclick="delUser('${u.id}')">Sil</button>
-      </td>
-    </tr>
-  `).join("");
-  qs("#out").innerHTML = `<table><thead><tr><th>ID</th><th>E-posta</th><th>Durum</th><th>İşlem</th></tr></thead><tbody>${rows}</tbody></table>`;
-}
+    if(res.status === 401){
+      setToken(null);
+      showLogin(true);
+      const msg = (data && (data.message || data.error)) || "Yetkisiz. Tekrar giriş yapın.";
+      throw new Error(msg);
+    }
 
-window.setApprove = async function(id, ok){
-  await api(`/api/admin/users/${id}/approve`, {method:"PATCH", body: JSON.stringify({approved: ok})});
-  loadAll();
-}
-window.setAdmin = async function(id, ok){
-  await api(`/api/admin/users/${id}/approve`, {method:"PATCH", body: JSON.stringify({makeAdmin: ok})});
-  loadAll();
-}
-window.delUser = async function(id){
-  if(!confirm("Silinsin mi?")) return;
-  await api(`/api/admin/users/${id}`, {method:"DELETE"});
-  loadAll();
-}
+    if(!res.ok){
+      const msg = data && (data.message || data.error);
+      throw new Error(msg || ("HTTP "+res.status));
+    }
+    return data;
+  }
+
+  function showLogin(show){
+    qs("#loginBox").style.display  = show ? "block" : "none";
+    qs("#panelBox").style.display  = show ? "none"  : "block";
+    qs("#btnLogout").style.display = show ? "none"  : "inline-flex";
+  }
+
+  // ===== LOGIN =====
+  async function doLogin(){
+    const u = qs("#user").value.trim();
+    const p = qs("#pass").value;
+    const out = qs("#loginOut");
+    out.textContent = "Giriş yapılıyor...";
+    try{
+      const r = await api("/api/login",{
+        method:"POST",
+        body:JSON.stringify({ username:u, password:p })
+      });
+      if(r.success && r.token){
+        setToken(r.token);
+        out.textContent = "Giriş başarılı ✅";
+        showLogin(false);
+        loadUsersList();
+      }else{
+        out.textContent = (r && r.message) || "Kullanıcı adı veya şifre hatalı.";
+      }
+    }catch(e){
+      out.textContent = e.message || "Sunucu hatası.";
+    }
+  }
+
+  function logout(){
+    setToken(null);
+    showLogin(true);
+    qs("#tbody").innerHTML = "";
+    qs("#listInfo").textContent = "";
+    qs("#loginOut").textContent = "Oturum kapatıldı.";
+  }
+
+  // ===== Kullanıcılar =====
+  function applyFilters(){
+    const term = qs("#searchEmail").value.trim().toLowerCase();
+    const status = qs("#filterStatus").value;
+    const role   = qs("#filterRole").value;
+
+    let list = USERS.slice();
+
+    if(term){
+      list = list.filter(u =>
+        String(u.email||"").toLowerCase().includes(term) ||
+        String(u.displayName||"").toLowerCase().includes(term)
+      );
+    }
+    if(status === "pending")   list = list.filter(u => !u.isApproved);
+    if(status === "approved")  list = list.filter(u =>  u.isApproved);
+    if(role   === "admins")    list = list.filter(u =>  u.isAdmin);
+    if(role   === "members")   list = list.filter(u => !u.isAdmin);
+
+    renderTable(list);
+  }
+
+  function renderTable(list){
+    const tb = qs("#tbody");
+    const info = qs("#listInfo");
+    tb.innerHTML = "";
+
+    if(!list.length){
+      tb.innerHTML = `<tr><td colspan="5" class="muted">Kayıt bulunamadı.</td></tr>`;
+      info.textContent = "";
+      return;
+    }
+
+    info.textContent = `${list.length} kullanıcı gösteriliyor (toplam ${USERS.length}).`;
+
+    tb.innerHTML = list.map(u=>{
+      const statusLabel = u.isApproved ? "Onaylı" : "Bekliyor";
+      const statusClass = u.isApproved ? "ok" : "warn";
+      const roleLabel   = u.isAdmin ? "Admin" : "Üye";
+
+      return `
+        <tr>
+          <td><code>${esc(u.id)}</code></td>
+          <td>
+            <div>${esc(u.email)}</div>
+            <div class="muted" style="font-size:12px">${esc(u.displayName || "")}</div>
+          </td>
+          <td>
+            <span class="pill ${statusClass}">${statusLabel}</span>
+            <span class="pill tag" style="margin-left:4px">${roleLabel}</span>
+          </td>
+          <td class="muted" style="font-size:12px">${u.createdAt ? esc(fmtDate(u.createdAt)) : "-"}</td>
+          <td>
+            <div class="row wrap" style="gap:6px">
+              <button class="btn ghost" style="padding:4px 8px" data-action="approve" data-id="${esc(u.id)}" data-next="${u.isApproved?'0':'1'}">
+                ${u.isApproved ? "Onayı Kaldır" : "Onayla"}
+              </button>
+              <button class="btn ghost" style="padding:4px 8px" data-action="admin" data-id="${esc(u.id)}" data-next="${u.isAdmin?'0':'1'}">
+                ${u.isAdmin ? "Adminden Al" : "Admin Yap"}
+              </button>
+              <button class="btn danger" style="padding:4px 8px" data-action="delete" data-id="${esc(u.id)}">
+                Sil
+              </button>
+            </div>
+          </td>
+        </tr>`;
+    }).join("");
+  }
+
+  async function loadUsersList(){
+    const info = qs("#listInfo");
+    info.textContent = "Yükleniyor...";
+    try{
+      const r = await api("/api/admin/users");
+      if(!r.success){ info.textContent = "Liste alınamadı."; return; }
+      USERS = (r.items || []);
+      applyFilters();
+    }catch(e){
+      info.textContent = e.message || "Sunucu hatası.";
+    }
+  }
+
+  async function setApprove(id, ok){
+    await api(`/api/admin/users/${encodeURIComponent(id)}/approve`,{
+      method:"PATCH",
+      body:JSON.stringify({ approved: !!ok })
+    });
+  }
+  async function setAdmin(id, ok){
+    await api(`/api/admin/users/${encodeURIComponent(id)}/approve`,{
+      method:"PATCH",
+      body:JSON.stringify({ makeAdmin: !!ok })
+    });
+  }
+  async function delUser(id){
+    if(!confirm("Kullanıcı silinsin mi? İlgili kullanıcıya ait yorumlar da temizlenecektir.")) return;
+    await api(`/api/admin/users/${encodeURIComponent(id)}`,{ method:"DELETE" });
+  }
+
+  // ===== Event binding =====
+  qs("#loginBtn").addEventListener("click", doLogin);
+  qs("#btnLogout").addEventListener("click", logout);
+  qs("#reloadBtn").addEventListener("click", loadUsersList);
+  qs("#searchEmail").addEventListener("input", ()=> applyFilters());
+  qs("#filterStatus").addEventListener("change", ()=> applyFilters());
+  qs("#filterRole").addEventListener("change", ()=> applyFilters());
+
+  // tablo üzerinde event delegation
+  qs("#tbody").addEventListener("click", async (e)=>{
+    const btn = e.target.closest("button[data-action]");
+    if(!btn) return;
+    const id = btn.getAttribute("data-id");
+    const action = btn.getAttribute("data-action");
+    try{
+      if(action === "approve"){
+        const next = btn.getAttribute("data-next") === "1";
+        await setApprove(id, next);
+      }else if(action === "admin"){
+        const next = btn.getAttribute("data-next") === "1";
+        await setAdmin(id, next);
+      }else if(action === "delete"){
+        await delUser(id);
+      }
+      await loadUsersList();
+    }catch(err){
+      alert(err.message || "İşlem başarısız.");
+    }
+  });
+
+  // ===== Init =====
+  (function init(){
+    // Önceden alınmış token varsa kullan
+    try{
+      const t = localStorage.getItem(STORAGE_KEY);
+      if(t){
+        TOKEN = t;
+        showLogin(false);
+        loadUsersList();
+        qs("#loginOut").textContent = "Kayıtlı admin oturumu yüklendi.";
+        return;
+      }
+    }catch{}
+
+    showLogin(true);
+  })();
 </script>
 </body>
 </html>

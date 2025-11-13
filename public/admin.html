@@ -548,12 +548,27 @@
   // ===== Mesajlar & Siparişler =====
   const mailStatusPill = (sent) => sent ? '<span class="pill yes">Mail: Gönderildi</span>' : '<span class="pill no">Mail: Gönderilemedi</span>';
 
+  function orderStatusInfo(status){
+    const st = String(status || 'pending');
+    switch(st){
+      case 'preparing': return { label:'Hazırlanıyor', cls:'warn' };
+      case 'shipped':   return { label:'Kargoda',      cls:'ok'   };
+      case 'completed': return { label:'Tamamlandı',   cls:'ok'   };
+      case 'cancelled': return { label:'İptal',        cls:'err'  };
+      case 'pending':
+      default:          return { label:'Beklemede',    cls:'warn' };
+    }
+  }
+
   async function resendMail(id, kind){
     try{
       const r = await fetch('/api/admin/messages/'+encodeURIComponent(id)+'/resend', withAuth({ method:'POST' }));
       await handle401(r);
       const data = await r.json();
-      if(data.success){ if(kind==='order') loadOrders(); else loadMails(); alert('Mail yeniden gönderildi.'); }
+      if(data.success){
+        if(kind==='order') loadOrders(); else loadMails();
+        alert('Mail yeniden gönderildi.');
+      }
       else alert(data.message || 'Yeniden gönderilemedi');
     }catch(err){ alert(err.message || 'Sunucu hatası'); }
   }
@@ -591,6 +606,12 @@
             </div>`;
         }).join('');
 
+        const addrFull  = String(o.address || '-');
+        const addrShort = addrFull.length > 70 ? addrFull.slice(0,70) + '…' : addrFull;
+        const stInfo    = orderStatusInfo(o.status);
+        const curSt     = String(o.status || 'pending');
+        const tracking  = o.trackingCode || '';
+
         return `
           <div class="card">
             <div class="row" style="justify-content:space-between;align-items:flex-start">
@@ -600,11 +621,15 @@
                 <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">
                   <span class="chip">Müşteri: ${esc(o.name||'-')}</span>
                   <span class="chip">${esc(o.email||'-')}</span>
+                  <span class="chip">Tel: ${esc(o.phone||'-')}</span>
+                  <span class="chip" title="${esc(addrFull)}">Adres: ${esc(addrShort)}</span>
                   ${o.coupon ? `<span class="chip">Kupon: ${esc(o.coupon)}</span>` : ''}
                   ${mailStatusPill(!!o.mailSent)}
+                  ${tracking ? `<span class="chip">Takip: ${esc(tracking)}</span>` : ''}
                 </div>
               </div>
-              <div class="row" style="gap:8px;flex-wrap:wrap">
+              <div class="row" style="gap:8px;flex-wrap:wrap;justify-content:flex-end">
+                <span class="badge ${stInfo.cls}">Durum: ${stInfo.label}</span>
                 ${o.read ? '<span class="badge ok">Okundu</span>' : '<span class="badge warn">Yeni</span>'}
                 <button class="btn ghost" onclick="markMsgRead('${o.id}')">Okundu</button>
                 <button class="btn ghost" onclick="resendMail('${o.id}','order')">Maili Tekrar Dene</button>
@@ -613,15 +638,52 @@
             </div>
             <div class="list" style="margin-top:10px">${itemsHTML}</div>
             <div class="divider"></div>
-            <div class="row" style="justify-content:flex-end;gap:12px;flex-wrap:wrap">
-              <span class="chip">İndirim: ${(o.discount||0).toLocaleString('tr-TR')} ₺</span>
-              <span class="chip">Toplam: ${(o.total||0).toLocaleString('tr-TR')} ₺</span>
-              <span class="tag" style="border-color:#3a5c2a;color:#b8ffb0;">Ödenecek: ${(o.payable||0).toLocaleString('tr-TR')} ₺</span>
+            <div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end;justify-content:space-between">
+              <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
+                <select id="st-${esc(o.id)}" style="min-width:140px">
+                  <option value="pending"   ${curSt==='pending'?'selected':''}>Beklemede</option>
+                  <option value="preparing" ${curSt==='preparing'?'selected':''}>Hazırlanıyor</option>
+                  <option value="shipped"   ${curSt==='shipped'?'selected':''}>Kargoda</option>
+                  <option value="completed" ${curSt==='completed'?'selected':''}>Tamamlandı</option>
+                  <option value="cancelled" ${curSt==='cancelled'?'selected':''}>İptal</option>
+                </select>
+                <input id="trk-${esc(o.id)}" placeholder="Takip Kodu" value="${esc(tracking)}" style="min-width:160px">
+                <button class="btn ghost" onclick="saveOrderMeta('${esc(o.id)}')">Durum / Kargo Kaydet</button>
+              </div>
+              <div class="row" style="gap:12px;flex-wrap:wrap;justify-content:flex-end">
+                <span class="chip">İndirim: ${(o.discount||0).toLocaleString('tr-TR')} ₺</span>
+                <span class="chip">Toplam: ${(o.total||0).toLocaleString('tr-TR')} ₺</span>
+                <span class="tag" style="border-color:#3a5c2a;color:#b8ffb0;">Ödenecek: ${(o.payable||0).toLocaleString('tr-TR')} ₺</span>
+              </div>
             </div>
           </div>`;
       }).join('');
     }catch(err){
       $('#ordersList').innerHTML = '<p class="muted">Liste alınamadı</p>';
+    }
+  }
+
+  async function saveOrderMeta(id){
+    const stEl  = document.getElementById('st-'+id);
+    const trkEl = document.getElementById('trk-'+id);
+    if(!stEl || !trkEl) return;
+    const status = stEl.value;
+    const trackingCode = trkEl.value.trim();
+    try{
+      const r = await fetch('/api/admin/orders/'+encodeURIComponent(id), withAuth({
+        method:'PATCH',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ status, trackingCode })
+      }));
+      await handle401(r);
+      const data = await r.json();
+      if(data.success){
+        loadOrders();
+      }else{
+        alert(data.message || 'Güncellenemedi');
+      }
+    }catch(err){
+      alert(err.message || 'Sunucu hatası');
     }
   }
 

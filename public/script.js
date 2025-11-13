@@ -4,7 +4,9 @@ const qsa = (sel) => document.querySelectorAll(sel);
 const hasTr = (s = "") => /[çğıöşüÇĞİÖŞÜ]/.test(s);
 const fmtMoney = (n) => `${Number(n || 0).toFixed(0)} ₺`;
 
-let TOKEN = localStorage.getItem("mavern_token") || null;
+// ==== JWT anahtarı (auth.html ile uyumlu) ====
+const TOKEN_KEY = "mavern_jwt";
+let TOKEN = null;
 
 // ==== Sepet kalıcılık anahtarı ====
 const CART_KEY = "mavern_cart";
@@ -13,26 +15,51 @@ let PRODUCTS = [];
 let CART = {};        // { id: {id,name,price,image,qty} }
 let COUPON = null;    // { code, percent, expiresAt? }
 
+// ===== Token / session helper =====
+function loadTokenFromStorage() {
+  try {
+    TOKEN = localStorage.getItem(TOKEN_KEY) || null;
+  } catch {
+    TOKEN = null;
+  }
+}
+
 // ===== Panel aç/kapa =====
 function openSidebar(){ qs("#sidebar")?.classList.add("open"); }
 function closeSidebar(){ qs("#sidebar")?.classList.remove("open"); }
-function openCart(){ qs("#cartPanel")?.classList.add("open"); renderCart(); }
+function openCart(){ renderCart(); qs("#cartPanel")?.classList.add("open"); }
 function closeCart(){ qs("#cartPanel")?.classList.remove("open"); }
-function openProductsPanel(){ qs("#productsPanel")?.classList.add("open"); renderProductsFull(); }
+
+function openProductsPanel(){
+  if (!PRODUCTS.length) {
+    // ürünler daha yüklenmediyse bir daha çek
+    loadProducts().then(() => renderProductsFull()).catch(()=>{});
+  } else {
+    renderProductsFull();
+  }
+  qs("#productsPanel")?.classList.add("open");
+}
 function closeProductsPanel(){ qs("#productsPanel")?.classList.remove("open"); }
 
 // Checkout overlay
 function openCheckout(){
   const items = Object.values(CART);
-  if(!items.length){ const m=qs("#checkoutMsg"); if(m) m.textContent="Sepet boş."; return; }
+  const msg = qs("#checkoutMsg");
+  if(!items.length){
+    if (msg) msg.textContent = "Sepet boş.";
+    return;
+  }
   const payable = getPayable();
-  const out = qs("#chPayable"); if(out) out.textContent = fmtMoney(payable);
-  qs("#chStatus") && (qs("#chStatus").textContent = "");
+  const out = qs("#chPayable");
+  if(out) out.textContent = fmtMoney(payable);
+  const st = qs("#chStatus");
+  if(st) st.textContent = "";
   qs("#checkoutOverlay")?.classList.add("show");
 }
 function closeCheckout(){
   qs("#checkoutOverlay")?.classList.remove("show");
 }
+
 function scrollToSection(id){
   const el = qs("#" + id);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -40,6 +67,7 @@ function scrollToSection(id){
 
 // ===== API =====
 async function api(path, opts = {}) {
+  loadTokenFromStorage(); // her istekte güncel token
   const headers = {
     "Content-Type": "application/json",
     ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}),
@@ -134,9 +162,13 @@ function productCard(p) {
   const priceTag = displayPriceTag(p);
   const canBuy = !!(p && p.purchasable && typeof p.price === "number" && isFinite(p.price));
   const link = `product.html?id=${encodeURIComponent(p.id)}`;
+  const imgSrc = sanitize(p.image || "logo.png");
+
   el.innerHTML = `
     <a href="${link}" style="display:block">
-      <img class="prod" src="${sanitize(p.image || "logo.png")}" alt="${esc(p.name)}"
+      <img class="prod"
+           src="${imgSrc}"
+           alt="${esc(p.name)}"
            style="width:100%;height:180px;object-fit:cover;border-radius:12px;border:1px solid #26324a;background:#0a0f1b"
            onerror="this.src='logo.png'">
     </a>
@@ -145,7 +177,10 @@ function productCard(p) {
     </h4>
     <div class="price muted" style="margin:.25rem 0 .5rem">${esc(priceTag)}</div>
     ${p.desc ? `<p style="margin:0 0 .5rem" class="muted">${esc(p.desc)}</p>` : ""}
-    <button class="btn" ${canBuy ? `onclick="addToCart('${p.id}')"` : "disabled title='Satın alınamaz'"}>${canBuy ? "Sepete Ekle" : "Satın Alınamaz"}</button>
+    <button class="btn"
+      ${canBuy ? `onclick="addToCart('${p.id}')"` : 'disabled title="Satın alınamaz"'}>
+      ${canBuy ? "Sepete Ekle" : "Satın Alınamaz"}
+    </button>
   `;
   return el;
 }
@@ -202,8 +237,8 @@ function clearCart() {
   CART = {};
   saveCartToStorage();
   COUPON = null;
-  qs("#couponInput") && (qs("#couponInput").value = "");
-  qs("#couponMsg") && (qs("#couponMsg").textContent = "");
+  const ci = qs("#couponInput"); if(ci) ci.value = "";
+  const cm = qs("#couponMsg"); if(cm) cm.textContent = "";
   renderCart();
   const out = qs("#chPayable"); if(out) out.textContent = fmtMoney(0);
 }
@@ -229,9 +264,12 @@ function renderCart() {
   const badge = qs("#cartCount");
   if (badge) badge.textContent = count > 0 ? count : "";
 
-  qs("#subtotal") && (qs("#subtotal").textContent = fmtMoney(subtotal));
-  qs("#discount") && (qs("#discount").textContent = fmtMoney(discount));
-  qs("#payable") && (qs("#payable").textContent = fmtMoney(payable));
+  const st = qs("#subtotal");
+  const dc = qs("#discount");
+  const py = qs("#payable");
+  if (st) st.textContent = fmtMoney(subtotal);
+  if (dc) dc.textContent = fmtMoney(discount);
+  if (py) py.textContent = fmtMoney(payable);
 
   if (!items.length) {
     list.innerHTML = `<div class="muted">Sepetiniz boş.</div>`;
@@ -241,8 +279,9 @@ function renderCart() {
   items.forEach((it) => {
     const row = document.createElement("div");
     row.className = "cart-item";
+    const imgSrc = sanitize(it.image || "logo.png");
     row.innerHTML = `
-      <img src="${sanitize(it.image || "logo.png")}" alt=""
+      <img src="${imgSrc}" alt=""
            style="width:64px;height:48px;object-fit:cover;border-radius:6px;border:1px solid #26324a;background:#0a0f1b"
            onerror="this.src='logo.png'">
       <div class="meta" style="min-width:0">
@@ -251,11 +290,11 @@ function renderCart() {
       </div>
       <div>
         <div class="qty">
-          <button aria-label="Azalt" onclick="changeQty('${it.id}',-1)">−</button>
+          <button type="button" aria-label="Azalt" onclick="changeQty('${it.id}',-1)">−</button>
           <div class="num">${it.qty}</div>
-          <button aria-label="Arttır" onclick="changeQty('${it.id}',1)">+</button>
+          <button type="button" aria-label="Arttır" onclick="changeQty('${it.id}',1)">+</button>
         </div>
-        <button class="btn" style="margin-top:6px" onclick="removeFromCart('${it.id}')">Kaldır</button>
+        <button class="btn" type="button" style="margin-top:6px" onclick="removeFromCart('${it.id}')">Kaldır</button>
       </div>
     `;
     list.appendChild(row);
@@ -295,7 +334,7 @@ async function applyCoupon() {
     if(el?.classList.contains("show")){
       const out = qs("#chPayable"); if(out) out.textContent = fmtMoney(getPayable());
     }
-  } catch (e) {
+  } catch {
     msgEl.textContent = "Sunucu hatası.";
   }
 }
@@ -316,7 +355,12 @@ async function submitCheckout(){
   const addr   = (qs("#chAddress")?.value || "").trim();
   const kvkkOk = qs("#chKvkk")?.checked;
 
-  if (CHECKOUT_LOCK) { st && (st.textContent = "İşleminiz alınıyor, lütfen bekleyin."); return; }
+  if (!st) return;
+
+  if (CHECKOUT_LOCK) {
+    st.textContent = "İşleminiz alınıyor, lütfen bekleyin.";
+    return;
+  }
 
   const { items } = getTotals();
   if(!items.length){ st.textContent="Sepet boş."; return; }
@@ -376,9 +420,9 @@ async function sendMessage() {
     const res = await api("/api/contact", { method: "POST", body: JSON.stringify({ name, email, message }) });
     status.textContent = res.success ? "Mesaj alındı. Teşekkürler!" : res.message || "Gönderilemedi.";
     if (res.success) {
-      qs("#contactName").value = "";
-      qs("#contactEmail").value = "";
-      qs("#contactMsg").value = "";
+      const n = qs("#contactName"); if(n) n.value = "";
+      const e = qs("#contactEmail"); if(e) e.value = "";
+      const m = qs("#contactMsg"); if(m) m.value = "";
     }
   } catch (e) {
     status.textContent = e.message || "Sunucu hatası.";
@@ -387,16 +431,19 @@ async function sendMessage() {
 
 // ===== utils =====
 function esc(s) {
-  return String(s).replace(
+  return String(s ?? "").replace(
     /[&<>"']/g,
     (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])
   );
 }
-function sanitize(s) { return String(s || "").replace(/"/g, "&quot;"); }
+function sanitize(s) {
+  // src / href gibi attribute’lar için sadece çift tırnak temizliyoruz
+  return String(s ?? "").replace(/"/g, "&quot;");
+}
 
 // ===== init =====
 window.addEventListener("DOMContentLoaded", async () => {
-  // sepeti localStorage'dan yükle
+  loadTokenFromStorage();
   loadCartFromStorage();
 
   await loadProducts();

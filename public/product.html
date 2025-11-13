@@ -4,106 +4,294 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Mavern • Ürün</title>
+
+  <!-- Ana stil -->
   <link rel="stylesheet" href="style.css"/>
+
+  <!-- Font uyumu (index.html ile aynı) -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Poppins:wght@300;500&display=swap" rel="stylesheet">
+
   <style>
-    body{background:#0b1220;color:#e6edf3}
-    .wrap{max-width:1000px;margin:20px auto;padding:0 12px}
-    .prod-hero{display:grid;grid-template-columns:320px 1fr;gap:20px}
-    @media(max-width:800px){.prod-hero{grid-template-columns:1fr}}
-    .rev-form, .rev-list {background:#0a0f1b;border:1px solid #26324a;border-radius:12px;padding:14px;margin-top:16px}
-    .rev-item{border-top:1px solid #26324a;padding:12px 0}
+    body{
+      margin:0;
+      background:#0b1220;
+      color:#e6edf3;
+      font-family:Poppins,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+    }
+    a{color:#c7d2fe;text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    .wrap{
+      max-width:1000px;
+      margin:24px auto 32px;
+      padding:0 12px;
+    }
+    .back-link{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-size:.9rem;
+      color:#9aa4b2;
+    }
+
+    .prod-hero{
+      display:grid;
+      grid-template-columns:320px 1fr;
+      gap:20px;
+      margin-top:12px;
+      padding:16px;
+      border-radius:16px;
+      background:radial-gradient(600px 400px at 0 0,rgba(59,130,246,.25),transparent),
+                 #050816;
+      border:1px solid #1f2937;
+      box-shadow:0 18px 40px rgba(0,0,0,.55);
+    }
+    @media(max-width:800px){
+      .prod-hero{grid-template-columns:1fr}
+    }
+    .prod-img-wrap{
+      border-radius:14px;
+      border:1px solid #26324a;
+      background:#020617;
+      overflow:hidden;
+    }
+    .prod-img-wrap img{
+      width:100%;
+      height:auto;
+      display:block;
+      object-fit:cover;
+    }
+    .prod-title{
+      font-family:"Playfair Display",Georgia,serif;
+      font-size:1.7rem;
+      letter-spacing:.4px;
+      margin:0 0 6px;
+    }
+    .prod-desc{
+      color:#9aa4b2;
+      font-size:.95rem;
+      margin-bottom:10px;
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+    .price-tag{
+      font-size:1.3rem;
+      font-weight:600;
+      margin:6px 0 12px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      padding:.2rem .55rem;
+      border-radius:999px;
+      border:1px solid #344256;
+      font-size:.8rem;
+      color:#cbd5f5;
+      background:#020617;
+    }
+
+    .rev-form,
+    .rev-list{
+      background:#020617;
+      border:1px solid #26324a;
+      border-radius:16px;
+      padding:16px 14px;
+      margin-top:18px;
+      box-shadow:0 12px 30px rgba(0,0,0,.55);
+    }
+    .rev-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      margin-bottom:6px;
+    }
+    .rev-header h3{
+      margin:0;
+      font-family:"Playfair Display",Georgia,serif;
+      font-size:1.15rem;
+    }
+
+    .rev-item{
+      border-top:1px solid #26324a;
+      padding:10px 0 12px;
+    }
     .rev-item:first-child{border-top:0}
-    .stars{color:#ffd35a}
+
+    .stars{color:#ffd35a;font-size:.95rem}
     .muted{color:#9aa4b2}
-    .thumbs img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid #26324a;margin-right:6px}
-    button, input, textarea, select{background:#0f1629;color:#e6edf3;border:1px solid #2b3a57;border-radius:8px;padding:10px}
-    .btn{cursor:pointer}
-    .btn[disabled]{opacity:.55;cursor:not-allowed}
+    .muted.small{font-size:.85rem}
+    .thumbs img{
+      width:72px;
+      height:72px;
+      object-fit:cover;
+      border-radius:8px;
+      border:1px solid #26324a;
+      margin-right:6px;
+      background:#020617;
+    }
+
+    button,
+    input,
+    textarea,
+    select{
+      background:#020617;
+      color:#e6edf3;
+      border:1px solid #2b3a57;
+      border-radius:10px;
+      padding:9px 10px;
+      font-family:inherit;
+      font-size:.95rem;
+    }
+    textarea{resize:vertical;min-height:90px}
+    .btn{
+      cursor:pointer;
+      font-weight:500;
+    }
+    .btn[disabled]{opacity:.6;cursor:not-allowed}
+    .btn.primary{
+      background:#f1f5f9;
+      color:#020617;
+      border-color:transparent;
+    }
+    .btn.primary:hover{filter:brightness(.97)}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <a href="index.html" class="muted">← Mağaza</a>
-    <div id="hero" class="prod-hero" style="margin-top:10px"></div>
+    <a href="index.html" class="back-link">
+      <span>←</span><span>Mağaza</span>
+    </a>
 
-    <div class="rev-list">
-      <h3 style="margin:0 0 8px">Yorumlar</h3>
-      <div id="avgBlock" class="muted" style="margin-bottom:8px"></div>
-      <div id="reviews"></div>
-      <div id="noReviews" class="muted" style="display:none">Henüz yorum yok.</div>
-    </div>
+    <div id="hero" class="prod-hero" aria-live="polite"></div>
 
-    <div class="rev-form" id="revFormBox">
-      <h3 style="margin:0 0 8px">Yorum Yaz</h3>
-      <div id="rfGate" class="muted" style="margin-bottom:8px">
-        Yorum için giriş gerekir. <a href="auth.html">Giriş/Kayıt</a>
+    <!-- Yorumlar (liste) -->
+    <section class="rev-list" aria-label="Ürün yorumları">
+      <div class="rev-header">
+        <h3>Yorumlar</h3>
+        <div id="avgBlock" class="muted small"></div>
       </div>
+      <div id="reviews"></div>
+      <div id="noReviews" class="muted small" style="display:none">Henüz yorum yok.</div>
+    </section>
+
+    <!-- Yorum formu -->
+    <section class="rev-form" id="revFormBox" aria-label="Yorum yaz">
+      <div class="rev-header">
+        <h3>Yorum Yaz</h3>
+      </div>
+
+      <p id="rfGate" class="muted small" style="margin-bottom:8px">
+        Yorum için giriş gerekir. <a href="auth.html">Giriş / Kayıt</a>
+      </p>
 
       <div id="rfFields" style="display:none">
-        <label>Puan
-          <select id="rfRating">
-            <option value="5">5</option><option value="4">4</option>
-            <option value="3">3</option><option value="2">2</option><option value="1">1</option>
-          </select>
-        </label>
+        <label for="rfRating" class="muted small">Puan</label>
+        <select id="rfRating">
+          <option value="5">5 - Mükemmel</option>
+          <option value="4">4 - İyi</option>
+          <option value="3">3 - Orta</option>
+          <option value="2">2 - Zayıf</option>
+          <option value="1">1 - Kötü</option>
+        </select>
+
         <div style="margin-top:8px">
-          <textarea id="rfComment" rows="4" placeholder="Yorumun..."></textarea>
+          <label for="rfComment" class="muted small">Yorumunuz</label>
+          <textarea id="rfComment" rows="4" placeholder="Deneyiminizi paylaşın..."></textarea>
         </div>
+
         <div style="margin-top:8px">
+          <label class="muted small" for="rfPhoto">
+            Fotoğraf (opsiyonel, en fazla 5 adet • JPG / PNG / WEBP)
+          </label>
           <input type="file" id="rfPhoto" accept="image/jpeg,image/png,image/webp" multiple>
         </div>
-        <label style="display:block;margin-top:8px">
-          <input type="checkbox" id="rfAnon"> Gizli kullanıcı olarak yayınla
+
+        <label style="display:block;margin-top:8px" class="muted small">
+          <input type="checkbox" id="rfAnon" style="width:auto;margin-right:6px">
+          Gizli kullanıcı olarak yayınla
         </label>
-        <div id="rfStatus" class="muted" style="margin-top:6px"></div>
-        <button class="btn" style="margin-top:10px" id="rfSend">Gönder</button>
+
+        <div id="rfStatus" class="muted small" style="margin-top:6px"></div>
+
+        <button class="btn primary" style="margin-top:10px" id="rfSend">Gönder</button>
       </div>
-    </div>
+    </section>
   </div>
 
-  <!-- Global yardımcılar + sepet + api burada -->
+  <!-- Global yardımcılar + sepet + api -->
   <script src="script.js"></script>
+
   <script>
     // ========= Yardımcılar (script.js ile ÇAKIŞMAYAN küçük yardımcılar) =========
     // (script.js zaten qs, fmtMoney, api, normalizeProductClient, addToCart içeriyor)
-    const escLocal = (s)=>String(s).replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
-    const getJWT = ()=>{ try{ return localStorage.getItem("mavern_jwt") || null; }catch{ return null; } };
+
+    const escLocal = (s) =>
+      String(s ?? "").replace(/[&<>"']/g, (m) =>
+        ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[m])
+      );
+
+    const sanitizeAttr = (s) =>
+      String(s ?? "").replace(/"/g, "&quot;");
+
+    const getJWT = () => {
+      try { return localStorage.getItem("mavern_jwt") || null; }
+      catch { return null; }
+    };
+
     const url = new URL(location.href);
     const PID = url.searchParams.get("id");
 
     // Yıldız yardımcıları
-    function starsRow(n){ n = Math.max(0, Math.min(5, Number(n||0))); return "★".repeat(n) + "☆".repeat(5-n); }
+    function starsRow(n) {
+      n = Math.max(0, Math.min(5, Number(n || 0)));
+      return "★".repeat(n) + "☆".repeat(5 - n);
+    }
 
     // ================ ÜRÜN =================
     let PRODUCT = null;
 
-    async function loadProduct(){
+    async function loadProduct() {
+      const box = qs("#hero");
+      if (!box) return;
+
       let list = [];
-      try{
+      try {
         const raw = await api("/api/products");
         list = Array.isArray(raw) ? raw.map(normalizeProductClient) : [];
-      }catch{}
-      PRODUCT = (list||[]).find(p=>p.id===PID);
+      } catch {
+        list = [];
+      }
+      PRODUCT = (list || []).find((p) => p.id === PID);
 
-      const box = qs("#hero");
-      if(!PRODUCT){ box.innerHTML = "<div>Ürün bulunamadı.</div>"; return; }
+      if (!PRODUCT) {
+        box.innerHTML = "<div>Ürün bulunamadı.</div>";
+        return;
+      }
 
-      const priceText = PRODUCT.purchasable ? fmtMoney(PRODUCT.price) : (PRODUCT.priceText||"—");
+      const priceText = PRODUCT.purchasable
+        ? fmtMoney(PRODUCT.price)
+        : (PRODUCT.priceText || "—");
+
+      const imgSrc = sanitizeAttr(PRODUCT.image || "logo.png");
 
       box.innerHTML = `
-        <div>
-          <img src="${escLocal(PRODUCT.image||'logo.png')}" alt=""
-               style="width:100%;height:auto;border-radius:12px;border:1px solid #26324a;background:#0a0f1b"
+        <div class="prod-img-wrap">
+          <img src="${imgSrc}" alt="${escLocal(PRODUCT.name || "")}"
                onerror="this.src='logo.png'">
         </div>
         <div>
-          <h2 style="margin:0 0 6px">${escLocal(PRODUCT.name)}</h2>
-          <div class="muted" style="margin-bottom:8px">${PRODUCT.desc?escLocal(PRODUCT.desc):""}</div>
-          <div style="font-size:20px;margin:6px 0 10px">${priceText}</div>
-          ${PRODUCT.purchasable
-            ? `<button class="btn" id="btnAddCart">Sepete Ekle</button>`
-            : `<button class="btn" disabled>Satın Alınamaz</button>`}
-        </div>`;
+          <h2 class="prod-title">${escLocal(PRODUCT.name)}</h2>
+          <div class="prod-desc">${PRODUCT.desc ? escLocal(PRODUCT.desc) : ""}</div>
+          <div class="price-tag">${escLocal(priceText)}</div>
+          ${
+            PRODUCT.purchasable
+              ? `<button class="btn primary" id="btnAddCart">Sepete Ekle</button>`
+              : `<span class="pill">Bu ürün şu anda satılabilir değil.</span>`
+          }
+        </div>
+      `;
 
       // Sepete ekle (script.js içindeki addToCart’u kullan)
       const btn = qs("#btnAddCart");
@@ -111,136 +299,221 @@
     }
 
     // ================ YORUMLAR (public) ================
-    async function loadReviews(){
+    async function loadReviews() {
       const out = qs("#reviews");
       const none = qs("#noReviews");
-      out.innerHTML = ""; none.style.display = "none";
-      let items = [];
-      try{
-        const r = await api(`/api/products/${encodeURIComponent(PID)}/reviews`);
-        items = r && r.items ? r.items : [];
-      }catch{}
+      const avgBlock = qs("#avgBlock");
+      if (!out || !none || !avgBlock) return;
 
-      if(!items.length){
-        qs("#avgBlock").textContent="";
+      out.innerHTML = "";
+      none.style.display = "none";
+      avgBlock.textContent = "";
+
+      let items = [];
+      try {
+        const r = await api(`/api/products/${encodeURIComponent(PID)}/reviews`);
+        items = r && Array.isArray(r.items) ? r.items : [];
+      } catch {
+        items = [];
+      }
+
+      if (!items.length) {
         none.style.display = "block";
         return;
       }
 
-      const avg = (items.reduce((s,x)=>s+Number(x.rating||0),0)/items.length).toFixed(1);
-      qs("#avgBlock").innerHTML = `Ortalama: <span class="stars">★</span> ${avg} / 5 • ${items.length} yorum`;
+      const sum = items.reduce((s, x) => s + Number(x.rating || 0), 0);
+      const avg = (sum / items.length).toFixed(1);
+      avgBlock.innerHTML =
+        `Ortalama: <span class="stars">★</span> ${avg} / 5 • ${items.length} yorum`;
 
-      items.forEach(rv=>{
+      items.forEach((rv) => {
         const d = document.createElement("div");
-        d.className="rev-item";
-        const photos = (rv.photos||[]).map(p=>`<img src="${escLocal(p)}" alt="" onerror="this.src='logo.png'">`).join("");
+        d.className = "rev-item";
+
+        const created = rv.createdAt
+          ? new Date(rv.createdAt).toLocaleString("tr-TR")
+          : "";
+
+        const photos =
+          (rv.photos || [])
+            .slice(0, 5)
+            .map((p) =>
+              `<img src="${sanitizeAttr(p)}" alt="" onerror="this.src='logo.png'">`
+            )
+            .join("");
+
         d.innerHTML = `
-          <div style="display:flex;justify-content:space-between;gap:8px">
-            <div><strong>${escLocal(rv.displayName||"Kullanıcı")}</strong> • <span class="stars">${starsRow(rv.rating)}</span></div>
-            <div class="muted" style="font-size:12px">${new Date(rv.createdAt).toLocaleString("tr-TR")}</div>
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+            <div>
+              <strong>${escLocal(rv.displayName || "Kullanıcı")}</strong>
+              <span class="stars"> • ${starsRow(rv.rating)}</span>
+            </div>
+            <div class="muted small">${escLocal(created)}</div>
           </div>
-          ${rv.comment?`<div style="margin-top:6px">${escLocal(rv.comment)}</div>`:""}
-          ${photos?`<div class="thumbs" style="margin-top:6px">${photos}</div>`:""}
+          ${
+            rv.comment
+              ? `<div style="margin-top:6px">${escLocal(rv.comment)}</div>`
+              : ""
+          }
+          ${photos ? `<div class="thumbs" style="margin-top:6px">${photos}</div>` : ""}
         `;
         out.appendChild(d);
       });
     }
 
     // ================ YORUM FORMU (JWT) ================
-    async function checkAuthAndGate(){
+    async function checkAuthAndGate() {
       const token = getJWT();
       const gate = qs("#rfGate");
       const fields = qs("#rfFields");
       const status = qs("#rfStatus");
+      if (!gate || !fields || !status) return;
+
       status.textContent = "";
 
-      if(!token){
+      if (!token) {
         gate.style.display = "block";
         fields.style.display = "none";
-        gate.innerHTML = `Yorum için giriş gerekir. <a href="auth.html">Giriş/Kayıt</a>`;
+        gate.innerHTML = `Yorum için giriş gerekir. <a href="auth.html">Giriş / Kayıt</a>`;
         return;
       }
 
-      // me çağrısı ile onay kontrolü
-      try{
-        const res = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } });
+      // /api/auth/me ile onay kontrolü
+      try {
+        const res = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const data = await res.json();
-        if(!data.success) throw new Error("Oturum doğrulanamadı");
+        if (!data.success || !data.user) throw new Error("Oturum doğrulanamadı");
 
-        if(!data.user || !data.user.isApproved){
+        if (!data.user.isApproved) {
           gate.style.display = "block";
           fields.style.display = "none";
-          gate.textContent = "Hesabınız onay bekliyor. Onaylandıktan sonra yorum bırakabilirsiniz.";
+          gate.textContent =
+            "Hesabınız onay bekliyor. Onaylandıktan sonra yorum bırakabilirsiniz.";
           return;
         }
 
-        // yetkili
         gate.style.display = "none";
         fields.style.display = "block";
-      }catch(e){
+      } catch (e) {
         gate.style.display = "block";
         fields.style.display = "none";
-        gate.innerHTML = `Oturum doğrulanamadı. <a href="auth.html">Tekrar giriş yapın</a>`;
+        gate.innerHTML =
+          `Oturum doğrulanamadı. <a href="auth.html">Tekrar giriş yapın</a>`;
       }
     }
 
-    async function uploadPhotos(files){
+    async function uploadPhotos(files) {
       const token = getJWT();
-      if(!token) throw new Error("Giriş gerekli");
+      if (!token) throw new Error("Giriş gerekli");
+
       const urls = [];
-      for(const f of files){
+      // en fazla 5 fotoğraf
+      const max = Math.min(files.length, 5);
+      for (let i = 0; i < max; i++) {
+        const f = files[i];
         const fd = new FormData();
         fd.append("file", f);
         const res = await fetch("/api/reviews/upload", {
-          method:"POST",
-          headers:{ Authorization:`Bearer ${token}` },
-          body: fd
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
         });
         const data = await res.json();
-        if(!data.success) throw new Error(data.message||"Yükleme hatası");
+        if (!data.success || !data.path) {
+          throw new Error(data.message || "Fotoğraf yüklenemedi");
+        }
         urls.push(data.path);
       }
       return urls;
     }
 
-    async function sendReview(){
+    async function sendReview() {
       const st = qs("#rfStatus");
-      const token = getJWT();
-      if(!token){ st.textContent="Giriş gerekli (auth.html)."; return; }
+      const btn = qs("#rfSend");
+      if (!st || !btn) return;
 
-      const rating = Number(qs("#rfRating").value);
-      const comment = qs("#rfComment").value.trim();
-      const anonymous = qs("#rfAnon").checked;
-      const files = qs("#rfPhoto").files;
+      const token = getJWT();
+      if (!token) {
+        st.textContent = "Giriş gerekli. Lütfen auth.html üzerinden giriş yapın.";
+        return;
+      }
+
+      const rating = Number(qs("#rfRating")?.value || 0);
+      const comment = (qs("#rfComment")?.value || "").trim();
+      const anonymous = !!qs("#rfAnon")?.checked;
+      const fileInput = qs("#rfPhoto");
+      const files = fileInput?.files || [];
+
+      if (!(rating >= 1 && rating <= 5)) {
+        st.textContent = "Puan 1–5 arası olmalı.";
+        return;
+      }
 
       st.textContent = "Gönderiliyor...";
-      try{
-        let photos=[];
-        if(files && files.length){ photos = await uploadPhotos(files); }
+      btn.disabled = true;
 
-        const res = await fetch(`/api/products/${encodeURIComponent(PID)}/reviews`, {
-          method:"POST",
-          headers:{ "Content-Type":"application/json", Authorization:`Bearer ${token}` },
-          body: JSON.stringify({ rating, comment, photos, anonymous })
-        });
+      try {
+        let photos = [];
+        if (files.length) {
+          photos = await uploadPhotos(files);
+        }
+
+        const res = await fetch(
+          `/api/products/${encodeURIComponent(PID)}/reviews`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ rating, comment, photos, anonymous }),
+          }
+        );
         const data = await res.json();
-        if(!data.success) throw new Error(data.message||"Gönderilemedi");
+        if (!data.success) {
+          throw new Error(data.message || "Gönderilemedi");
+        }
 
-        st.textContent = "Yorum alındı, admin onayı sonrası yayınlanacaktır.";
-        qs("#rfComment").value=""; qs("#rfPhoto").value="";
-      }catch(e){
+        st.textContent =
+          "Yorum alındı, admin onayı sonrası yayınlanacaktır.";
+        const cmt = qs("#rfComment");
+        if (cmt) cmt.value = "";
+        if (fileInput) fileInput.value = "";
+      } catch (e) {
         st.textContent = e.message || "Hata";
+      } finally {
+        btn.disabled = false;
       }
     }
 
     // ================ INIT ================
-    qs("#rfSend").addEventListener("click", sendReview);
+    (function init() {
+      if (!PID) {
+        const hero = qs("#hero");
+        if (hero) hero.innerHTML = "<div>Geçersiz ürün.</div>";
+        const gate = qs("#rfGate");
+        const fields = qs("#rfFields");
+        if (gate) gate.textContent = "Geçersiz ürün ID.";
+        if (fields) fields.style.display = "none";
+        return;
+      }
 
-    (async function init(){
-      if(!PID){ qs("#hero").innerHTML="<div>Geçersiz ürün.</div>"; return; }
-      await loadProduct();
-      await loadReviews();
-      await checkAuthAndGate();
+      const sendBtn = qs("#rfSend");
+      if (sendBtn) {
+        sendBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          sendReview();
+        });
+      }
+
+      (async () => {
+        await loadProduct();
+        await loadReviews();
+        await checkAuthAndGate();
+      })();
     })();
   </script>
 </body>

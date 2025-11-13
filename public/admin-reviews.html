@@ -1,82 +1,457 @@
 <!doctype html>
 <html lang="tr">
-<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Admin • Yorumlar</title>
-<style>body{background:#0b1220;color:#e6edf3;font-family:system-ui} input,button{padding:8px;border:1px solid #2b3a57;background:#0f1629;color:#e6edf3;border-radius:8px} table{width:100%;border-collapse:collapse;margin-top:10px} td,th{border:1px solid #26324a;padding:8px;vertical-align:top}</style>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Mavern • Yorum Yönetimi</title>
+
+  <style>
+    :root{
+      --bg:#050815;
+      --card:#0b1220;
+      --ink:#e6edf3;
+      --muted:#9aa4b2;
+      --border:#26324a;
+      --accent:#cfd6ff;
+      --ok:#0f2a17;
+      --ok-border:#1b5d32;
+      --warn:#2a230f;
+      --warn-border:#5b4f1a;
+      --danger:#2a0f0f;
+      --danger-border:#5d1b1b;
+    }
+
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;
+      background:radial-gradient(1200px 600px at 20% -10%, #15192b 0%, #050815 50%, #020308 100%);
+      color:var(--ink);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    }
+
+    h1,h2,h3{margin:0}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:1100px;margin:20px auto;padding:0 16px}
+
+    .top-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .brand-block{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    /* Sadece M harfini göstermek için logo kutusu */
+    .logo-mark{
+      width:52px;
+      height:52px;
+      overflow:hidden;
+      border-radius:10px;
+      background:#000;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      box-shadow:0 8px 24px rgba(0,0,0,.6);
+    }
+    .logo-mark img{
+      height:100%;
+      width:auto;
+      object-fit:cover;
+      object-position:top center; /* üstteki büyük M kısmı */
+      display:block;
+    }
+
+    .card{
+      background:linear-gradient(180deg,rgba(10,15,35,.95),rgba(5,8,20,.98));
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px 16px;
+      box-shadow:0 18px 50px rgba(0,0,0,.55);
+      margin-top:14px;
+    }
+
+    button,input,select{
+      padding:8px 10px;
+      border:1px solid #2b3a57;
+      background:#0f1629;
+      color:var(--ink);
+      border-radius:8px;
+      font-family:inherit;
+      font-size:14px;
+    }
+    button{cursor:pointer}
+    button:disabled{opacity:.6;cursor:not-allowed}
+
+    .btn{border-radius:10px}
+    .btn.primary{background:var(--accent);color:#050815;border:0;font-weight:600}
+    .btn.ghost{background:transparent;border-color:#445;color:var(--accent)}
+    .btn.danger{background:#3a1717;border-color:#5d1b1b;color:#ffb2b2}
+
+    .table-wrap{max-height:540px;overflow:auto;border:1px solid var(--border);border-radius:12px;margin-top:10px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #1f2937;text-align:left;font-size:14px}
+    th{
+      position:sticky;
+      top:0;
+      background:#121a2f;
+      z-index:1;
+      font-weight:600;
+      color:#d4ddff;
+    }
+
+    .photo-grid{display:flex;flex-wrap:wrap;gap:4px}
+    .photo-grid img{width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid #26324a}
+
+    .pill{display:inline-block;padding:3px 8px;border-radius:999px;font-size:12px}
+    .pill.ok{background:var(--ok);border:1px solid var(--ok-border);color:#9ff3b0}
+    .pill.warn{background:var(--warn);border:1px solid var(--warn-border);color:#f2e19a}
+
+    .stars{color:#ffd35a}
+
+    /* Güvenli, vendor-özgü line-clamp (lint uyarısı normal) */
+    .comment-snippet{
+      display:-webkit-box;
+      -webkit-box-orient:vertical;
+      -webkit-line-clamp:4;
+      overflow:hidden;
+      line-height:1.4;
+      max-height:calc(1.4em * 4);
+      font-size:13px;
+      word-wrap:break-word;
+    }
+
+    .muted{color:var(--muted);font-size:13px}
+
+    @media(max-width:800px){
+      .top-row{flex-direction:column;align-items:flex-start}
+      th,td{font-size:13px}
+      .table-wrap{max-height:none}
+    }
+  </style>
 </head>
+
 <body>
-  <div style="max-width:1100px;margin:20px auto">
-    <h2>Yorum Yönetimi</h2>
-    <div style="display:flex;gap:8px;align-items:center">
-      <input id="user" placeholder="Admin kullanıcı">
-      <input id="pass" placeholder="Admin şifre" type="password">
-      <button id="loginBtn">Giriş</button>
-      <span id="loginOut" style="margin-left:8px;color:#9aa4b2"></span>
-    </div>
+<div class="wrap">
 
-    <div style="margin-top:10px">
-      <input id="filterPid" placeholder="Ürün ID (opsiyonel)">
-      <button id="loadBtn">Yükle</button>
+  <!-- Üst logo + başlık -->
+  <div class="top-row">
+    <div class="brand-block">
+      <div class="logo-mark">
+        <img src="logo.png" alt="Mavern">
+      </div>
+      <div>
+        <h2>Mavern Admin • Yorum Yönetimi</h2>
+        <div class="muted">Ürün yorumlarını görüntüle · onayla · sil</div>
+      </div>
     </div>
-
-    <div id="out"></div>
   </div>
 
-<script>
-let TOKEN=null;
-const qs=s=>document.querySelector(s);
+  <!-- LOGIN -->
+  <div class="card" id="loginBox">
+    <h3>Yönetici Girişi</h3>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <input id="user" placeholder="Admin kullanıcı" autocomplete="username">
+      <input id="pass" placeholder="Admin şifre" type="password" autocomplete="current-password">
+      <button id="loginBtn" class="btn primary">Giriş</button>
+    </div>
+    <div id="loginOut" class="muted" style="margin-top:8px"></div>
+  </div>
 
-async function api(path, opts={}){
-  const headers={"Content-Type":"application/json", ...(TOKEN?{Authorization:`Bearer ${TOKEN}`}:{}) , ...(opts.headers||{})};
-  const res = await fetch(path,{...opts, headers});
-  let data=null;try{data=await res.json();}catch{}
-  if(!res.ok){const msg=data&&(data.message||data.error);throw new Error(msg||("HTTP "+res.status));}
+  <!-- PANEL -->
+  <div class="card" id="panelBox" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <h3>Yorumlar</h3>
+      <button id="reloadBtn" class="btn ghost" type="button">Yenile</button>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <input id="filterPid" placeholder="Ürün ID (opsiyonel)">
+      <input id="searchText" placeholder="Kullanıcı / yorum ara" style="flex:1 1 220px">
+      <select id="filterStatus">
+        <option value="pending">Bekleyen</option>
+        <option value="approved">Onaylı</option>
+        <option value="all">Tümü</option>
+      </select>
+      <select id="filterRating">
+        <option value="all">Puan: Tümü</option>
+        <option value="5">Sadece 5 ★</option>
+        <option value="4">En az 4 ★</option>
+        <option value="3">En az 3 ★</option>
+        <option value="2">En az 2 ★</option>
+        <option value="1">En az 1 ★</option>
+      </select>
+    </div>
+
+    <div id="listInfo" class="muted" style="margin-top:6px"></div>
+
+    <div class="table-wrap" aria-live="polite">
+      <table>
+        <thead>
+          <tr>
+            <th>ID / Ürün</th>
+            <th>Kullanıcı / Tarih</th>
+            <th>Puan &amp; Yorum</th>
+            <th>Fotoğraflar</th>
+            <th>Durum</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* === Güvenli ESC === */
+const esc = (s="") => String(s).replace(/[&<>"']/g, m => ({
+  "&":"&amp;",
+  "<":"&lt;",
+  ">":"&gt;",
+  '"':"&quot;"
+}[m]));
+
+/* === Yardımcılar === */
+const qs = sel => document.querySelector(sel);
+const fmtDate = t => t ? new Date(t).toLocaleString("tr-TR") : "-";
+const stars = n => {
+  const x = Math.max(0, Math.min(5, Number(n||0)));
+  return "★".repeat(x) + "☆".repeat(5-x);
+};
+
+let TOKEN = null;
+let REVIEWS = [];
+const STORAGE_KEY = "MAVERN_ADMIN_TOKEN";
+
+/* === API (401 yakala, idleri encode et) === */
+async function api(path, opts={}) {
+  const headers = {
+    "Content-Type":"application/json",
+    ...(TOKEN ? {Authorization:`Bearer ${TOKEN}`} : {}),
+    ...(opts.headers||{})
+  };
+
+  const res = await fetch(path,{...opts,headers});
+  let data = null;
+  try { data = await res.json(); } catch {}
+
+  if (res.status === 401) {
+    TOKEN = null;
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    showLogin();
+    throw new Error((data && (data.message || data.error)) || "Yetkisiz. Tekrar giriş yapın.");
+  }
+  if (!res.ok) {
+    throw new Error((data && (data.message || data.error)) || "Hata");
+  }
   return data;
 }
 
-qs("#loginBtn").onclick=async()=>{
-  const u=qs("#user").value.trim(), p=qs("#pass").value;
-  const out=qs("#loginOut"); out.textContent="...";
+/* === Login === */
+function showLogin(){
+  qs("#loginBox").style.display="block";
+  qs("#panelBox").style.display="none";
+}
+
+function showPanel(){
+  qs("#loginBox").style.display="none";
+  qs("#panelBox").style.display="block";
+}
+
+async function doLogin(){
+  const u = qs("#user").value.trim();
+  const p = qs("#pass").value;
+  const out = qs("#loginOut");
+  out.textContent = "Giriş yapılıyor...";
+
   try{
-    const r = await api("/api/login",{method:"POST",body:JSON.stringify({username:u,password:p})});
-    if(r.success){ TOKEN=r.token; out.textContent="Giriş OK"; }
-  }catch(e){ out.textContent=e.message||"Hata"; }
+    const r = await api("/api/login",{
+      method:"POST",
+      body:JSON.stringify({username:u,password:p})
+    });
+    if(r && r.success && r.token){
+      TOKEN = r.token;
+      try { localStorage.setItem(STORAGE_KEY,TOKEN); } catch {}
+      out.textContent = "Başarılı!";
+      showPanel();
+      loadReviews();
+    } else {
+      out.textContent = (r && r.message) || "Hatalı kullanıcı adı veya şifre.";
+    }
+  }catch(e){
+    out.textContent = e.message || "Sunucu hatası.";
+  }
 }
 
-qs("#loadBtn").onclick=loadAll;
+/* === Yorumları çek === */
+async function loadReviews(){
+  const info = qs("#listInfo");
+  info.textContent="Yükleniyor...";
+  try{
+    const pidRaw = qs("#filterPid").value.trim();
+    const base = "/api/admin/reviews";
+    const url = pidRaw ? `${base}?productId=${encodeURIComponent(pidRaw)}` : base;
 
-async function loadAll(){
-  if(!TOKEN){ alert("Önce giriş."); return; }
-  const pid = qs("#filterPid").value.trim();
-  const url = pid?(`/api/admin/reviews?productId=${encodeURIComponent(pid)}`):"/api/admin/reviews";
-  const r = await api(url);
-  const items = r.items||[];
-  const rows = items.map(x=>`
+    const r = await api(url);
+    REVIEWS = Array.isArray(r.items) ? r.items : [];
+    info.textContent = `${REVIEWS.length} yorum bulundu`;
+    applyFilters();
+  }catch(e){
+    info.textContent=e.message || "Sunucu hatası.";
+  }
+}
+
+/* === Filtrele === */
+function applyFilters(){
+  const pid = qs("#filterPid").value.toLowerCase().trim();
+  const txt = qs("#searchText").value.toLowerCase().trim();
+  const stat = qs("#filterStatus").value;
+  const rat  = qs("#filterRating").value;
+
+  let list = REVIEWS.slice();
+
+  if(pid){
+    list = list.filter(x => String(x.productId||"").toLowerCase().includes(pid));
+  }
+  if(txt){
+    list = list.filter(x =>
+      String(x.displayName||"").toLowerCase().includes(txt) ||
+      String(x.comment||"").toLowerCase().includes(txt)
+    );
+  }
+
+  if(stat==="pending")  list = list.filter(x => !x.approved);
+  if(stat==="approved") list = list.filter(x =>  x.approved);
+
+  if(rat!=="all"){
+    const min = Number(rat);
+    if(min===5) list = list.filter(x => Number(x.rating||0) === 5);
+    else        list = list.filter(x => Number(x.rating||0) >= min);
+  }
+
+  renderTable(list);
+}
+
+/* === Tabloyu oluştur === */
+function renderTable(list){
+  const tb = qs("#tbody");
+  tb.innerHTML="";
+
+  if(!list.length){
+    tb.innerHTML=`<tr><td colspan="6" class="muted">Yorum yok</td></tr>`;
+    return;
+  }
+
+  tb.innerHTML = list.map(x=>{
+    const safeId       = esc(String(x.id||""));
+    const safeProdId   = esc(String(x.productId||""));
+    const safeName     = esc(String(x.displayName||"Kullanıcı"));
+    const safeDate     = fmtDate(x.createdAt);
+    const rating       = Number(x.rating||0);
+    const comment      = String(x.comment||"");
+    const snippet      = esc(comment.length>600 ? comment.slice(0,600)+"…" : comment);
+
+    const photos = Array.isArray(x.photos) ? x.photos : [];
+    const photosHtml = photos.length
+      ? `<div class="photo-grid">${photos.map(p=>(
+          `<img src="${esc(String(p))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.opacity=0.4">`
+        )).join("")}</div>`
+      : `<span class="muted">Fotoğraf yok</span>`;
+
+    const statusCls = x.approved ? "ok" : "warn";
+    const statusTxt = x.approved ? "Onaylı" : "Bekliyor";
+
+    return `
     <tr>
-      <td>${x.id}<br><span style="color:#9aa4b2">${x.productId}</span></td>
-      <td>${x.displayName||"-"}<br><span style="color:#9aa4b2">${new Date(x.createdAt).toLocaleString("tr-TR")}</span></td>
-      <td>${"★".repeat(x.rating)}${"☆".repeat(5-x.rating)}<br>${x.comment?x.comment.replace(/</g,"&lt;"):""}</td>
-      <td>${(x.photos||[]).map(p=>`<img src="${p}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #26324a;margin:2px">`).join("")}</td>
-      <td>${x.approved?"Onaylı":"Bekliyor"}</td>
       <td>
-        <button onclick="approve('${x.id}',true)">Onayla</button>
-        <button onclick="approve('${x.id}',false)">Reddet</button>
-        <button onclick="delRev('${x.id}')">Sil</button>
+        <code>${safeId}</code><br>
+        <span class="muted" style="font-size:12px">Ürün: ${safeProdId}</span>
       </td>
-    </tr>
-  `).join("");
-  qs("#out").innerHTML = `<table><thead><tr><th>ID</th><th>Kullanıcı</th><th>İçerik</th><th>Foto</th><th>Durum</th><th>İşlem</th></tr></thead><tbody>${rows}</tbody></table>`;
+      <td>
+        ${safeName}<br>
+        <span class="muted" style="font-size:12px">${esc(safeDate)}</span>
+      </td>
+      <td>
+        <div class="stars">${stars(rating)}</div>
+        <div class="comment-snippet" title="${esc(comment)}">${snippet}</div>
+      </td>
+      <td>${photosHtml}</td>
+      <td><span class="pill ${statusCls}">${statusTxt}</span></td>
+      <td>
+        <button class="btn ghost" type="button"
+          data-action="approve"
+          data-id="${safeId}"
+          data-next="${x.approved ? "0" : "1"}">
+          ${x.approved ? "Onayı Kaldır" : "Onayla"}
+        </button>
+        <button class="btn danger" type="button"
+          data-action="delete"
+          data-id="${safeId}">
+          Sil
+        </button>
+      </td>
+    </tr>`;
+  }).join("");
 }
 
-window.approve = async function(id, ok){
-  await api(`/api/admin/reviews/${id}/approve`, {method:"PATCH", body: JSON.stringify({approved: ok})});
-  loadAll();
-}
-window.delRev = async function(id){
-  if(!confirm("Silinsin mi?")) return;
-  await api(`/api/admin/reviews/${id}`, {method:"DELETE"});
-  loadAll();
-}
+/* === İşlem butonları === */
+qs("#tbody").addEventListener("click", async e=>{
+  const btn = e.target.closest("button[data-action]");
+  if(!btn) return;
+
+  const id  = btn.getAttribute("data-id") || "";
+  const act = btn.getAttribute("data-action");
+
+  if(!id) return;
+
+  try{
+    if(act==="approve"){
+      const ok = btn.getAttribute("data-next") === "1";
+      await api(`/api/admin/reviews/${encodeURIComponent(id)}/approve`,{
+        method:"PATCH",
+        body:JSON.stringify({approved:ok})
+      });
+    }else if(act==="delete"){
+      if(!confirm("Yorum silinsin mi?")) return;
+      await api(`/api/admin/reviews/${encodeURIComponent(id)}`,{
+        method:"DELETE"
+      });
+    }
+    await loadReviews();
+  }catch(err){
+    alert(err.message || "İşlem hatası.");
+  }
+});
+
+/* === Eventler === */
+qs("#loginBtn").addEventListener("click", doLogin);
+qs("#reloadBtn").addEventListener("click", loadReviews);
+qs("#filterPid").addEventListener("input", applyFilters);
+qs("#searchText").addEventListener("input", applyFilters);
+qs("#filterStatus").addEventListener("change", applyFilters);
+qs("#filterRating").addEventListener("change", applyFilters);
+
+/* === INIT === */
+(function(){
+  try{
+    const t = localStorage.getItem(STORAGE_KEY);
+    if(t){
+      TOKEN=t;
+      showPanel();
+      loadReviews();
+      return;
+    }
+  }catch{}
+  showLogin();
+})();
 </script>
+
 </body>
 </html>
