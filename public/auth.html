@@ -18,6 +18,8 @@
       --btn:#f9fafb;
       --btnText:#020617;
       --danger:#7f1d1d;
+      --pill-ok:#22c55e;
+      --pill-warn:#fbbf24;
     }
     *{box-sizing:border-box}
     html,body{
@@ -30,35 +32,65 @@
       color:var(--text);
     }
     .wrap{
-      max-width:420px;
-      margin:40px auto;
+      max-width:900px;
+      margin:32px auto 40px;
       padding:0 16px 32px;
+    }
+    .top-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
     }
     .brand{
       display:flex;
       align-items:center;
       gap:10px;
-      margin-bottom:16px;
     }
-    .brand-dot{
-      width:12px;height:12px;border-radius:50%;
-      background:linear-gradient(135deg,#f9fafb,#818cf8);
-      box-shadow:0 0 18px #818cf8;
+    .brand-logo-circle{
+      width:40px;
+      height:40px;
+      border-radius:50%;
+      background:radial-gradient(circle at 30% 20%,#f9fafb,#4b5563);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 0 24px rgba(148,163,184,.8);
+      font-family:"Playfair Display",serif;
+      font-size:1.2rem;
+      color:#020617;
     }
     h1{
       font-family:"Playfair Display",Georgia,serif;
-      font-size:1.4rem;
+      font-size:1.5rem;
       margin:0;
-      letter-spacing:.6px;
+      letter-spacing:.8px;
     }
+    .sub{
+      margin:2px 0 0;
+      font-size:.8rem;
+      color:var(--muted);
+    }
+
     .card{
       margin-top:16px;
-      background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(15,23,42,.98));
+      background:radial-gradient(circle at 0 0,rgba(148,163,184,.15),transparent 40%),
+                 linear-gradient(180deg,rgba(15,23,42,.98),rgba(2,6,23,.98));
       border-radius:18px;
       border:1px solid var(--border);
       padding:18px 16px 16px;
-      box-shadow:0 16px 40px rgba(0,0,0,.65);
+      box-shadow:0 18px 42px rgba(0,0,0,.75);
     }
+    .layout{
+      display:grid;
+      grid-template-columns: minmax(0, 1.15fr);
+      gap:16px;
+    }
+    .layout.account{
+      grid-template-columns: minmax(0,1.1fr) minmax(0,1.2fr);
+    }
+
     .tabs{
       display:flex;
       gap:6px;
@@ -70,7 +102,7 @@
     }
     .tab{
       flex:1;
-      padding:6px 10px;
+      padding:7px 10px;
       border-radius:999px;
       border:none;
       cursor:pointer;
@@ -82,7 +114,7 @@
     .tab.active{
       background:radial-gradient(circle at 0 0,#e5e7ff,#6366f1);
       color:#020617;
-      box-shadow:0 0 18px rgba(129,140,248,.6);
+      box-shadow:0 0 18px rgba(129,140,248,.7);
     }
 
     label{
@@ -91,7 +123,7 @@
       color:var(--muted);
       margin-bottom:4px;
     }
-    input{
+    input,textarea{
       width:100%;
       padding:9px 10px;
       border-radius:10px;
@@ -100,8 +132,9 @@
       color:var(--text);
       outline:none;
       font-size:.9rem;
+      resize:vertical;
     }
-    input:focus{
+    input:focus,textarea:focus{
       border-color:#6366f1;
       box-shadow:0 0 0 1px rgba(99,102,241,.7);
     }
@@ -117,6 +150,11 @@
       display:flex;
       align-items:center;
       justify-content:space-between;
+      gap:8px;
+    }
+    .two-col{
+      display:grid;
+      grid-template-columns:1fr 1fr;
       gap:8px;
     }
     .btn{
@@ -168,10 +206,21 @@
       color:var(--muted);
     }
     .pill strong{color:var(--text);font-weight:500;}
+    .pill-status{
+      padding:2px 7px;
+      border-radius:999px;
+      font-size:.7rem;
+      border:1px solid #1f2937;
+      background:#020617;
+    }
+    .pill-status.ok{border-color:var(--pill-ok);color:var(--pill-ok);}
+    .pill-status.warn{border-color:var(--pill-warn);color:var(--pill-warn);}
+    .pill-status.neutral{border-color:#64748b;color:#e5e7eb;}
+
     .divider{
       height:1px;
       background:#111827;
-      margin:8px 0;
+      margin:10px 0;
     }
     a{
       color:#a5b4fc;
@@ -193,48 +242,133 @@
       font-size:.75rem;
       padding:2px 4px;
     }
+
+    /* Siparişlerim */
+    .orders-card{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .orders-list{
+      max-height:320px;
+      overflow:auto;
+      padding-right:4px;
+    }
+    .order-item{
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid #1f2937;
+      background:radial-gradient(circle at 0 0,rgba(148,163,184,.15),transparent 60%);
+      margin-bottom:8px;
+    }
+    .order-top{
+      display:flex;
+      justify-content:space-between;
+      gap:6px;
+      font-size:.78rem;
+      color:var(--muted);
+      margin-bottom:4px;
+    }
+    .order-id{font-family:monospace;font-size:.78rem;color:#e5e7eb;}
+    .order-main{
+      font-size:.8rem;
+      margin-bottom:4px;
+      color:#e5e7eb;
+    }
+    .order-footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      font-size:.78rem;
+      color:var(--muted);
+      flex-wrap:wrap;
+    }
+    .order-price{font-weight:600;color:#e5e7eb;}
+
+    @media (max-width:768px){
+      .wrap{margin-top:20px;}
+      .layout.account{
+        grid-template-columns: minmax(0,1fr);
+      }
+      .orders-list{max-height:none;}
+    }
   </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="brand">
-    <div class="brand-dot" aria-hidden="true"></div>
-    <h1>Mavern Üyelik</h1>
+  <div class="top-row">
+    <div>
+      <div class="brand">
+        <div class="brand-logo-circle" aria-hidden="true">M</div>
+        <div>
+          <h1>Mavern Üyelik</h1>
+          <div class="sub">Hesabını yönet, siparişlerini takip et.</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn ghost" type="button" onclick="goHome()">Ana sayfaya dön</button>
   </div>
 
-  <!-- HESAP GÖRÜNÜMÜ (Giriş yapmış kullanıcı) -->
-  <div id="accountCard" class="card hidden">
-    <h2 style="margin:0 0 8px;font-size:1.05rem;">Hesabım</h2>
-    <p class="muted" id="accWelcome" style="margin:0 0 10px;"></p>
+  <div id="accountLayout" class="layout">
+    <!-- HESAP GÖRÜNÜMÜ (Giriş yapmış kullanıcı) -->
+    <div id="accountCard" class="card hidden">
+      <h2 style="margin:0 0 8px;font-size:1.05rem;">Hesabım</h2>
+      <p class="muted" id="accWelcome" style="margin:0 0 10px;"></p>
 
-    <div class="field">
-      <span class="pill"><span class="small">E-posta:</span> <strong id="accEmail"></strong></span>
-    </div>
-    <div class="field">
-      <span class="pill"><span class="small">Ad:</span> <strong id="accName"></strong></span>
-    </div>
-    <div class="field">
-      <span class="pill"><span class="small">Durum:</span> <strong id="accStatus"></strong></span>
-    </div>
-    <div class="field">
-      <span class="pill"><span class="small">Yetki:</span> <strong id="accRole"></strong></span>
+      <div class="field">
+        <span class="pill"><span class="small">E-posta:</span> <strong id="accEmail"></strong></span>
+      </div>
+      <div class="field">
+        <span class="pill"><span class="small">Görünen Ad:</span> <strong id="accName"></strong></span>
+      </div>
+      <div class="field">
+        <span class="pill"><span class="small">Ad Soyad:</span> <strong id="accFullName"></strong></span>
+      </div>
+      <div class="field">
+        <span class="pill"><span class="small">Telefon:</span> <strong id="accPhone"></strong></span>
+      </div>
+      <div class="field">
+        <span class="pill"><span class="small">Durum:</span> <strong id="accStatus"></strong></span>
+      </div>
+      <div class="field">
+        <span class="pill"><span class="small">Yetki:</span> <strong id="accRole"></strong></span>
+      </div>
+
+      <div class="field">
+        <label class="small" style="margin-bottom:2px;">Adres / Şehir (kayıtlıysa)</label>
+        <div class="muted small" id="accAddress"></div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="row-between">
+        <button class="btn ghost" type="button" onclick="logout()">Çıkış Yap</button>
+        <button id="btnAdminLink" class="btn primary hidden" type="button" onclick="goAdmin()">Admin Panel</button>
+      </div>
+      <p class="muted small" style="margin-top:4px;">Not: Kişisel bilgilerin KVKK kapsamında korunur.</p>
     </div>
 
-    <p class="muted" style="margin:10px 0 4px;">Siparişlerim</p>
-    <p class="muted small">
-      Şimdilik siparişler admin panelinden takip ediliyor.  
-      İleride buraya Trendyol tarzı detaylı sipariş ekranı ekleyebiliriz.
-    </p>
-
-    <div class="divider"></div>
-    <div class="row-between">
-      <button class="btn ghost" onclick="logout()">Çıkış Yap</button>
-      <button id="btnAdminLink" class="btn primary hidden" onclick="goAdmin()">Admin Panel</button>
+    <!-- SİPARİŞLERİM BLOĞU (sadece girişte gösterilecek) -->
+    <div id="ordersCard" class="card hidden">
+      <div class="orders-card">
+        <div class="row-between" style="margin-bottom:4px;">
+          <h2 style="margin:0;font-size:1.02rem;">Siparişlerim</h2>
+          <button class="btn ghost small" type="button" onclick="refreshOrders()">Yenile</button>
+        </div>
+        <p class="muted small" style="margin:0 0 6px;">
+          En son verdiğin siparişleri buradan takip edebilirsin.
+        </p>
+        <div id="ordersEmpty" class="muted small" style="margin-top:4px;">
+          Henüz kayıtlı bir siparişin görünmüyor.
+        </div>
+        <div id="ordersList" class="orders-list"></div>
+      </div>
     </div>
   </div>
 
-  <!-- GİRİŞ / KAYIT KARTI -->
-  <div id="authCard" class="card">
+  <!-- GİRİŞ / KAYIT KARTI (oturum yokken) -->
+  <div id="authCard" class="card" style="margin-top:18px;">
     <div class="tabs" role="tablist">
       <button class="tab active" data-tab="login" type="button">Giriş Yap</button>
       <button class="tab" data-tab="register" type="button">Kayıt Ol</button>
@@ -255,12 +389,44 @@
       <p id="lOut" class="status"></p>
     </div>
 
-    <!-- KAYIT FORMU -->
+    <!-- KAYIT FORMU (GENİŞLETİLMİŞ) -->
     <div id="tab-register" class="hidden">
       <div class="field">
-        <label for="rName">Görünen Ad <span class="small">(opsiyonel)</span></label>
+        <label for="rName">Görünen Ad <span class="small">(site içinde görünecek ad, opsiyonel)</span></label>
         <input id="rName" type="text" placeholder="Mavern üyesi">
       </div>
+      <div class="field">
+        <label for="rFullName">Ad Soyad</label>
+        <input id="rFullName" type="text" placeholder="Adınız Soyadınız">
+      </div>
+
+      <div class="two-col">
+        <div class="field">
+          <label for="rPhone">Telefon</label>
+          <input id="rPhone" type="tel" placeholder="+90 5xx xxx xx xx">
+        </div>
+        <div class="field">
+          <label for="rCity">Şehir</label>
+          <input id="rCity" type="text" placeholder="Eskişehir">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="rAddress">Adres <span class="small">(kısaca)</span></label>
+        <textarea id="rAddress" rows="2" placeholder="Mahalle / Cadde / Kısa açıklama (isteğe bağlı)"></textarea>
+      </div>
+
+      <div class="two-col">
+        <div class="field">
+          <label for="rZip">Posta Kodu <span class="small">(opsiyonel)</span></label>
+          <input id="rZip" type="text" placeholder="26xxx">
+        </div>
+        <div class="field">
+          <label for="rNotes">Not <span class="small">(opsiyonel)</span></label>
+          <input id="rNotes" type="text" placeholder="Teslimatla ilgili not vs.">
+        </div>
+      </div>
+
       <div class="field">
         <label for="rMail">E-posta</label>
         <input id="rMail" type="email" placeholder="ornek@mail.com" autocomplete="email">
@@ -280,16 +446,18 @@
   </div>
 
   <p class="muted small" style="margin-top:10px;text-align:center;">
-    Bu sayfayı kapatıp tekrar gelirseniz, giriş yaptıysanız otomatik olarak hesabınız gösterilir.
+    Bu sayfaya tekrar geldiğinizde, giriş yaptıysanız otomatik olarak hesabınız ve siparişleriniz gösterilir.
   </p>
 </div>
 
 <script>
   const $ = (s)=>document.querySelector(s);
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  let AUTH_TOKEN = null;
+  let ORDERS_CACHE = [];
 
-  function setStatus(elId, msg, ok){
-    const el = $(elId);
+  function setStatus(sel, msg, ok){
+    const el = $(sel);
     if(!el) return;
     el.textContent = msg || '';
     el.classList.remove('ok','err');
@@ -318,7 +486,6 @@
     const key = t.dataset.tab;
     $('#tab-login').classList.toggle('hidden', key!=='login');
     $('#tab-register').classList.toggle('hidden', key!=='register');
-    // status temizle
     setStatus('#lOut','',true);
     setStatus('#rOut','',true);
   });
@@ -337,10 +504,15 @@
 
   async function handleRegister(){
     const displayName = $('#rName').value.trim();
-    const email = $('#rMail').value.trim();
-    const password = $('#rPass').value;
+    const fullName    = $('#rFullName').value.trim();
+    const phone       = $('#rPhone').value.trim();
+    const city        = $('#rCity').value.trim();
+    const address     = $('#rAddress').value.trim();
+    const zip         = $('#rZip').value.trim();
+    const notes       = $('#rNotes').value.trim();
+    const email       = $('#rMail').value.trim();
+    const password    = $('#rPass').value;
 
-    // basit doğrulamalar
     if(!email || !EMAIL_RE.test(email)){
       setStatus('#rOut','Geçerli bir e-posta girin.',false);
       return;
@@ -352,13 +524,23 @@
 
     setStatus('#rOut','Gönderiliyor...',true);
     try{
+      const body = {
+        displayName,
+        fullName,
+        phone,
+        city,
+        address,
+        zip,
+        notes,
+        email,
+        password
+      };
       const r = await api('/api/auth/register',{
         method:'POST',
-        body:JSON.stringify({ displayName, email, password })
+        body:JSON.stringify(body)
       });
       if(r.success){
         setStatus('#rOut','Kayıt alındı. Admin onayından sonra giriş yapabilirsiniz.',true);
-        // formu temizle
         $('#rPass').value = '';
       }else{
         setStatus('#rOut', r.message || 'Kayıt yapılamadı.', false);
@@ -389,8 +571,8 @@
       });
       if(r.success && r.token){
         localStorage.setItem('mavern_jwt', r.token);
+        AUTH_TOKEN = r.token;
         setStatus('#lOut','Giriş başarılı.',true);
-        // Hesap görünümüne geç
         await loadMe();
       }else{
         setStatus('#lOut', r.message || 'Giriş başarısız.', false);
@@ -400,13 +582,101 @@
     }
   }
 
+  function statusLabel(s){
+    switch(String(s||'').toLowerCase()){
+      case 'pending': return 'Beklemede';
+      case 'preparing': return 'Hazırlanıyor';
+      case 'shipped': return 'Kargoda';
+      case 'completed': return 'Tamamlandı';
+      case 'cancelled': return 'İptal edildi';
+      default: return 'Bilinmiyor';
+    }
+  }
+
+  function statusClass(s){
+    switch(String(s||'').toLowerCase()){
+      case 'completed': return 'ok';
+      case 'cancelled': return 'warn';
+      case 'shipped':
+      case 'preparing':
+      case 'pending':
+      default: return 'neutral';
+    }
+  }
+
+  function renderOrders(items){
+    const listEl = $('#ordersList');
+    const emptyEl = $('#ordersEmpty');
+    if(!listEl || !emptyEl) return;
+
+    if(!items || !items.length){
+      emptyEl.classList.remove('hidden');
+      listEl.innerHTML = '';
+      return;
+    }
+    emptyEl.classList.add('hidden');
+
+    listEl.innerHTML = items.map(o=>{
+      const dt = o.createdAt ? new Date(o.createdAt) : null;
+      const dateStr = dt ? dt.toLocaleString('tr-TR') : '-';
+      const first = (o.items && o.items[0]) ? o.items[0].name : 'Ürün';
+      const extraCount = (o.items ? o.items.length : 0) - 1;
+      const line = extraCount > 0 ? `${first} +${extraCount} ürün` : first;
+      const statLabel = statusLabel(o.status);
+      const statCls = statusClass(o.status);
+      const payable = typeof o.payable === 'number' ? o.payable : (o.total || 0);
+      const track = o.trackingCode ? String(o.trackingCode).trim() : '';
+
+      return `
+        <div class="order-item">
+          <div class="order-top">
+            <span class="order-id">#${(o.id||'').slice(0,8)}</span>
+            <span>${dateStr}</span>
+          </div>
+          <div class="order-main">
+            ${line || '-'}
+          </div>
+          <div class="order-footer">
+            <span>
+              <span class="pill-status ${statCls}">${statLabel}</span>
+              ${track ? `<span class="small" style="margin-left:6px;">Kargo: ${track}</span>` : ''}
+            </span>
+            <span class="order-price">${payable} ₺</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function loadOrders(){
+    if(!AUTH_TOKEN) return;
+    try{
+      const res = await fetch('/api/orders/my',{
+        headers:{ Authorization:'Bearer '+AUTH_TOKEN },
+        cache:'no-store'
+      });
+      if(!res.ok) throw new Error('Siparişler alınamadı');
+      const data = await res.json();
+      if(!data.success) throw new Error(data.message || 'Siparişler alınamadı');
+      ORDERS_CACHE = data.items || [];
+      renderOrders(ORDERS_CACHE);
+    }catch(e){
+      // sessiz geç, sadece boş göster
+      renderOrders([]);
+    }
+  }
+
   async function loadMe(){
     const token = localStorage.getItem('mavern_jwt');
     if(!token){
+      AUTH_TOKEN = null;
       $('#accountCard').classList.add('hidden');
+      $('#ordersCard').classList.add('hidden');
       $('#authCard').classList.remove('hidden');
+      $('#accountLayout').classList.remove('account');
       return;
     }
+    AUTH_TOKEN = token;
     try{
       const r = await fetch('/api/auth/me',{
         headers:{ Authorization:'Bearer '+token },
@@ -420,14 +690,20 @@
         throw new Error('Oturum bulunamadı.');
       }
       const u = data.user;
-      // Hesap bilgilerini doldur
-      $('#accWelcome').textContent = `Hoş geldin, ${u.displayName || u.email}.`;
+      $('#accWelcome').textContent = `Hoş geldin, ${u.displayName || u.fullName || u.email}.`;
       $('#accEmail').textContent   = u.email || '-';
       $('#accName').textContent    = u.displayName || '(tanımlı değil)';
+      $('#accFullName').textContent= u.fullName || '(tanımlı değil)';
+      $('#accPhone').textContent   = u.phone || '(tanımlı değil)';
       $('#accStatus').textContent  = u.isApproved ? 'Onaylı' : 'Onay bekliyor';
       $('#accRole').textContent    = u.isAdmin ? 'Admin' : 'Üye';
 
-      // Admin link
+      const addrParts = [];
+      if(u.address) addrParts.push(u.address);
+      if(u.city) addrParts.push(u.city);
+      if(u.zip) addrParts.push(u.zip);
+      $('#accAddress').textContent = addrParts.join(' • ') || 'Adres bilgisi kaydedilmemiş.';
+
       const btnAdmin = $('#btnAdminLink');
       if(u.isAdmin){
         btnAdmin.classList.remove('hidden');
@@ -435,33 +711,49 @@
         btnAdmin.classList.add('hidden');
       }
 
-      // UI geçişi
       $('#authCard').classList.add('hidden');
       $('#accountCard').classList.remove('hidden');
+      $('#ordersCard').classList.remove('hidden');
+      $('#accountLayout').classList.add('account');
+
+      await loadOrders();
     }catch(_){
-      // Token bozuksa temizle
       localStorage.removeItem('mavern_jwt');
+      AUTH_TOKEN = null;
       $('#accountCard').classList.add('hidden');
+      $('#ordersCard').classList.add('hidden');
       $('#authCard').classList.remove('hidden');
+      $('#accountLayout').classList.remove('account');
     }
   }
 
   function logout(){
     localStorage.removeItem('mavern_jwt');
-    // form temizle
+    AUTH_TOKEN = null;
     $('#lPass').value = '';
     $('#rPass').value = '';
     $('#accountCard').classList.add('hidden');
+    $('#ordersCard').classList.add('hidden');
     $('#authCard').classList.remove('hidden');
+    $('#accountLayout').classList.remove('account');
   }
 
   function goAdmin(){
-    // Admin panelin adı farklıysa burayı değiştirirsin
     window.location.href = '/admin.html';
   }
 
-  // SAYFA AÇILIŞI: varsa token ile hesabı yükle
+  function goHome(){
+    window.location.href = '/';
+  }
+
+  function refreshOrders(){
+    if(!AUTH_TOKEN) return;
+    loadOrders();
+  }
+
   (function init(){
+    const tok = localStorage.getItem('mavern_jwt');
+    if(tok) AUTH_TOKEN = tok;
     loadMe();
   })();
 </script>

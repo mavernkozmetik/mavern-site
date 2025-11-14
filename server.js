@@ -1,4 +1,4 @@
-// server.js — Mavern (Auth + Reviews + SMTP + Coupons + Messages + Secure Upload + Rate Limit + Helmet + HTTPS + 20s Idempotency + Products Normalize + Persistent DATA_DIR)
+// server.js — Mavern (Auth + Reviews + SMTP + Coupons + Messages + Secure Upload + Rate Limit + Helmet + HTTPS + 20s Idempotency + Products Normalize + Persistent DATA_DIR + Extended User Fields + Limited Admin Creation)
 
 require("dotenv").config();
 const express = require("express");
@@ -288,6 +288,14 @@ function requireLegacyAdmin(req, res, next) {
   return res.status(401).json({ success: false, message: "Yetkisiz işlem" });
 }
 
+// Sadece LEGACY admin (super admin) — yeni admin yaratma vb.
+function requireSuperAdmin(req, res, next) {
+  const hdr = req.headers.authorization || "";
+  const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
+  if (token && token === CURRENT_TOKEN) return next();
+  return res.status(401).json({ success:false, message:"Süper admin yetkisi gerekli" });
+}
+
 app.post("/api/login", (req, res) => {
   const { username, password } = req.body || {};
   if (username === ADMIN_USER && password === ADMIN_PASS) {
@@ -317,10 +325,10 @@ function requireAdmin(req, res, next) {
   const hdr = req.headers.authorization || "";
   const bearer = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
 
-  // eski panel token'ı
+  // eski panel token'ı (super admin)
   if (bearer && bearer === CURRENT_TOKEN) return next();
 
-  // jwt admin
+  // jwt admin (sınırlı admin dâhil)
   if (bearer) {
     try {
       const dec = jwt.verify(bearer, JWT_SECRET);
@@ -330,15 +338,44 @@ function requireAdmin(req, res, next) {
   return res.status(401).json({ success: false, message: "Admin yetkisi gerekli" });
 }
 
-// Register (rate limited)
+// Register (rate limited) — EK ALANLAR: fullName, phone, city, address, zip, notes
 app.post("/api/auth/register", tightLimiter, async (req, res) => {
-  const { email, password, displayName } = req.body || {};
+  const {
+    email,
+    password,
+    displayName,
+    fullName,
+    phone,
+    city,
+    address,
+    zip,
+    notes
+  } = req.body || {};
+
   const e = String(email || "").trim().toLowerCase();
-  if (!e || containsTR(e) || !isValidEmail(e)) return res.status(400).json({ success:false, message:"Geçerli e-posta gerekli" });
-  if (!password || String(password).length < 6) return res.status(400).json({ success:false, message:"Şifre en az 6 karakter" });
+  if (!e || containsTR(e) || !isValidEmail(e)) {
+    return res.status(400).json({ success:false, message:"Geçerli e-posta gerekli" });
+  }
+  if (!password || String(password).length < 6) {
+    return res.status(400).json({ success:false, message:"Şifre en az 6 karakter" });
+  }
 
   const users = readUsers();
-  if (users.find(u => u.email === e)) return res.status(400).json({ success:false, message:"Bu e-posta zaten kayıtlı" });
+  if (users.find(u => u.email === e)) {
+    return res.status(400).json({ success:false, message:"Bu e-posta zaten kayıtlı" });
+  }
+
+  // bazı ek alanlarda hafif validasyon
+  const safeFullName = String(fullName || "").trim();
+  const safePhone    = String(phone || "").trim();
+  const safeCity     = String(city || "").trim();
+  const safeAddress  = String(address || "").trim();
+  const safeZip      = String(zip || "").trim().slice(0, 16);
+  const safeNotes    = String(notes || "").trim().slice(0, 500);
+
+  if (safePhone && !isValidPhone(safePhone)) {
+    return res.status(400).json({ success:false, message:"Telefon formatı geçersiz" });
+  }
 
   const hash = await bcrypt.hash(String(password), 10);
   const user = {
@@ -346,27 +383,61 @@ app.post("/api/auth/register", tightLimiter, async (req, res) => {
     email: e,
     passHash: hash,
     displayName: String(displayName || "").trim() || e.split("@")[0],
+    fullName: safeFullName || null,
+    phone: safePhone || null,
+    city: safeCity || null,
+    address: safeAddress || null,
+    zip: safeZip || null,
+    notes: safeNotes || null,
     isApproved: false,  // admin onayı gerekir
     isAdmin: false,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    lastLoginAt: null,
+    lastLoginIp: null
   };
   users.push(user);
   writeUsers(users);
   return res.json({ success:true, pendingApproval:true });
 });
 
-// Login (rate limited)
+// Login (rate limited) — lastLoginAt / lastLoginIp set
 app.post("/api/auth/login", tightLimiter, async (req, res) => {
   const { email, password } = req.body || {};
   const e = String(email || "").trim().toLowerCase();
   const users = readUsers();
-  const u = users.find(x => x.email === e);
-  if (!u) return res.status(400).json({ success:false, message:"Kullanıcı bulunamadı" });
+  const idx = users.findIndex(x => x.email === e);
+  if (idx === -1) return res.status(400).json({ success:false, message:"Kullanıcı bulunamadı" });
+
+  const u = users[idx];
   const ok = await bcrypt.compare(String(password || ""), u.passHash || "");
   if (!ok) return res.status(400).json({ success:false, message:"Şifre hatalı" });
   if (!u.isApproved) return res.status(403).json({ success:false, message:"Hesabınız onay bekliyor" });
+
+  // login bilgilerini güncelle
+  users[idx].lastLoginAt = new Date().toISOString();
+  users[idx].lastLoginIp = clientIP(req) || null;
+  writeUsers(users);
+
   const token = signToken({ uid: u.id, isAdmin: !!u.isAdmin });
-  return res.json({ success:true, token, user:{ id:u.id, email:u.email, displayName:u.displayName, isAdmin:!!u.isAdmin } });
+  return res.json({
+    success:true,
+    token,
+    user:{
+      id:u.id,
+      email:u.email,
+      displayName:u.displayName,
+      fullName:u.fullName || null,
+      phone:u.phone || null,
+      city:u.city || null,
+      address:u.address || null,
+      zip:u.zip || null,
+      isAdmin:!!u.isAdmin,
+      isApproved:!!u.isApproved,
+      createdAt:u.createdAt,
+      lastLoginAt:u.lastLoginAt,
+      lastLoginIp:u.lastLoginIp
+    }
+  });
 });
 
 // Me
@@ -374,68 +445,153 @@ app.get("/api/auth/me", requireJWT, (req, res) => {
   const users = readUsers();
   const u = users.find(x => x.id === req.user.uid);
   if (!u) return res.status(404).json({ success:false, message:"Kullanıcı yok" });
-  return res.json({ success:true, user:{ id:u.id, email:u.email, displayName:u.displayName, isAdmin:!!u.isAdmin, isApproved:!!u.isApproved } });
+  return res.json({
+    success:true,
+    user:{
+      id:u.id,
+      email:u.email,
+      displayName:u.displayName,
+      fullName:u.fullName || null,
+      phone:u.phone || null,
+      city:u.city || null,
+      address:u.address || null,
+      zip:u.zip || null,
+      isAdmin:!!u.isAdmin,
+      isApproved:!!u.isApproved,
+      createdAt:u.createdAt,
+      lastLoginAt:u.lastLoginAt,
+      lastLoginIp:u.lastLoginIp
+    }
+  });
 });
 
-// Profil güncelle (displayName + opsiyonel şifre)
+// Profil güncelle (displayName + ek alanlar + opsiyonel şifre)
 app.patch("/api/auth/profile", requireJWT, async (req, res) => {
-  const { displayName, currentPassword, newPassword } = req.body || {};
+  const {
+    displayName,
+    fullName,
+    phone,
+    city,
+    address,
+    zip,
+    notes,
+    currentPassword,
+    newPassword
+  } = req.body || {};
+
   const users = readUsers();
   const idx = users.findIndex(u => u.id === req.user.uid);
   if (idx === -1) return res.status(404).json({ success:false, message:"Kullanıcı bulunamadı" });
 
+  const user = users[idx];
+
   if (displayName !== undefined) {
     const dn = String(displayName || "").trim();
-    if (dn) users[idx].displayName = dn;
+    if (dn) user.displayName = dn;
+  }
+  if (fullName !== undefined) {
+    user.fullName = String(fullName || "").trim() || null;
+  }
+  if (phone !== undefined) {
+    const p = String(phone || "").trim();
+    if (p && !isValidPhone(p)) {
+      return res.status(400).json({ success:false, message:"Telefon formatı geçersiz" });
+    }
+    user.phone = p || null;
+  }
+  if (city !== undefined) {
+    user.city = String(city || "").trim() || null;
+  }
+  if (address !== undefined) {
+    user.address = String(address || "").trim() || null;
+  }
+  if (zip !== undefined) {
+    user.zip = String(zip || "").trim().slice(0, 16) || null;
+  }
+  if (notes !== undefined) {
+    user.notes = String(notes || "").trim().slice(0, 500) || null;
   }
 
   if (newPassword) {
     const curr = String(currentPassword || "");
-    const ok = await bcrypt.compare(curr, users[idx].passHash || "");
+    const ok = await bcrypt.compare(curr, user.passHash || "");
     if (!ok) return res.status(400).json({ success:false, message:"Mevcut şifre hatalı" });
     if (String(newPassword).length < 6) return res.status(400).json({ success:false, message:"Yeni şifre en az 6 karakter" });
     const hash = await bcrypt.hash(String(newPassword), 10);
-    users[idx].passHash = hash;
+    user.passHash = hash;
   }
 
+  users[idx] = user;
   writeUsers(users);
-  const u = users[idx];
   res.json({
     success:true,
-    user:{ id:u.id, email:u.email, displayName:u.displayName, isAdmin:!!u.isAdmin, isApproved:!!u.isApproved }
+    user:{
+      id:user.id,
+      email:user.email,
+      displayName:user.displayName,
+      fullName:user.fullName || null,
+      phone:user.phone || null,
+      city:user.city || null,
+      address:user.address || null,
+      zip:user.zip || null,
+      isAdmin:!!user.isAdmin,
+      isApproved:!!user.isApproved,
+      createdAt:user.createdAt,
+      lastLoginAt:user.lastLoginAt,
+      lastLoginIp:user.lastLoginIp
+    }
   });
 });
 
 /* ----------------------------- Admin: Users -------------------------------- */
+// Tüm kullanıcıları göster — tüm alanlar
 app.get("/api/admin/users", requireAdmin, (_req, res) => {
   const users = readUsers().map(u => ({
     id:u.id,
     email:u.email,
     displayName:u.displayName,
-    isApproved:u.isApproved,
-    isAdmin:u.isAdmin,
-    createdAt:u.createdAt
+    fullName:u.fullName || null,
+    phone:u.phone || null,
+    city:u.city || null,
+    address:u.address || null,
+    zip:u.zip || null,
+    notes:u.notes || null,
+    isApproved:!!u.isApproved,
+    isAdmin:!!u.isAdmin,
+    createdAt:u.createdAt,
+    lastLoginAt:u.lastLoginAt || null,
+    lastLoginIp:u.lastLoginIp || null
   }));
   res.json({ success:true, items: users });
 });
 
+// Sadece onay durumunu değiştirme (artık makeAdmin yok)
 app.patch("/api/admin/users/:id/approve", requireAdmin, (req, res) => {
   const id = String(req.params.id || "");
-  const { approved, makeAdmin } = req.body || {};
+  const { approved } = req.body || {};
   const users = readUsers();
   const idx = users.findIndex(u => u.id === id);
   if (idx === -1) return res.status(404).json({ success:false, message:"Kullanıcı bulunamadı" });
-  if (typeof approved === "boolean") users[idx].isApproved = approved;
-  if (typeof makeAdmin === "boolean") users[idx].isAdmin = makeAdmin;
+
+  if (typeof approved === "boolean") {
+    users[idx].isApproved = approved;
+  }
+  // isAdmin burada değiştirilmez — admin verme/kaldırma yasaklandı
+
   writeUsers(users);
-  res.json({ success:true, user:{
-    id:users[idx].id,
-    email:users[idx].email,
-    isApproved:users[idx].isApproved,
-    isAdmin:users[idx].isAdmin
-  }});
+  const u = users[idx];
+  res.json({
+    success:true,
+    user:{
+      id:u.id,
+      email:u.email,
+      isApproved:!!u.isApproved,
+      isAdmin:!!u.isAdmin
+    }
+  });
 });
 
+// Kullanıcı silme (admin veya super admin kullanır)
 app.delete("/api/admin/users/:id", requireAdmin, (req, res) => {
   const id = String(req.params.id || "");
   let users = readUsers();
@@ -448,6 +604,61 @@ app.delete("/api/admin/users/:id", requireAdmin, (req, res) => {
   const newRevs = revs.filter(r => r.userId !== id);
   if (newRevs.length !== revs.length) writeReviews(newRevs);
   res.json({ success:true });
+});
+
+// YENİ: Yeni admin ekleme (sadece Süper Admin / legacy panel)
+// Bu adminler JWT ile giriş yapacak, isAdmin:true, fakat yeni admin oluşturamaz (limited admin)
+app.post("/api/admin/admins", requireSuperAdmin, async (req, res) => {
+  const { email, password, displayName, fullName, phone } = req.body || {};
+  const e = String(email || "").trim().toLowerCase();
+  if (!e || containsTR(e) || !isValidEmail(e)) {
+    return res.status(400).json({ success:false, message:"Geçerli e-posta gerekli" });
+  }
+  if (!password || String(password).length < 8) {
+    return res.status(400).json({ success:false, message:"Admin şifresi en az 8 karakter olmalı" });
+  }
+
+  const users = readUsers();
+  if (users.find(u => u.email === e)) {
+    return res.status(400).json({ success:false, message:"Bu e-posta zaten kayıtlı" });
+  }
+
+  const safeFullName = String(fullName || "").trim();
+  const safePhone    = String(phone || "").trim();
+  if (safePhone && !isValidPhone(safePhone)) {
+    return res.status(400).json({ success:false, message:"Telefon formatı geçersiz" });
+  }
+
+  const hash = await bcrypt.hash(String(password), 10);
+  const user = {
+    id: "u" + Date.now(),
+    email: e,
+    passHash: hash,
+    displayName: String(displayName || "").trim() || e.split("@")[0],
+    fullName: safeFullName || null,
+    phone: safePhone || null,
+    city: null,
+    address: null,
+    zip: null,
+    notes: "Otomatik eklenen admin (limited).",
+    isApproved: true,    // hazır onaylı
+    isAdmin: true,       // JWT admin
+    createdAt: new Date().toISOString(),
+    lastLoginAt: null,
+    lastLoginIp: null
+  };
+  users.push(user);
+  writeUsers(users);
+  res.json({
+    success:true,
+    user:{
+      id:user.id,
+      email:user.email,
+      displayName:user.displayName,
+      isAdmin:true,
+      isApproved:true
+    }
+  });
 });
 
 /* --------------------------------- SMTP (Brevo) --------------------------- */
@@ -904,9 +1115,9 @@ app.post("/api/checkout", tightLimiter, idempGuard(["items","email","name","phon
     total,
     discount,
     payable,
-    userId: userId,                 // yeni: siparişi hangi kullanıcı verdi
-    status: "pending",              // yeni: sipariş durumu
-    trackingCode: null,             // yeni: kargo takip kodu
+    userId: userId,                 // siparişi hangi kullanıcı verdi
+    status: "pending",              // sipariş durumu
+    trackingCode: null,             // kargo takip kodu
     createdAt: new Date().toISOString(),
     read: false,
     mailSent: false,
@@ -1069,7 +1280,7 @@ app.delete("/api/admin/reviews/:id", requireAdmin, (req, res) => {
 });
 
 /* ------------------------------- Fallback/Server --------------------------- */
-app.get("/api/version", (_req, res) => res.json({ name: "mavern", version: "1.0.0" }));
+app.get("/api/version", (_req, res) => res.json({ name: "mavern", version: "1.1.0" }));
 
 app.get("*", (_req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, "index.html"));
