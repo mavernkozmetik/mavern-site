@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Mavern • Ürün</title>
 
+  <!-- Açıklama: Bu dosya Mavern ürün detay sayfasının lüks/siyah tema + yorum + sepet revize edilmiş halidir.
+       Başlıca değişiklikler:
+       1) Tamamen siyaha yakın, premium ürün sayfası tasarımı (2 kolon layout, kartlar, altın vurgular).
+       2) Yorum kartları yenilendi; uzun yorumlar satır kırıyor, sayfadan taşmıyor.
+       3) Yorum fotoğrafları için grid düzeni ve maksimum 5 görsel desteği (multiple file input + JS).
+       4) Sepet paneli ve sticky bar görünümü koyu, modern ve daha “lüks” hale getirildi.
+       5) Geçersiz ürün / hata durumlarında daha net mesajlar.
+       6) script.js içindeki global yardımcılar (api, qs, fmtMoney, normalizeProductClient, addToCart...) ile tam uyumlu. -->
+
   <!-- Ana stil -->
   <link rel="stylesheet" href="style.css"/>
 
@@ -12,220 +21,600 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Poppins:wght@300;500&display=swap" rel="stylesheet">
 
+  <!-- ÜRÜN SAYFASI ÖZEL TASARIM (lacivertten siyaha, lüks görünüm) -->
   <style>
-    body{
-      margin:0;
-      background:#0b1220;
-      color:#e6edf3;
-      font-family:Poppins,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+    :root{
+      --page-bg:#020308;
+      --card-bg:#070a14;
+      --card-bg-soft:#070a14;
+      --card-border:#202637;
+      --accent:#d4af37;
+      --accent-soft:rgba(212,175,55,.16);
+      --accent-soft-2:rgba(212,175,55,.30);
+      --ink:#e5e7eb;
+      --muted:#9ca3af;
+      --danger:#ef4444;
     }
-    a{color:#c7d2fe;text-decoration:none}
-    a:hover{text-decoration:underline}
 
-    .wrap{
-      max-width:1000px;
-      margin:24px auto 32px;
-      padding:0 12px;
+    html,body{
+      margin:0;
+      padding:0;
+      background:radial-gradient(1200px 600px at 20% -10%, #111827 0%, #020308 50%, #000000 100%);
+      color:var(--ink);
+      font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     }
-    .back-link{
+
+    /* Üst bar hafif siyaha çekildi */
+    .topbar{
+      background:rgba(3,7,18,.96);
+      border-bottom:1px solid rgba(148,163,184,.18);
+      backdrop-filter:blur(10px);
+    }
+    .logo-mark{
+      width:40px;
+      height:40px;
+      border-radius:12px;
+      overflow:hidden;
+      border:1px solid rgba(148,163,184,.25);
+      background:radial-gradient(circle at 0% 0%, #111827 0, #020617 55%, #000 100%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .brand-logo{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      object-position:center;
+    }
+
+    /* Genel buton ve badge iyileştirme */
+    .btn.primary{
+      background:linear-gradient(135deg,#f9fafb,#e5e7eb);
+      color:#020617;
+      border:none;
+      font-weight:600;
+      box-shadow:0 10px 30px rgba(0,0,0,.7);
+    }
+    .btn.primary:hover{
+      filter:brightness(1.05);
+      transform:translateY(-1px);
+    }
+    .btn.ghost{
+      border-color:rgba(148,163,184,.4);
+      background:rgba(15,23,42,.7);
+      color:var(--ink);
+    }
+
+    /* ==== ÜRÜN SAYFASI ANA YAPI ==== */
+    .product-page{
+      max-width:1120px;
+      margin:80px auto 40px;
+      padding:0 16px;
+    }
+
+    .auth-back{
       display:inline-flex;
       align-items:center;
       gap:6px;
-      font-size:.9rem;
-      color:#9aa4b2;
+      font-size:13px;
+      color:var(--muted);
+      text-decoration:none;
+      margin-bottom:12px;
+    }
+    .auth-back svg{
+      width:16px;height:16px;
+      stroke:var(--muted);
+      fill:none;
+      stroke-width:1.6;
+    }
+    .auth-back:hover{
+      color:var(--ink);
     }
 
-    .prod-hero{
+    .product-shell{
       display:grid;
-      grid-template-columns:320px 1fr;
-      gap:20px;
-      margin-top:12px;
-      padding:16px;
-      border-radius:16px;
-      background:radial-gradient(600px 400px at 0 0,rgba(59,130,246,.25),transparent),
-                 #050816;
-      border:1px solid #1f2937;
-      box-shadow:0 18px 40px rgba(0,0,0,.55);
+      grid-template-columns: minmax(0,1.4fr) minmax(0,1.1fr);
+      gap:22px;
+      align-items:flex-start;
     }
-    @media(max-width:800px){
-      .prod-hero{grid-template-columns:1fr}
+
+    .product-main{
+      background:radial-gradient(circle at 0% 0%, #111827 0,#020617 50%,#000 100%);
+      border-radius:18px;
+      border:1px solid rgba(148,163,184,.16);
+      padding:18px;
+      box-shadow:
+        0 24px 60px rgba(0,0,0,.8),
+        0 0 0 1px rgba(15,23,42,.7);
+      display:grid;
+      grid-template-columns: minmax(0,1.1fr) minmax(0,1.2fr);
+      gap:18px;
     }
-    .prod-img-wrap{
+
+    .product-gallery{
       border-radius:14px;
-      border:1px solid #26324a;
-      background:#020617;
-      overflow:hidden;
+      background:radial-gradient(circle at 0% 0%, #020617 0,#000 60%);
+      padding:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
     }
-    .prod-img-wrap img{
+    .product-main-image{
       width:100%;
-      height:auto;
-      display:block;
+      aspect-ratio: 4/5;
+      border-radius:14px;
+      overflow:hidden;
+      border:1px solid rgba(148,163,184,.25);
+      background:radial-gradient(circle at 0% 0%, #1f2937 0,#020617 45%,#000 100%);
+      box-shadow:0 20px 40px rgba(0,0,0,.85);
+    }
+    .product-main-image img{
+      width:100%;
+      height:100%;
       object-fit:cover;
+      display:block;
     }
-    .prod-title{
-      font-family:"Playfair Display",Georgia,serif;
-      font-size:1.7rem;
-      letter-spacing:.4px;
-      margin:0 0 6px;
+
+    .product-info{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
     }
-    .prod-desc{
-      color:#9aa4b2;
-      font-size:.95rem;
-      margin-bottom:10px;
-      white-space:pre-wrap;
-      word-break:break-word;
+    .product-info-title{
+      font-family:"Playfair Display",serif;
+      font-size:24px;
+      letter-spacing:.5px;
+      margin:0;
     }
-    .price-tag{
-      font-size:1.3rem;
+    .product-info-sub{
+      margin:0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.5;
+    }
+
+    .product-info-meta{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:6px;
+    }
+    .product-price{
+      font-size:22px;
       font-weight:600;
-      margin:6px 0 12px;
+      letter-spacing:.4px;
     }
-    .pill{
+    .product-badges{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      justify-content:flex-end;
+    }
+    .product-badge{
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.35);
+      padding:3px 9px;
+      font-size:11px;
+      color:var(--muted);
+      background:linear-gradient(135deg,rgba(15,23,42,.8),rgba(15,23,42,.4));
+    }
+
+    .product-cta-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:14px;
+    }
+    .product-cta-row .btn{
+      flex:0 0 auto;
+      min-width:140px;
+      height:38px;
       display:inline-flex;
       align-items:center;
-      padding:.2rem .55rem;
-      border-radius:999px;
-      border:1px solid #344256;
-      font-size:.8rem;
-      color:#cbd5f5;
-      background:#020617;
+      justify-content:center;
     }
 
-    .rev-form,
-    .rev-list{
-      background:#020617;
-      border:1px solid #26324a;
-      border-radius:16px;
-      padding:16px 14px;
-      margin-top:18px;
-      box-shadow:0 12px 30px rgba(0,0,0,.55);
+    /* ==== ALT BÖLÜM / YORUMLAR ==== */
+    .product-sections{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
     }
-    .rev-header{
+
+    .product-section-card{
+      background:radial-gradient(circle at 0% 0%, #020617 0,#020308 50%,#000 100%);
+      border-radius:16px;
+      border:1px solid rgba(31,41,55,.9);
+      box-shadow:0 18px 45px rgba(0,0,0,.9);
+      padding:14px 14px 12px;
+    }
+
+    .section-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding-bottom:6px;
+      border-bottom:1px solid rgba(55,65,81,.75);
+      margin-bottom:8px;
+    }
+
+    .muted.small{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    /* Yorum kartları */
+    .review-card{
+      border-radius:12px;
+      border:1px solid rgba(55,65,81,.9);
+      padding:10px 11px;
+      margin-top:8px;
+      background:radial-gradient(circle at 0% 0%, #020617 0,#020308 55%,#000 100%);
+    }
+    .review-card-header{
       display:flex;
       justify-content:space-between;
       align-items:center;
       gap:8px;
-      margin-bottom:6px;
     }
-    .rev-header h3{
-      margin:0;
-      font-family:"Playfair Display",Georgia,serif;
-      font-size:1.15rem;
+    .review-rating .stars{
+      color:#fbbf24;
+      font-size:13px;
     }
-
-    .rev-item{
-      border-top:1px solid #26324a;
-      padding:10px 0 12px;
+    .comment-text{
+      margin-top:6px;
+      font-size:13px;
+      line-height:1.5;
+      white-space:pre-wrap;
+      word-wrap:break-word;
+      overflow-wrap:anywhere;
     }
-    .rev-item:first-child{border-top:0}
-
-    .stars{color:#ffd35a;font-size:.95rem}
-    .muted{color:#9aa4b2}
-    .muted.small{font-size:.85rem}
-    .thumbs img{
-      width:72px;
-      height:72px;
-      object-fit:cover;
+    .review-photos{
+      display:flex;
+      flex-wrap:wrap;
+      gap:4px;
+      margin-top:4px;
+    }
+    .review-photos img{
+      width:54px;
+      height:54px;
       border-radius:8px;
-      border:1px solid #26324a;
-      margin-right:6px;
+      border:1px solid rgba(55,65,81,.9);
+      object-fit:cover;
       background:#020617;
     }
 
-    button,
-    input,
-    textarea,
-    select{
-      background:#020617;
-      color:#e6edf3;
-      border:1px solid #2b3a57;
+    .stars{
+      color:#fbbf24;
+    }
+
+    /* Yorum formu */
+    #revFormBox select,
+    #revFormBox textarea,
+    #revFormBox input[type="file"]{
+      width:100%;
+      margin-top:3px;
       border-radius:10px;
-      padding:9px 10px;
-      font-family:inherit;
-      font-size:.95rem;
+      border:1px solid rgba(55,65,81,.9);
+      background:#020617;
+      color:var(--ink);
+      font-size:13px;
+      padding:7px 9px;
     }
-    textarea{resize:vertical;min-height:90px}
-    .btn{
-      cursor:pointer;
-      font-weight:500;
+    #revFormBox textarea{
+      resize:vertical;
+      min-height:80px;
     }
-    .btn[disabled]{opacity:.6;cursor:not-allowed}
-    .btn.primary{
-      background:#f1f5f9;
-      color:#020617;
-      border-color:transparent;
+    #rfStatus{
+      min-height:16px;
     }
-    .btn.primary:hover{filter:brightness(.97)}
+
+    /* ==== SEPET PANELİ (daha lüks) ==== */
+    .panel.right{
+      background:radial-gradient(circle at 0% 0%, #020617 0,#020308 50%,#000 100%);
+      border-left:1px solid rgba(31,41,55,.9);
+      box-shadow:-18px 0 50px rgba(0,0,0,.9);
+    }
+    .cart-list{
+      padding:0 16px;
+    }
+    .cart-list .cart-item{
+      border-radius:12px;
+      border:1px solid rgba(55,65,81,.85);
+      padding:8px 10px;
+      margin-bottom:8px;
+      background:radial-gradient(circle at 0% 0%, #020617 0,#020308 60%,#000 100%);
+    }
+    .cart-summary{
+      border-top:1px solid rgba(55,65,81,.85);
+      padding:10px 16px 16px;
+      background:linear-gradient(to top,rgba(15,23,42,.95),rgba(15,23,42,.8));
+    }
+    .cart-summary .row{
+      display:flex;
+      justify-content:space-between;
+      font-size:13px;
+      margin-bottom:4px;
+    }
+    .cart-summary .total{
+      font-weight:600;
+      margin-top:4px;
+    }
+
+    .coupon-row{
+      padding:10px 16px 6px;
+      border-top:1px solid rgba(31,41,55,.9);
+      border-bottom:1px solid rgba(31,41,55,.9);
+      background:rgba(15,23,42,.8);
+    }
+    .coupon-row input{
+      flex:1;
+      min-width:0;
+      border-radius:8px;
+      border:1px solid rgba(55,65,81,.9);
+      background:#020617;
+      color:var(--ink);
+      font-size:13px;
+      padding:6px 8px;
+    }
+
+    /* Checkout overlay */
+    .overlay{
+      background:rgba(0,0,0,.74);
+    }
+    .overlay-card{
+      background:radial-gradient(circle at 0% 0%, #020617 0,#020308 55%,#000 100%);
+      border-radius:18px;
+      border:1px solid rgba(55,65,81,.9);
+      box-shadow:0 26px 70px rgba(0,0,0,.9);
+    }
+    .checkout-form input,
+    .checkout-form textarea{
+      border-radius:10px;
+      border:1px solid rgba(55,65,81,.9);
+      background:#020617;
+      color:var(--ink);
+      font-size:13px;
+      padding:7px 9px;
+    }
+    .checkout-form textarea{
+      min-height:80px;
+      resize:vertical;
+    }
+    #chStatus{
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    /* Sticky cart (alt bar) */
+    .sticky-cart-bar{
+      background:radial-gradient(circle at 0% 0%, #020617 0,#020308 50%,#000 100%);
+      border-top:1px solid rgba(31,41,55,.9);
+      box-shadow:0 -18px 40px rgba(0,0,0,.8);
+    }
+    .sticky-cart-bar .sum strong{
+      font-size:15px;
+    }
+    .sticky-cart-bar .btn.primary{
+      height:34px;
+      padding:0 14px;
+      font-size:13px;
+    }
+
+    /* Footer siyaha uyumlu */
+    .footer{
+      border-top:1px solid rgba(31,41,55,.9);
+      background:#020308;
+    }
+
+    /* Hata / uyarı */
+    .error-text{
+      color:var(--danger);
+      font-size:13px;
+      margin-top:4px;
+    }
+
+    /* RESPONSIVE */
+    @media(max-width:900px){
+      .product-shell{
+        grid-template-columns: minmax(0,1fr);
+      }
+      .product-main{
+        grid-template-columns:minmax(0,1fr);
+      }
+    }
+    @media(max-width:640px){
+      .product-page{
+        margin-top:70px;
+      }
+      .product-main{
+        padding:14px;
+      }
+      .product-section-card{
+        padding:12px;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <a href="index.html" class="back-link">
-      <span>←</span><span>Mağaza</span>
+  <!-- ===== Üst bar ===== -->
+  <header class="topbar">
+    <div class="logo-area">
+      <div class="logo-mark">
+        <img src="logo.png" alt="Mavern" class="brand-logo">
+      </div>
+      <h1 class="brand">Mavern</h1>
+    </div>
+    <nav class="topnav">
+      <a href="index.html">Ürünler</a>
+      <a href="index.html#about">Hakkımızda</a>
+      <a href="index.html#contact">İletişim</a>
+      <a href="auth.html" class="account-link">Hesabım</a>
+      <a href="javascript:void 0" class="cart-link" onclick="openCart()">
+        <span class="cart-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6h15l-1.5 9h-13z"></path>
+            <circle cx="9" cy="19" r="1.3"></circle>
+            <circle cx="17" cy="19" r="1.3"></circle>
+          </svg>
+        </span>
+        <span>Sepet <span id="cartCount" class="badge"></span></span>
+      </a>
+    </nav>
+  </header>
+
+  <!-- ===== ÜRÜN SAYFASI ===== -->
+  <main class="product-page">
+    <a href="index.html" class="auth-back">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6"></path>
+      </svg>
+      <span>Mağazaya dön</span>
     </a>
 
-    <div id="hero" class="prod-hero" aria-live="polite"></div>
+    <div class="product-shell">
+      <!-- Ürün ana blok (JS burayı dolduruyor) -->
+      <div id="hero" class="product-main" aria-live="polite"></div>
 
-    <!-- Yorumlar (liste) -->
-    <section class="rev-list" aria-label="Ürün yorumları">
-      <div class="rev-header">
-        <h3>Yorumlar</h3>
-        <div id="avgBlock" class="muted small"></div>
+      <!-- Alt bilgi + yorumlar -->
+      <div class="product-sections">
+        <!-- Yorumlar (liste) -->
+        <section class="product-section-card" aria-label="Ürün yorumları">
+          <div class="section-head" style="border-bottom:none;margin-bottom:6px;padding-bottom:0">
+            <h3 style="margin:0;font-size:15px">Yorumlar</h3>
+            <div id="avgBlock" class="muted small"></div>
+          </div>
+          <div id="reviews"></div>
+          <div id="noReviews" class="muted small" style="margin-top:4px;display:none">Henüz yorum yok.</div>
+        </section>
+
+        <!-- Yorum formu -->
+        <section class="product-section-card" id="revFormBox" aria-label="Yorum yaz">
+          <div class="section-head" style="border-bottom:none;margin-bottom:6px;padding-bottom:0">
+            <h3 style="margin:0;font-size:15px">Yorum Yaz</h3>
+          </div>
+
+          <p id="rfGate" class="muted small" style="margin-bottom:8px">
+            Yorum için giriş gerekir. <a href="auth.html">Giriş / Kayıt</a>
+          </p>
+
+          <div id="rfFields" style="display:none">
+            <label for="rfRating" class="muted small">Puan</label>
+            <select id="rfRating">
+              <option value="5">5 - Mükemmel</option>
+              <option value="4">4 - İyi</option>
+              <option value="3">3 - Orta</option>
+              <option value="2">2 - Zayıf</option>
+              <option value="1">1 - Kötü</option>
+            </select>
+
+            <div style="margin-top:8px">
+              <label for="rfComment" class="muted small">Yorumunuz</label>
+              <textarea id="rfComment" rows="4" placeholder="Deneyiminizi paylaşın..."></textarea>
+            </div>
+
+            <div style="margin-top:8px">
+              <label class="muted small" for="rfPhoto">
+                Fotoğraf (opsiyonel, en fazla 5 adet • JPG / PNG / WEBP)
+              </label>
+              <input type="file" id="rfPhoto" accept="image/jpeg,image/png,image/webp" multiple>
+            </div>
+
+            <label style="display:block;margin-top:8px" class="muted small">
+              <input type="checkbox" id="rfAnon" style="width:auto;margin-right:6px">
+              Gizli kullanıcı olarak yayınla
+            </label>
+
+            <div id="rfStatus" class="muted small" style="margin-top:6px"></div>
+
+            <button class="btn primary" style="margin-top:10px;width:100%" id="rfSend">Gönder</button>
+          </div>
+        </section>
       </div>
-      <div id="reviews"></div>
-      <div id="noReviews" class="muted small" style="display:none">Henüz yorum yok.</div>
-    </section>
+    </div>
+  </main>
 
-    <!-- Yorum formu -->
-    <section class="rev-form" id="revFormBox" aria-label="Yorum yaz">
-      <div class="rev-header">
-        <h3>Yorum Yaz</h3>
+  <!-- ===== Sepet Paneli ===== -->
+  <aside id="cartPanel" class="panel right">
+    <button class="close-btn" type="button" onclick="closeCart()">×</button>
+    <div style="padding:0 16px 12px;">
+      <h3 style="margin:0 0 6px;">Sepetim</h3>
+    </div>
+    <div class="cart-list" id="cartItems"></div>
+
+    <div class="coupon-row">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <input id="couponInput" placeholder="Kupon kodu">
+        <button class="btn small" type="button" onclick="applyCoupon()" style="padding:6px 10px;font-size:12px">
+          Uygula
+        </button>
       </div>
+      <div id="couponMsg" class="muted small" style="margin-top:4px"></div>
+    </div>
 
-      <p id="rfGate" class="muted small" style="margin-bottom:8px">
-        Yorum için giriş gerekir. <a href="auth.html">Giriş / Kayıt</a>
-      </p>
+    <div class="cart-summary">
+      <div class="row"><span>Ara Toplam</span><span id="subtotal">0 ₺</span></div>
+      <div class="row"><span>İndirim</span><span id="discount">0 ₺</span></div>
+      <div class="row total"><span>Ödenecek</span><span id="payable">0 ₺</span></div>
+      <button class="btn primary actions" type="button" onclick="openCheckout()">Ödemeye Geç</button>
+    </div>
+  </aside>
 
-      <div id="rfFields" style="display:none">
-        <label for="rfRating" class="muted small">Puan</label>
-        <select id="rfRating">
-          <option value="5">5 - Mükemmel</option>
-          <option value="4">4 - İyi</option>
-          <option value="3">3 - Orta</option>
-          <option value="2">2 - Zayıf</option>
-          <option value="1">1 - Kötü</option>
-        </select>
+  <!-- ===== Checkout Overlay ===== -->
+  <div id="checkoutOverlay" class="overlay">
+    <div class="overlay-card">
+      <button class="close-btn" type="button" onclick="closeCheckout()">×</button>
+      <h3 style="margin-top:0;margin-bottom:6px;">Sipariş Bilgileri</h3>
+      <div id="checkoutMsg" class="muted small" style="margin-bottom:6px;"></div>
 
-        <div style="margin-top:8px">
-          <label for="rfComment" class="muted small">Yorumunuz</label>
-          <textarea id="rfComment" rows="4" placeholder="Deneyiminizi paylaşın..."></textarea>
-        </div>
+      <form class="checkout-form" onsubmit="event.preventDefault(); submitCheckout();">
+        <input id="chName" placeholder="Ad Soyad">
+        <input id="chEmail" placeholder="E-posta">
+        <input id="chPhone" placeholder="Telefon">
+        <textarea id="chAddress" placeholder="Teslimat adresi"></textarea>
 
-        <div style="margin-top:8px">
-          <label class="muted small" for="rfPhoto">
-            Fotoğraf (opsiyonel, en fazla 5 adet • JPG / PNG / WEBP)
-          </label>
-          <input type="file" id="rfPhoto" accept="image/jpeg,image/png,image/webp" multiple>
-        </div>
-
-        <label style="display:block;margin-top:8px" class="muted small">
-          <input type="checkbox" id="rfAnon" style="width:auto;margin-right:6px">
-          Gizli kullanıcı olarak yayınla
+        <label class="muted small" style="display:block;margin-top:6px;">
+          <input type="checkbox" id="chKvkk" style="width:auto;margin-right:6px;">
+          KVKK metnini okudum, onaylıyorum.
         </label>
 
-        <div id="rfStatus" class="muted small" style="margin-top:6px"></div>
+        <div class="cart-summary" style="border-top:none;padding:8px 0 0;margin-top:4px;">
+          <div class="row total"><span>Ödenecek</span><span id="chPayable">0 ₺</span></div>
+        </div>
 
-        <button class="btn primary" style="margin-top:10px" id="rfSend">Gönder</button>
-      </div>
-    </section>
+        <div id="chStatus" class="muted small" style="margin-top:6px;"></div>
+
+        <button class="btn primary actions" type="submit" style="margin-top:8px;">Siparişi Tamamla</button>
+      </form>
+    </div>
   </div>
+
+  <!-- ===== Sticky Cart (mobil alt bar) ===== -->
+  <div id="stickyCartBar" class="sticky-cart-bar">
+    <div class="sum">
+      <strong data-sticky-total>0 ₺</strong>
+      <small data-sticky-label>0 ürün</small>
+    </div>
+    <button class="btn primary" type="button" onclick="openCart()">Sepeti Gör</button>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div>© <span class="italic">Mavern</span> — Seçkin bakım rutinleri.</div>
+    <div>
+      <a href="index.html#about" class="muted small">Hakkımızda</a>
+      <a href="index.html#contact" class="muted small">İletişim</a>
+    </div>
+  </footer>
 
   <!-- Global yardımcılar + sepet + api -->
   <script src="script.js"></script>
 
+  <!-- ===== ÜRÜN SAYFASI ÖZEL JS ===== -->
   <script>
-    // ========= Yardımcılar (script.js ile ÇAKIŞMAYAN küçük yardımcılar) =========
-    // (script.js zaten qs, fmtMoney, api, normalizeProductClient, addToCart içeriyor)
+    // script.js zaten qs, fmtMoney, api, normalizeProductClient, addToCart içeriyor
 
     const escLocal = (s) =>
       String(s ?? "").replace(/[&<>"']/g, (m) =>
@@ -256,6 +645,11 @@
       const box = qs("#hero");
       if (!box) return;
 
+      if (!PID) {
+        box.innerHTML = '<div class="error-text">Geçersiz ürün. Lütfen mağazaya geri dönün.</div>';
+        return;
+      }
+
       let list = [];
       try {
         const raw = await api("/api/products");
@@ -266,7 +660,7 @@
       PRODUCT = (list || []).find((p) => p.id === PID);
 
       if (!PRODUCT) {
-        box.innerHTML = "<div>Ürün bulunamadı.</div>";
+        box.innerHTML = '<div class="error-text">Ürün bulunamadı. Mağazada artık görünmüyor olabilir.</div>';
         return;
       }
 
@@ -277,19 +671,34 @@
       const imgSrc = sanitizeAttr(PRODUCT.image || "logo.png");
 
       box.innerHTML = `
-        <div class="prod-img-wrap">
-          <img src="${imgSrc}" alt="${escLocal(PRODUCT.name || "")}"
-               onerror="this.src='logo.png'">
+        <div class="product-gallery">
+          <div class="product-main-image">
+            <img src="${imgSrc}" alt="${escLocal(PRODUCT.name || "")}"
+                 onerror="this.src='logo.png'">
+          </div>
         </div>
-        <div>
-          <h2 class="prod-title">${escLocal(PRODUCT.name)}</h2>
-          <div class="prod-desc">${PRODUCT.desc ? escLocal(PRODUCT.desc) : ""}</div>
-          <div class="price-tag">${escLocal(priceText)}</div>
-          ${
-            PRODUCT.purchasable
-              ? `<button class="btn primary" id="btnAddCart">Sepete Ekle</button>`
-              : `<span class="pill">Bu ürün şu anda satılabilir değil.</span>`
-          }
+        <div class="product-info">
+          <h2 class="product-info-title">${escLocal(PRODUCT.name)}</h2>
+          <p class="product-info-sub">
+            ${PRODUCT.desc ? escLocal(PRODUCT.desc) : "Erkek bakım rutinleri için özel formül."}
+          </p>
+
+          <div class="product-info-meta">
+            <div class="product-price">${escLocal(priceText)}</div>
+            <div class="product-badges">
+              <span class="product-badge">Hızlı kargo</span>
+              <span class="product-badge">Sınırlı stok</span>
+            </div>
+          </div>
+
+          <div class="product-cta-row">
+            ${
+              PRODUCT.purchasable
+                ? `<button class="btn primary" id="btnAddCart">Sepete Ekle</button>`
+                : `<span class="product-badge">Bu ürün şu anda satılamıyor</span>`
+            }
+            <button class="btn ghost" type="button" onclick="openCart()">Sepeti Gör</button>
+          </div>
         </div>
       `;
 
@@ -303,7 +712,7 @@
       const out = qs("#reviews");
       const none = qs("#noReviews");
       const avgBlock = qs("#avgBlock");
-      if (!out || !none || !avgBlock) return;
+      if (!out || !none || !avgBlock || !PID) return;
 
       out.innerHTML = "";
       none.style.display = "none";
@@ -328,8 +737,8 @@
         `Ortalama: <span class="stars">★</span> ${avg} / 5 • ${items.length} yorum`;
 
       items.forEach((rv) => {
-        const d = document.createElement("div");
-        d.className = "rev-item";
+        const d = document.createElement("article");
+        d.className = "review-card";
 
         const created = rv.createdAt
           ? new Date(rv.createdAt).toLocaleString("tr-TR")
@@ -339,24 +748,30 @@
           (rv.photos || [])
             .slice(0, 5)
             .map((p) =>
-              `<img src="${sanitizeAttr(p)}" alt="" onerror="this.src='logo.png'">`
+              `<img src="${sanitizeAttr(p)}" alt="" onerror="this.src='logo.png'>`
             )
             .join("");
 
         d.innerHTML = `
-          <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+          <div class="review-card-header">
             <div>
               <strong>${escLocal(rv.displayName || "Kullanıcı")}</strong>
-              <span class="stars"> • ${starsRow(rv.rating)}</span>
+              <div class="muted small">${escLocal(created)}</div>
             </div>
-            <div class="muted small">${escLocal(created)}</div>
+            <div class="review-rating">
+              <span class="stars">${starsRow(rv.rating)}</span>
+            </div>
           </div>
           ${
             rv.comment
-              ? `<div style="margin-top:6px">${escLocal(rv.comment)}</div>`
+              ? `<div class="comment-text">${escLocal(rv.comment)}</div>`
               : ""
           }
-          ${photos ? `<div class="thumbs" style="margin-top:6px">${photos}</div>` : ""}
+          ${
+            photos
+              ? `<div class="review-photos">${photos}</div>`
+              : ""
+          }
         `;
         out.appendChild(d);
       });
@@ -410,8 +825,7 @@
       if (!token) throw new Error("Giriş gerekli");
 
       const urls = [];
-      // en fazla 5 fotoğraf
-      const max = Math.min(files.length, 5);
+      const max = Math.min(files.length, 5); // en fazla 5 fotoğraf
       for (let i = 0; i < max; i++) {
         const f = files[i];
         const fd = new FormData();
@@ -438,6 +852,10 @@
       const token = getJWT();
       if (!token) {
         st.textContent = "Giriş gerekli. Lütfen auth.html üzerinden giriş yapın.";
+        return;
+      }
+      if (!PID) {
+        st.textContent = "Geçersiz ürün.";
         return;
       }
 
@@ -491,14 +909,9 @@
 
     // ================ INIT ================
     (function init() {
-      if (!PID) {
-        const hero = qs("#hero");
-        if (hero) hero.innerHTML = "<div>Geçersiz ürün.</div>";
-        const gate = qs("#rfGate");
-        const fields = qs("#rfFields");
-        if (gate) gate.textContent = "Geçersiz ürün ID.";
-        if (fields) fields.style.display = "none";
-        return;
+      const hero = qs("#hero");
+      if (!PID && hero) {
+        hero.innerHTML = '<div class="error-text">Geçersiz ürün ID.</div>';
       }
 
       const sendBtn = qs("#rfSend");

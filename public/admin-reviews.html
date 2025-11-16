@@ -19,6 +19,7 @@
       --warn-border:#5b4f1a;
       --danger:#2a0f0f;
       --danger-border:#5d1b1b;
+      --shadow:0 18px 50px rgba(0,0,0,.55);
     }
 
     *{box-sizing:border-box}
@@ -32,7 +33,8 @@
     h1,h2,h3{margin:0}
     a{color:var(--accent);text-decoration:none}
     a:hover{text-decoration:underline}
-    .wrap{max-width:1100px;margin:20px auto;padding:0 16px}
+
+    .wrap{max-width:1100px;margin:20px auto 28px;padding:0 16px}
 
     .top-row{
       display:flex;
@@ -40,6 +42,7 @@
       align-items:center;
       gap:10px;
       margin-bottom:8px;
+      flex-wrap:wrap;
     }
     .brand-block{
       display:flex;
@@ -47,7 +50,7 @@
       gap:10px;
     }
 
-    /* Sadece M harfini göstermek için logo kutusu */
+    /* Logo sadece M harfi bölgesi */
     .logo-mark{
       width:52px;
       height:52px;
@@ -63,16 +66,18 @@
       height:100%;
       width:auto;
       object-fit:cover;
-      object-position:top center; /* üstteki büyük M kısmı */
+      object-position:top center;
       display:block;
     }
+
+    .muted{color:var(--muted);font-size:13px}
 
     .card{
       background:linear-gradient(180deg,rgba(10,15,35,.95),rgba(5,8,20,.98));
       border:1px solid var(--border);
       border-radius:14px;
       padding:14px 16px;
-      box-shadow:0 18px 50px rgba(0,0,0,.55);
+      box-shadow:var(--shadow);
       margin-top:14px;
     }
 
@@ -84,18 +89,54 @@
       border-radius:8px;
       font-family:inherit;
       font-size:14px;
+      outline:none;
+    }
+    input::placeholder{color:#657087}
+    input:focus,select:focus{
+      border-color:#6366f1;
+      box-shadow:0 0 0 1px rgba(99,102,241,.5);
     }
     button{cursor:pointer}
     button:disabled{opacity:.6;cursor:not-allowed}
 
-    .btn{border-radius:10px}
-    .btn.primary{background:var(--accent);color:#050815;border:0;font-weight:600}
-    .btn.ghost{background:transparent;border-color:#445;color:var(--accent)}
-    .btn.danger{background:#3a1717;border-color:#5d1b1b;color:#ffb2b2}
+    .btn{border-radius:10px;font-weight:600;font-size:13px;border-width:1px;}
+    .btn.primary{
+      background:var(--accent);
+      color:#050815;
+      border-color:transparent;
+    }
+    .btn.ghost{
+      background:transparent;
+      border-color:#445;
+      color:var(--accent);
+    }
+    .btn.danger{
+      background:#3a1717;
+      border-color:#5d1b1b;
+      color:#ffb2b2;
+    }
 
-    .table-wrap{max-height:540px;overflow:auto;border:1px solid var(--border);border-radius:12px;margin-top:10px}
+    .row{display:flex;gap:8px;align-items:center}
+    .row.wrap{flex-wrap:wrap}
+    .row.between{justify-content:space-between}
+    .grow{flex:1}
+
+    .table-wrap{
+      max-height:540px;
+      overflow:auto;
+      border:1px solid var(--border);
+      border-radius:12px;
+      margin-top:10px;
+      background:#020617;
+    }
     table{width:100%;border-collapse:collapse}
-    th,td{padding:8px;border-bottom:1px solid #1f2937;text-align:left;font-size:14px}
+    th,td{
+      padding:8px;
+      border-bottom:1px solid #1f2937;
+      text-align:left;
+      font-size:14px;
+      vertical-align:top;
+    }
     th{
       position:sticky;
       top:0;
@@ -105,16 +146,33 @@
       color:#d4ddff;
     }
 
-    .photo-grid{display:flex;flex-wrap:wrap;gap:4px}
-    .photo-grid img{width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid #26324a}
+    .photo-grid{
+      display:flex;
+      flex-wrap:wrap;
+      gap:4px;
+    }
+    .photo-grid img{
+      width:56px;
+      height:56px;
+      object-fit:cover;
+      border-radius:6px;
+      border:1px solid #26324a;
+    }
 
-    .pill{display:inline-block;padding:3px 8px;border-radius:999px;font-size:12px}
-    .pill.ok{background:var(--ok);border:1px solid var(--ok-border);color:#9ff3b0}
-    .pill.warn{background:var(--warn);border:1px solid var(--warn-border);color:#f2e19a}
+    .pill{
+      display:inline-block;
+      padding:3px 8px;
+      border-radius:999px;
+      font-size:12px;
+      border:1px solid transparent;
+      white-space:nowrap;
+    }
+    .pill.ok{background:var(--ok);border-color:var(--ok-border);color:#9ff3b0}
+    .pill.warn{background:var(--warn);border-color:var(--warn-border);color:#f2e19a}
+    .pill.tag{background:#111827;border-color:#1f2937;color:#cfd6ff}
 
-    .stars{color:#ffd35a}
+    .stars{color:#ffd35a;font-size:14px}
 
-    /* Güvenli, vendor-özgü line-clamp (lint uyarısı normal) */
     .comment-snippet{
       display:-webkit-box;
       -webkit-box-orient:vertical;
@@ -126,7 +184,64 @@
       word-wrap:break-word;
     }
 
-    .muted{color:var(--muted);font-size:13px}
+    .status-bar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      margin-top:6px;
+      font-size:13px;
+      flex-wrap:wrap;
+    }
+
+    .metric-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .metric-chip{
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid #1f2937;
+      background:#020617;
+    }
+
+    /* Toast */
+    .toast-wrap{
+      position:fixed;
+      top:10px;
+      right:10px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      z-index:9999;
+    }
+    .toast{
+      min-width:220px;
+      max-width:320px;
+      padding:8px 10px;
+      border-radius:10px;
+      font-size:12px;
+      box-shadow:0 10px 25px rgba(0,0,0,.7);
+      backdrop-filter:blur(8px);
+      border:1px solid #1f2937;
+    }
+    .toast.info{
+      background:rgba(15,23,42,.96);
+      color:#e5e7eb;
+    }
+    .toast.ok{
+      background:rgba(22,163,74,.94);
+      color:#ecfdf5;
+      border-color:#4ade80;
+    }
+    .toast.err{
+      background:rgba(185,28,28,.95);
+      color:#fee2e2;
+      border-color:#fecaca;
+    }
 
     @media(max-width:800px){
       .top-row{flex-direction:column;align-items:flex-start}
@@ -137,9 +252,11 @@
 </head>
 
 <body>
+<div class="toast-wrap" id="toastWrap"></div>
+
 <div class="wrap">
 
-  <!-- Üst logo + başlık -->
+  <!-- Üst logo + başlık + oturum -->
   <div class="top-row">
     <div class="brand-block">
       <div class="logo-mark">
@@ -147,36 +264,46 @@
       </div>
       <div>
         <h2>Mavern Admin • Yorum Yönetimi</h2>
-        <div class="muted">Ürün yorumlarını görüntüle · onayla · sil</div>
+        <div class="muted">Ürün yorumlarını görüntüle · filtrele · onayla · sil</div>
       </div>
+    </div>
+    <div class="row">
+      <span id="adminState" class="muted" style="font-size:12px;"></span>
     </div>
   </div>
 
   <!-- LOGIN -->
   <div class="card" id="loginBox">
     <h3>Yönetici Girişi</h3>
-    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-      <input id="user" placeholder="Admin kullanıcı" autocomplete="username">
-      <input id="pass" placeholder="Admin şifre" type="password" autocomplete="current-password">
-      <button id="loginBtn" class="btn primary">Giriş</button>
+    <div class="row wrap" style="margin-top:8px">
+      <input id="user" class="grow" placeholder="Admin kullanıcı" autocomplete="username">
+      <input id="pass" class="grow" placeholder="Admin şifre" type="password" autocomplete="current-password">
+      <button id="loginBtn" class="btn primary" type="button">Giriş</button>
     </div>
-    <div id="loginOut" class="muted" style="margin-top:8px"></div>
+    <div class="status-bar">
+      <span id="loginOut" class="muted"></span>
+      <span class="muted" style="font-size:12px">
+        Bu ekran <code>/api/login</code> ve <code>/api/admin/reviews</code> endpointlerini kullanır.
+      </span>
+    </div>
   </div>
 
   <!-- PANEL -->
   <div class="card" id="panelBox" style="display:none">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+    <div class="row between">
       <h3>Yorumlar</h3>
-      <button id="reloadBtn" class="btn ghost" type="button">Yenile</button>
+      <div class="row wrap">
+        <button id="reloadBtn" class="btn ghost" type="button">Yenile</button>
+      </div>
     </div>
 
-    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+    <div class="row wrap" style="margin-top:10px">
       <input id="filterPid" placeholder="Ürün ID (opsiyonel)">
-      <input id="searchText" placeholder="Kullanıcı / yorum ara" style="flex:1 1 220px">
+      <input id="searchText" class="grow" placeholder="Kullanıcı adı / yorum içinde ara">
       <select id="filterStatus">
-        <option value="pending">Bekleyen</option>
-        <option value="approved">Onaylı</option>
-        <option value="all">Tümü</option>
+        <option value="pending">Durum: Bekleyen</option>
+        <option value="approved">Durum: Onaylı</option>
+        <option value="all">Durum: Tümü</option>
       </select>
       <select id="filterRating">
         <option value="all">Puan: Tümü</option>
@@ -186,9 +313,15 @@
         <option value="2">En az 2 ★</option>
         <option value="1">En az 1 ★</option>
       </select>
+      <label class="row" style="font-size:12px">
+        <input id="filterPhoto" type="checkbox" style="width:auto;height:auto"> Sadece fotoğraflı
+      </label>
     </div>
 
-    <div id="listInfo" class="muted" style="margin-top:6px"></div>
+    <div class="status-bar">
+      <span id="listInfo" class="muted"></span>
+      <div class="metric-row" id="metricsRow"></div>
+    </div>
 
     <div class="table-wrap" aria-live="polite">
       <table>
@@ -210,247 +343,331 @@
 </div>
 
 <script>
-/* === Güvenli ESC === */
-const esc = (s="") => String(s).replace(/[&<>"']/g, m => ({
-  "&":"&amp;",
-  "<":"&lt;",
-  ">":"&gt;",
-  '"':"&quot;"
-}[m]));
-
-/* === Yardımcılar === */
-const qs = sel => document.querySelector(sel);
-const fmtDate = t => t ? new Date(t).toLocaleString("tr-TR") : "-";
-const stars = n => {
-  const x = Math.max(0, Math.min(5, Number(n||0)));
-  return "★".repeat(x) + "☆".repeat(5-x);
-};
-
-let TOKEN = null;
-let REVIEWS = [];
-const STORAGE_KEY = "MAVERN_ADMIN_TOKEN";
-
-/* === API (401 yakala, idleri encode et) === */
-async function api(path, opts={}) {
-  const headers = {
-    "Content-Type":"application/json",
-    ...(TOKEN ? {Authorization:`Bearer ${TOKEN}`} : {}),
-    ...(opts.headers||{})
+  // === Yardımcılar ===
+  const qs  = (s) => document.querySelector(s);
+  const esc = (s="") => String(s).replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"
+  }[m]));
+  const fmtDate = (t) => t ? new Date(t).toLocaleString("tr-TR") : "-";
+  const stars = (n) => {
+    const x = Math.max(0, Math.min(5, Number(n||0)));
+    return "★".repeat(x) + "☆".repeat(5-x);
   };
 
-  const res = await fetch(path,{...opts,headers});
-  let data = null;
-  try { data = await res.json(); } catch {}
-
-  if (res.status === 401) {
-    TOKEN = null;
-    try { localStorage.removeItem(STORAGE_KEY); } catch {}
-    showLogin();
-    throw new Error((data && (data.message || data.error)) || "Yetkisiz. Tekrar giriş yapın.");
+  function showToast(msg, type="info"){
+    const wrap = qs("#toastWrap");
+    if(!wrap) return;
+    const div = document.createElement("div");
+    div.className = "toast "+type;
+    div.textContent = msg;
+    wrap.appendChild(div);
+    setTimeout(()=>div.remove(), 3500);
   }
-  if (!res.ok) {
-    throw new Error((data && (data.message || data.error)) || "Hata");
+
+  let TOKEN = null;
+  let REVIEWS = [];
+  const STORAGE_KEY = "MAVERN_ADMIN_TOKEN";
+
+  function setToken(t){
+    TOKEN = t || null;
+    try{
+      if(TOKEN) localStorage.setItem(STORAGE_KEY, TOKEN);
+      else localStorage.removeItem(STORAGE_KEY);
+    }catch{}
+    const st = qs("#adminState");
+    if(st) st.textContent = TOKEN ? "Oturum aktif." : "Oturum açılmadı.";
   }
-  return data;
-}
 
-/* === Login === */
-function showLogin(){
-  qs("#loginBox").style.display="block";
-  qs("#panelBox").style.display="none";
-}
+  async function api(path, opts={}) {
+    const headers = {
+      "Content-Type":"application/json",
+      ...(TOKEN ? { Authorization:`Bearer ${TOKEN}` } : {}),
+      ...(opts.headers||{})
+    };
+    const res = await fetch(path, { ...opts, headers });
+    let data = null;
+    try{ data = await res.json(); }catch{}
 
-function showPanel(){
-  qs("#loginBox").style.display="none";
-  qs("#panelBox").style.display="block";
-}
-
-async function doLogin(){
-  const u = qs("#user").value.trim();
-  const p = qs("#pass").value;
-  const out = qs("#loginOut");
-  out.textContent = "Giriş yapılıyor...";
-
-  try{
-    const r = await api("/api/login",{
-      method:"POST",
-      body:JSON.stringify({username:u,password:p})
-    });
-    if(r && r.success && r.token){
-      TOKEN = r.token;
-      try { localStorage.setItem(STORAGE_KEY,TOKEN); } catch {}
-      out.textContent = "Başarılı!";
-      showPanel();
-      loadReviews();
-    } else {
-      out.textContent = (r && r.message) || "Hatalı kullanıcı adı veya şifre.";
+    if(res.status === 401){
+      setToken(null);
+      showLogin();
+      const msg = (data && (data.message || data.error)) || "Yetkisiz. Tekrar giriş yapın.";
+      showToast(msg, "err");
+      throw new Error(msg);
     }
-  }catch(e){
-    out.textContent = e.message || "Sunucu hatası.";
-  }
-}
-
-/* === Yorumları çek === */
-async function loadReviews(){
-  const info = qs("#listInfo");
-  info.textContent="Yükleniyor...";
-  try{
-    const pidRaw = qs("#filterPid").value.trim();
-    const base = "/api/admin/reviews";
-    const url = pidRaw ? `${base}?productId=${encodeURIComponent(pidRaw)}` : base;
-
-    const r = await api(url);
-    REVIEWS = Array.isArray(r.items) ? r.items : [];
-    info.textContent = `${REVIEWS.length} yorum bulundu`;
-    applyFilters();
-  }catch(e){
-    info.textContent=e.message || "Sunucu hatası.";
-  }
-}
-
-/* === Filtrele === */
-function applyFilters(){
-  const pid = qs("#filterPid").value.toLowerCase().trim();
-  const txt = qs("#searchText").value.toLowerCase().trim();
-  const stat = qs("#filterStatus").value;
-  const rat  = qs("#filterRating").value;
-
-  let list = REVIEWS.slice();
-
-  if(pid){
-    list = list.filter(x => String(x.productId||"").toLowerCase().includes(pid));
-  }
-  if(txt){
-    list = list.filter(x =>
-      String(x.displayName||"").toLowerCase().includes(txt) ||
-      String(x.comment||"").toLowerCase().includes(txt)
-    );
-  }
-
-  if(stat==="pending")  list = list.filter(x => !x.approved);
-  if(stat==="approved") list = list.filter(x =>  x.approved);
-
-  if(rat!=="all"){
-    const min = Number(rat);
-    if(min===5) list = list.filter(x => Number(x.rating||0) === 5);
-    else        list = list.filter(x => Number(x.rating||0) >= min);
-  }
-
-  renderTable(list);
-}
-
-/* === Tabloyu oluştur === */
-function renderTable(list){
-  const tb = qs("#tbody");
-  tb.innerHTML="";
-
-  if(!list.length){
-    tb.innerHTML=`<tr><td colspan="6" class="muted">Yorum yok</td></tr>`;
-    return;
-  }
-
-  tb.innerHTML = list.map(x=>{
-    const safeId       = esc(String(x.id||""));
-    const safeProdId   = esc(String(x.productId||""));
-    const safeName     = esc(String(x.displayName||"Kullanıcı"));
-    const safeDate     = fmtDate(x.createdAt);
-    const rating       = Number(x.rating||0);
-    const comment      = String(x.comment||"");
-    const snippet      = esc(comment.length>600 ? comment.slice(0,600)+"…" : comment);
-
-    const photos = Array.isArray(x.photos) ? x.photos : [];
-    const photosHtml = photos.length
-      ? `<div class="photo-grid">${photos.map(p=>(
-          `<img src="${esc(String(p))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.opacity=0.4">`
-        )).join("")}</div>`
-      : `<span class="muted">Fotoğraf yok</span>`;
-
-    const statusCls = x.approved ? "ok" : "warn";
-    const statusTxt = x.approved ? "Onaylı" : "Bekliyor";
-
-    return `
-    <tr>
-      <td>
-        <code>${safeId}</code><br>
-        <span class="muted" style="font-size:12px">Ürün: ${safeProdId}</span>
-      </td>
-      <td>
-        ${safeName}<br>
-        <span class="muted" style="font-size:12px">${esc(safeDate)}</span>
-      </td>
-      <td>
-        <div class="stars">${stars(rating)}</div>
-        <div class="comment-snippet" title="${esc(comment)}">${snippet}</div>
-      </td>
-      <td>${photosHtml}</td>
-      <td><span class="pill ${statusCls}">${statusTxt}</span></td>
-      <td>
-        <button class="btn ghost" type="button"
-          data-action="approve"
-          data-id="${safeId}"
-          data-next="${x.approved ? "0" : "1"}">
-          ${x.approved ? "Onayı Kaldır" : "Onayla"}
-        </button>
-        <button class="btn danger" type="button"
-          data-action="delete"
-          data-id="${safeId}">
-          Sil
-        </button>
-      </td>
-    </tr>`;
-  }).join("");
-}
-
-/* === İşlem butonları === */
-qs("#tbody").addEventListener("click", async e=>{
-  const btn = e.target.closest("button[data-action]");
-  if(!btn) return;
-
-  const id  = btn.getAttribute("data-id") || "";
-  const act = btn.getAttribute("data-action");
-
-  if(!id) return;
-
-  try{
-    if(act==="approve"){
-      const ok = btn.getAttribute("data-next") === "1";
-      await api(`/api/admin/reviews/${encodeURIComponent(id)}/approve`,{
-        method:"PATCH",
-        body:JSON.stringify({approved:ok})
-      });
-    }else if(act==="delete"){
-      if(!confirm("Yorum silinsin mi?")) return;
-      await api(`/api/admin/reviews/${encodeURIComponent(id)}`,{
-        method:"DELETE"
-      });
+    if(!res.ok){
+      const msg = (data && (data.message || data.error)) || ("HTTP "+res.status);
+      throw new Error(msg);
     }
-    await loadReviews();
-  }catch(err){
-    alert(err.message || "İşlem hatası.");
+    return data || {};
   }
-});
 
-/* === Eventler === */
-qs("#loginBtn").addEventListener("click", doLogin);
-qs("#reloadBtn").addEventListener("click", loadReviews);
-qs("#filterPid").addEventListener("input", applyFilters);
-qs("#searchText").addEventListener("input", applyFilters);
-qs("#filterStatus").addEventListener("change", applyFilters);
-qs("#filterRating").addEventListener("change", applyFilters);
+  function showLogin(){
+    qs("#loginBox").style.display="block";
+    qs("#panelBox").style.display="none";
+  }
+  function showPanel(){
+    qs("#loginBox").style.display="none";
+    qs("#panelBox").style.display="block";
+  }
 
-/* === INIT === */
-(function(){
-  try{
-    const t = localStorage.getItem(STORAGE_KEY);
-    if(t){
-      TOKEN=t;
-      showPanel();
-      loadReviews();
+  // === Login ===
+  async function doLogin(){
+    const u   = qs("#user").value.trim();
+    const p   = qs("#pass").value;
+    const out = qs("#loginOut");
+    const btn = qs("#loginBtn");
+
+    if(!u || !p){
+      out.textContent = "Kullanıcı adı ve şifre zorunlu.";
+      showToast("Kullanıcı adı ve şifre zorunlu.", "err");
       return;
     }
-  }catch{}
-  showLogin();
-})();
+
+    out.textContent = "Giriş yapılıyor...";
+    if(btn) btn.disabled = true;
+
+    try{
+      const r = await api("/api/login",{
+        method:"POST",
+        body:JSON.stringify({ username:u, password:p })
+      });
+      if(r && r.success && r.token){
+        setToken(r.token);
+        out.textContent = "Giriş başarılı ✅";
+        showToast("Admin girişi başarılı.", "ok");
+        showPanel();
+        loadReviews();
+      }else{
+        const msg = (r && r.message) || "Hatalı kullanıcı adı veya şifre.";
+        out.textContent = msg;
+        showToast(msg, "err");
+      }
+    }catch(e){
+      out.textContent = e.message || "Sunucu hatası.";
+      showToast(out.textContent, "err");
+    }finally{
+      if(btn) btn.disabled = false;
+    }
+  }
+
+  // === Yorumlar ===
+  async function loadReviews(){
+    const info = qs("#listInfo");
+    info.textContent = "Yükleniyor...";
+    try{
+      const pidRaw = qs("#filterPid").value.trim();
+      const base   = "/api/admin/reviews";
+      const url    = pidRaw ? `${base}?productId=${encodeURIComponent(pidRaw)}` : base;
+
+      const r = await api(url);
+      REVIEWS = Array.isArray(r.items) ? r.items : [];
+      info.textContent = `${REVIEWS.length} yorum bulundu.`;
+      applyFilters();
+      showToast("Yorumlar yenilendi.", "info");
+    }catch(e){
+      info.textContent = e.message || "Sunucu hatası.";
+      showToast(info.textContent, "err");
+    }
+  }
+
+  function computeMetrics(list){
+    const total     = list.length;
+    const approved  = list.filter(x => x.approved).length;
+    const pending   = list.filter(x => !x.approved).length;
+    const withPhoto = list.filter(x => Array.isArray(x.photos) && x.photos.length>0).length;
+    const ratings   = list.map(x => Number(x.rating||0)).filter(n => n>0);
+    const avgRating = ratings.length ? (ratings.reduce((a,b)=>a+b,0) / ratings.length) : 0;
+    return { total, approved, pending, withPhoto, avgRating };
+  }
+
+  function renderMetrics(listAll){
+    const row = qs("#metricsRow");
+    if(!row) return;
+    const mAll = computeMetrics(REVIEWS);
+    const mSel = computeMetrics(listAll);
+    if(!mAll.total){
+      row.innerHTML = "";
+      return;
+    }
+    row.innerHTML = `
+      <span class="metric-chip">Toplam: ${mAll.total}</span>
+      <span class="metric-chip">Gösterilen: ${mSel.total}</span>
+      <span class="metric-chip">Onaylı: ${mAll.approved}</span>
+      <span class="metric-chip">Bekleyen: ${mAll.pending}</span>
+      <span class="metric-chip">Fotoğraflı: ${mAll.withPhoto}</span>
+      <span class="metric-chip">Ortalama Puan: ${mAll.avgRating ? mAll.avgRating.toFixed(2) : "-"}</span>
+    `;
+  }
+
+  function applyFilters(){
+    const pid   = qs("#filterPid").value.toLowerCase().trim();
+    const txt   = qs("#searchText").value.toLowerCase().trim();
+    const stat  = qs("#filterStatus").value;
+    const rat   = qs("#filterRating").value;
+    const photo = qs("#filterPhoto").checked;
+
+    let list = REVIEWS.slice();
+
+    if(pid){
+      list = list.filter(x =>
+        String(x.productId||"").toLowerCase().includes(pid)
+      );
+    }
+    if(txt){
+      list = list.filter(x =>
+        String(x.displayName||"").toLowerCase().includes(txt) ||
+        String(x.comment||"").toLowerCase().includes(txt)
+      );
+    }
+    if(stat==="pending")  list = list.filter(x => !x.approved);
+    if(stat==="approved") list = list.filter(x =>  x.approved);
+
+    if(rat!=="all"){
+      const min = Number(rat);
+      if(min===5) list = list.filter(x => Number(x.rating||0) === 5);
+      else        list = list.filter(x => Number(x.rating||0) >= min);
+    }
+
+    if(photo){
+      list = list.filter(x => Array.isArray(x.photos) && x.photos.length>0);
+    }
+
+    renderTable(list);
+    renderMetrics(list);
+  }
+
+  function renderTable(list){
+    const tb   = qs("#tbody");
+    const info = qs("#listInfo");
+    tb.innerHTML = "";
+
+    if(!list.length){
+      tb.innerHTML = `<tr><td colspan="6" class="muted">Yorum yok</td></tr>`;
+      if(REVIEWS.length){
+        info.textContent = "Filtrelere uyan yorum bulunamadı.";
+      }
+      return;
+    }
+
+    info.textContent = `${list.length} yorum gösteriliyor (toplam ${REVIEWS.length}).`;
+
+    tb.innerHTML = list.map(x=>{
+      const id        = String(x.id||"");
+      const safeId    = esc(id);
+      const safeProd  = esc(String(x.productId||""));
+      const safeName  = esc(String(x.displayName||"Kullanıcı"));
+      const safeDate  = esc(fmtDate(x.createdAt));
+      const rating    = Number(x.rating||0);
+      const comment   = String(x.comment||"");
+      const titleFull = esc(comment);
+      const snippet   = esc(comment.length>600 ? comment.slice(0,600)+"…" : comment);
+      const photos    = Array.isArray(x.photos) ? x.photos : [];
+
+      const photosHtml = photos.length
+        ? `<div class="photo-grid">${photos.map(p=>(
+            `<img src="${esc(String(p))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.opacity=0.4">`
+          )).join("")}</div>`
+        : `<span class="muted">Fotoğraf yok</span>`;
+
+      const statusCls = x.approved ? "ok" : "warn";
+      const statusTxt = x.approved ? "Onaylı" : "Bekliyor";
+
+      return `
+        <tr>
+          <td>
+            <code>${safeId}</code><br>
+            <span class="muted" style="font-size:12px">Ürün: ${safeProd}</span>
+          </td>
+          <td>
+            ${safeName}<br>
+            <span class="muted" style="font-size:12px">${safeDate}</span>
+          </td>
+          <td>
+            <div class="stars">${stars(rating)}</div>
+            <div class="comment-snippet" title="${titleFull}">${snippet}</div>
+          </td>
+          <td>${photosHtml}</td>
+          <td><span class="pill ${statusCls}">${statusTxt}</span></td>
+          <td>
+            <button class="btn ghost" type="button"
+              data-action="approve"
+              data-id="${safeId}"
+              data-next="${x.approved ? "0" : "1"}">
+              ${x.approved ? "Onayı Kaldır" : "Onayla"}
+            </button>
+            <button class="btn danger" type="button"
+              data-action="delete"
+              data-id="${safeId}">
+              Sil
+            </button>
+          </td>
+        </tr>`;
+    }).join("");
+  }
+
+  // === Buton aksiyonları ===
+  qs("#tbody").addEventListener("click", async (e)=>{
+    const btn = e.target.closest("button[data-action]");
+    if(!btn) return;
+    const id  = btn.getAttribute("data-id") || "";
+    const act = btn.getAttribute("data-action");
+    if(!id) return;
+
+    try{
+      if(act==="approve"){
+        const ok = btn.getAttribute("data-next") === "1";
+        await api(`/api/admin/reviews/${encodeURIComponent(id)}/approve`,{
+          method:"PATCH",
+          body:JSON.stringify({ approved:ok })
+        });
+        showToast(ok ? "Yorum onaylandı." : "Yorum onayı kaldırıldı.", "ok");
+      }else if(act==="delete"){
+        if(!confirm("Yorum silinsin mi?")) return;
+        await api(`/api/admin/reviews/${encodeURIComponent(id)}`,{
+          method:"DELETE"
+        });
+        showToast("Yorum silindi.", "ok");
+      }
+      await loadReviews();
+    }catch(err){
+      showToast(err.message || "İşlem hatası.", "err");
+    }
+    });
+
+  // === Eventler ===
+  qs("#loginBtn").addEventListener("click", doLogin);
+  qs("#reloadBtn").addEventListener("click", loadReviews);
+  qs("#filterPid").addEventListener("input", applyFilters);
+  qs("#searchText").addEventListener("input", applyFilters);
+  qs("#filterStatus").addEventListener("change", applyFilters);
+  qs("#filterRating").addEventListener("change", applyFilters);
+  qs("#filterPhoto").addEventListener("change", applyFilters);
+
+  // Enter ile login
+  ["user","pass"].forEach(id=>{
+    const el = qs("#"+id);
+    if(!el) return;
+    el.addEventListener("keydown",(ev)=>{
+      if(ev.key === "Enter") doLogin();
+    });
+  });
+
+  // === INIT ===
+  (function init(){
+    setToken(null);
+    try{
+      const t = localStorage.getItem(STORAGE_KEY);
+      if(t){
+        setToken(t);
+        showPanel();
+        qs("#loginOut").textContent = "Kayıtlı admin oturumu yüklendi.";
+        loadReviews();
+        return;
+      }
+    }catch{}
+    showLogin();
+  })();
 </script>
 
 </body>

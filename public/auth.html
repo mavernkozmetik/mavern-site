@@ -5,8 +5,10 @@
   <meta http-equiv="Cache-Control" content="no-store" />
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Mavern • Giriş / Kayıt</title>
+
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;500&display=swap" rel="stylesheet">
+
   <style>
     :root{
       --bg:#050816;
@@ -25,17 +27,23 @@
     html,body{
       margin:0;
       min-height:100%;
-      font-family:Poppins,system-ui,Segoe UI,Roboto,Arial;
+      font-family:Poppins,system-ui,Segoe UI,Roboto,Arial,sans-serif;
       background:
         radial-gradient(900px 600px at 0% 0%, #1f2937 0, #020617 60%),
         radial-gradient(900px 600px at 100% 0%, #0f172a 0, #020617 60%);
       color:var(--text);
     }
+    body{
+      display:flex;
+      justify-content:center;
+    }
     .wrap{
-      max-width:900px;
+      max-width:960px;
+      width:100%;
       margin:32px auto 40px;
       padding:0 16px 32px;
     }
+
     .top-row{
       display:flex;
       align-items:center;
@@ -49,8 +57,8 @@
       gap:10px;
     }
     .brand-logo-circle{
-      width:40px;
-      height:40px;
+      width:42px;
+      height:42px;
       border-radius:50%;
       background:radial-gradient(circle at 30% 20%,#f9fafb,#4b5563);
       display:flex;
@@ -75,20 +83,23 @@
 
     .card{
       margin-top:16px;
-      background:radial-gradient(circle at 0 0,rgba(148,163,184,.15),transparent 40%),
-                 linear-gradient(180deg,rgba(15,23,42,.98),rgba(2,6,23,.98));
+      background:
+        radial-gradient(circle at 0 0,rgba(148,163,184,.15),transparent 40%),
+        linear-gradient(180deg,rgba(15,23,42,.98),rgba(2,6,23,.98));
       border-radius:18px;
       border:1px solid var(--border);
       padding:18px 16px 16px;
       box-shadow:0 18px 42px rgba(0,0,0,.75);
     }
+
     .layout{
       display:grid;
-      grid-template-columns: minmax(0, 1.15fr);
+      grid-template-columns:minmax(0,1.1fr);
       gap:16px;
+      align-items:flex-start;
     }
     .layout.account{
-      grid-template-columns: minmax(0,1.1fr) minmax(0,1.2fr);
+      grid-template-columns:minmax(0,1.05fr) minmax(0,1.15fr);
     }
 
     .tabs{
@@ -110,6 +121,7 @@
       font-weight:500;
       background:transparent;
       color:var(--muted);
+      transition:background .16s, box-shadow .16s, color .16s;
     }
     .tab.active{
       background:radial-gradient(circle at 0 0,#e5e7ff,#6366f1);
@@ -157,6 +169,7 @@
       grid-template-columns:1fr 1fr;
       gap:8px;
     }
+
     .btn{
       padding:9px 10px;
       border-radius:10px;
@@ -164,25 +177,36 @@
       cursor:pointer;
       font-weight:600;
       font-size:.9rem;
+      transition:filter .16s, background .16s, border-color .16s;
     }
+    .btn[disabled]{opacity:.6;cursor:not-allowed;}
     .btn.primary{
       background:var(--btn);
       color:var(--btnText);
+    }
+    .btn.primary:hover:not([disabled]){
+      filter:brightness(.97);
     }
     .btn.ghost{
       background:transparent;
       border-color:#334155;
       color:#e5e7eb;
     }
+    .btn.ghost:hover{
+      filter:brightness(1.05);
+    }
     .btn.danger{
       background:#3f1d1d;
       border-color:#7f1d1d;
       color:#fecaca;
     }
+
     .muted{
       color:var(--muted);
       font-size:.8rem;
     }
+    .small{font-size:.75rem;}
+
     .status{
       margin-top:6px;
       min-height:18px;
@@ -190,10 +214,9 @@
     }
     .status.ok{color:#4ade80;}
     .status.err{color:#fecaca;}
-    .small{
-      font-size:.75rem;
-    }
+
     .hidden{display:none;}
+
     .pill{
       display:inline-flex;
       align-items:center;
@@ -206,6 +229,7 @@
       color:var(--muted);
     }
     .pill strong{color:var(--text);font-weight:500;}
+
     .pill-status{
       padding:2px 7px;
       border-radius:999px;
@@ -227,6 +251,7 @@
       text-decoration:none;
     }
     a:hover{text-decoration:underline;}
+
     .pwd-wrap{
       position:relative;
     }
@@ -254,6 +279,7 @@
       max-height:320px;
       overflow:auto;
       padding-right:4px;
+      margin-top:6px;
     }
     .order-item{
       padding:10px 10px;
@@ -290,7 +316,7 @@
     @media (max-width:768px){
       .wrap{margin-top:20px;}
       .layout.account{
-        grid-template-columns: minmax(0,1fr);
+        grid-template-columns:minmax(0,1fr);
       }
       .orders-list{max-height:none;}
     }
@@ -346,7 +372,9 @@
         <button class="btn ghost" type="button" onclick="logout()">Çıkış Yap</button>
         <button id="btnAdminLink" class="btn primary hidden" type="button" onclick="goAdmin()">Admin Panel</button>
       </div>
-      <p class="muted small" style="margin-top:4px;">Not: Kişisel bilgilerin KVKK kapsamında korunur.</p>
+      <p class="muted small" style="margin-top:4px;">
+        Bilgilerin KVKK kapsamında yalnızca sipariş ve hesap işlemleri için kullanılır.
+      </p>
     </div>
 
     <!-- SİPARİŞLERİM BLOĞU (sadece girişte gösterilecek) -->
@@ -376,6 +404,9 @@
 
     <!-- GİRİŞ FORMU -->
     <div id="tab-login">
+      <p class="muted small" style="margin:0 0 8px;">
+        Daha önce kayıt olduysan e-posta ve şifrenle giriş yapabilirsin.
+      </p>
       <div class="field">
         <label for="lMail">E-posta</label>
         <input id="lMail" type="email" placeholder="ornek@mail.com" autocomplete="email">
@@ -385,12 +416,20 @@
         <input id="lPass" type="password" placeholder="Şifreniz" autocomplete="current-password">
         <button class="pwd-toggle" type="button" onclick="togglePwd('lPass',this)">Göster</button>
       </div>
-      <button class="btn primary" style="width:100%;margin-top:4px" onclick="handleLogin()">Giriş Yap</button>
+      <button id="btnLogin" class="btn primary" style="width:100%;margin-top:4px" onclick="handleLogin()">Giriş Yap</button>
       <p id="lOut" class="status"></p>
+      <p class="muted small">
+        Şifreni unuttuysan, kayıtlı e-posta adresinle birlikte bizimle iletişime geçebilirsin.
+      </p>
     </div>
 
-    <!-- KAYIT FORMU (GENİŞLETİLMİŞ) -->
+    <!-- KAYIT FORMU -->
     <div id="tab-register" class="hidden">
+      <p class="muted small" style="margin:0 0 8px;">
+        Kayıt ol, sipariş formunda bilgilerini her seferinde tekrar yazmakla uğraşma.
+        Hesabın kısa bir onay sürecinden sonra aktif hale gelir.
+      </p>
+
       <div class="field">
         <label for="rName">Görünen Ad <span class="small">(site içinde görünecek ad, opsiyonel)</span></label>
         <input id="rName" type="text" placeholder="Mavern üyesi">
@@ -436,25 +475,46 @@
         <input id="rPass" type="password" placeholder="Şifreniz" autocomplete="new-password" minlength="6">
         <button class="pwd-toggle" type="button" onclick="togglePwd('rPass',this)">Göster</button>
       </div>
-      <button class="btn primary" style="width:100%;margin-top:4px" onclick="handleRegister()">Kayıt Ol</button>
+      <button id="btnRegister" class="btn primary" style="width:100%;margin-top:4px" onclick="handleRegister()">Kayıt Ol</button>
       <p id="rOut" class="status"></p>
       <p class="muted small" style="margin-top:4px">
-        Kayıt sonrası hesabınızın admin tarafından onaylanması gerekir.  
+        Kayıt sonrası hesabınızın admin tarafından onaylanması gerekir.
         Onaylandığında giriş yapabilirsiniz.
       </p>
     </div>
   </div>
 
+  <!-- Güvenlik & Destek kartı -->
+  <div class="card" style="margin-top:10px;">
+    <h2 style="margin:0 0 6px;font-size:1rem;">Güvenlik & Destek</h2>
+    <p class="muted small" style="margin:0 0 6px;">
+      Mavern hesabın; sipariş süreçlerini hızlandırmak, adresini tek tıkla seçmek ve
+      sipariş geçmişini görmek için kullanılır. Şifren üçüncü kişilerle paylaşılmaz.
+    </p>
+    <ul class="muted small" style="margin:4px 0 6px 16px;padding:0;">
+      <li>Şifreni unutursan, kayıtlı e-posta adresinle bize ulaşabilirsin.</li>
+      <li>E-posta adresin, sipariş ve hesap bilgilendirmeleri için kullanılır.</li>
+      <li>Hesap statün “Onay bekliyor” ise, kısa süre içinde kontrol edilir.</li>
+    </ul>
+    <p class="muted small" style="margin:4px 0 0;">
+      Destek için: <a href="mailto:destek@mavern.com">destek@mavern.com</a>
+      <span style="opacity:.7;">(adres örnektir, kendi mailini yazabilirsin)</span>
+    </p>
+  </div>
+
   <p class="muted small" style="margin-top:10px;text-align:center;">
-    Bu sayfaya tekrar geldiğinizde, giriş yaptıysanız otomatik olarak hesabınız ve siparişleriniz gösterilir.
+    Bu sayfaya tekrar geldiğinde, giriş yaptıysan otomatik olarak hesabın ve siparişlerin gösterilir.
   </p>
 </div>
 
 <script>
   const $ = (s)=>document.querySelector(s);
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const TOKEN_KEY = "mavern_jwt";
   let AUTH_TOKEN = null;
   let ORDERS_CACHE = [];
+
+  function hasTr(s=""){ return /[çğıöşüÇĞİÖŞÜ]/.test(s); }
 
   function setStatus(sel, msg, ok){
     const el = $(sel);
@@ -477,6 +537,18 @@
     }
   }
 
+  async function api(path,opts={}){
+    const headers = {"Content-Type":"application/json", ...(opts.headers||{})};
+    const res = await fetch(path,{...opts,headers,cache:'no-store'});
+    let data = null;
+    try{ data = await res.json(); }catch(_){}
+    if(!res.ok){
+      const msg = data && (data.message || data.error);
+      throw new Error(msg || ('HTTP '+res.status));
+    }
+    return data;
+  }
+
   // TAB GEÇİŞLERİ
   document.addEventListener('click', (e)=>{
     const t = e.target.closest('.tab');
@@ -490,19 +562,20 @@
     setStatus('#rOut','',true);
   });
 
-  async function api(path,opts={}){
-    const headers = {"Content-Type":"application/json", ...(opts.headers||{})};
-    const res = await fetch(path,{...opts,headers,cache:'no-store'});
-    let data = null;
-    try{ data = await res.json(); }catch(_){}
-    if(!res.ok){
-      const msg = data && (data.message || data.error);
-      throw new Error(msg || ('HTTP '+res.status));
+  // Enter ile gönderme (login için)
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){
+      const loginVisible = !$('#tab-login').classList.contains('hidden');
+      const authVisible = !$('#authCard').classList.contains('hidden');
+      if(authVisible && loginVisible){
+        e.preventDefault();
+        handleLogin();
+      }
     }
-    return data;
-  }
+  });
 
   async function handleRegister(){
+    const btn = $('#btnRegister');
     const displayName = $('#rName').value.trim();
     const fullName    = $('#rFullName').value.trim();
     const phone       = $('#rPhone').value.trim();
@@ -517,12 +590,18 @@
       setStatus('#rOut','Geçerli bir e-posta girin.',false);
       return;
     }
+    if(hasTr(email)){
+      setStatus('#rOut','E-posta adresinde Türkçe karakter kullanmayın.',false);
+      return;
+    }
     if(!password || password.length < 6){
       setStatus('#rOut','Şifre en az 6 karakter olmalı.',false);
       return;
     }
 
     setStatus('#rOut','Gönderiliyor...',true);
+    if(btn) btn.disabled = true;
+
     try{
       const body = {
         displayName,
@@ -547,15 +626,22 @@
       }
     }catch(e){
       setStatus('#rOut', e.message || 'Sunucu hatası.', false);
+    }finally{
+      if(btn) btn.disabled = false;
     }
   }
 
   async function handleLogin(){
+    const btn = $('#btnLogin');
     const email = $('#lMail').value.trim();
     const password = $('#lPass').value;
 
     if(!email || !EMAIL_RE.test(email)){
       setStatus('#lOut','Geçerli bir e-posta girin.',false);
+      return;
+    }
+    if(hasTr(email)){
+      setStatus('#lOut','E-posta adresinde Türkçe karakter kullanmayın.',false);
       return;
     }
     if(!password){
@@ -564,21 +650,27 @@
     }
 
     setStatus('#lOut','Giriş yapılıyor...',true);
+    if(btn) btn.disabled = true;
+
     try{
       const r = await api('/api/auth/login',{
+
         method:'POST',
         body:JSON.stringify({ email, password })
       });
       if(r.success && r.token){
-        localStorage.setItem('mavern_jwt', r.token);
+        localStorage.setItem(TOKEN_KEY, r.token);
         AUTH_TOKEN = r.token;
         setStatus('#lOut','Giriş başarılı.',true);
         await loadMe();
+        window.scrollTo({top:0,behavior:'smooth'});
       }else{
         setStatus('#lOut', r.message || 'Giriş başarısız.', false);
       }
     }catch(e){
       setStatus('#lOut', e.message || 'Sunucu hatası.', false);
+    }finally{
+      if(btn) btn.disabled = false;
     }
   }
 
@@ -621,30 +713,28 @@
       const dateStr = dt ? dt.toLocaleString('tr-TR') : '-';
       const first = (o.items && o.items[0]) ? o.items[0].name : 'Ürün';
       const extraCount = (o.items ? o.items.length : 0) - 1;
-      const line = extraCount > 0 ? `${first} +${extraCount} ürün` : first;
+      const line = extraCount > 0 ? (first + ' +' + extraCount + ' ürün') : first;
       const statLabel = statusLabel(o.status);
       const statCls = statusClass(o.status);
       const payable = typeof o.payable === 'number' ? o.payable : (o.total || 0);
       const track = o.trackingCode ? String(o.trackingCode).trim() : '';
 
-      return `
-        <div class="order-item">
-          <div class="order-top">
-            <span class="order-id">#${(o.id||'').slice(0,8)}</span>
-            <span>${dateStr}</span>
-          </div>
-          <div class="order-main">
-            ${line || '-'}
-          </div>
-          <div class="order-footer">
-            <span>
-              <span class="pill-status ${statCls}">${statLabel}</span>
-              ${track ? `<span class="small" style="margin-left:6px;">Kargo: ${track}</span>` : ''}
-            </span>
-            <span class="order-price">${payable} ₺</span>
-          </div>
-        </div>
-      `;
+      return (
+        '<div class="order-item">' +
+          '<div class="order-top">' +
+            '<span class="order-id">#' + String(o.id || '').slice(0,8) + '</span>' +
+            '<span>' + dateStr + '</span>' +
+          '</div>' +
+          '<div class="order-main">' + (line || '-') + '</div>' +
+          '<div class="order-footer">' +
+            '<span>' +
+              '<span class="pill-status ' + statCls + '">' + statLabel + '</span>' +
+              (track ? '<span class="small" style="margin-left:6px;">Kargo: ' + track + '</span>' : '') +
+            '</span>' +
+            '<span class="order-price">' + payable + ' ₺</span>' +
+          '</div>' +
+        '</div>'
+      );
     }).join('');
   }
 
@@ -661,13 +751,12 @@
       ORDERS_CACHE = data.items || [];
       renderOrders(ORDERS_CACHE);
     }catch(e){
-      // sessiz geç, sadece boş göster
       renderOrders([]);
     }
   }
 
   async function loadMe(){
-    const token = localStorage.getItem('mavern_jwt');
+    const token = localStorage.getItem(TOKEN_KEY);
     if(!token){
       AUTH_TOKEN = null;
       $('#accountCard').classList.add('hidden');
@@ -690,7 +779,7 @@
         throw new Error('Oturum bulunamadı.');
       }
       const u = data.user;
-      $('#accWelcome').textContent = `Hoş geldin, ${u.displayName || u.fullName || u.email}.`;
+      $('#accWelcome').textContent = 'Hoş geldin, ' + (u.displayName || u.fullName || u.email) + '.';
       $('#accEmail').textContent   = u.email || '-';
       $('#accName').textContent    = u.displayName || '(tanımlı değil)';
       $('#accFullName').textContent= u.fullName || '(tanımlı değil)';
@@ -718,7 +807,7 @@
 
       await loadOrders();
     }catch(_){
-      localStorage.removeItem('mavern_jwt');
+      localStorage.removeItem(TOKEN_KEY);
       AUTH_TOKEN = null;
       $('#accountCard').classList.add('hidden');
       $('#ordersCard').classList.add('hidden');
@@ -728,14 +817,16 @@
   }
 
   function logout(){
-    localStorage.removeItem('mavern_jwt');
+    localStorage.removeItem(TOKEN_KEY);
     AUTH_TOKEN = null;
-    $('#lPass').value = '';
-    $('#rPass').value = '';
+    const lp = $('#lPass'); if(lp) lp.value = '';
+    const rp = $('#rPass'); if(rp) rp.value = '';
     $('#accountCard').classList.add('hidden');
     $('#ordersCard').classList.add('hidden');
     $('#authCard').classList.remove('hidden');
     $('#accountLayout').classList.remove('account');
+    setStatus('#lOut','',true);
+    setStatus('#rOut','',true);
   }
 
   function goAdmin(){
@@ -743,7 +834,8 @@
   }
 
   function goHome(){
-    window.location.href = '/';
+    // index.html senin ana sayfan
+    window.location.href = 'index.html';
   }
 
   function refreshOrders(){
@@ -752,7 +844,7 @@
   }
 
   (function init(){
-    const tok = localStorage.getItem('mavern_jwt');
+    const tok = localStorage.getItem(TOKEN_KEY);
     if(tok) AUTH_TOKEN = tok;
     loadMe();
   })();

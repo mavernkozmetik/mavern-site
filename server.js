@@ -60,29 +60,28 @@ app.use((req, res, next) => {
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
 
-// Kalıcı disk (ENV ile değiştirilebilir)
-const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(ROOT, "data");
-
-// Varsayılan UPLOAD_DIR kalıcı diske alındı (DATA_DIR/uploads)
-const DEFAULT_UPLOAD_DIR = path.join(DATA_DIR, "uploads");
-const UPLOAD_DIR = process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : DEFAULT_UPLOAD_DIR;
-
-const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
-const MESSAGES_FILE = path.join(DATA_DIR, "messages.json");
-const COUPONS_FILE  = path.join(DATA_DIR, "coupons.json");
-const USERS_FILE    = path.join(DATA_DIR, "users.json");
-const REVIEWS_FILE  = path.join(DATA_DIR, "reviews.json");
-
 /* ----- Yardımcı: dizin/ dosya oluşturma ve yazılabilirlik testi ----- */
+// ÖNEMLİ NOT: Bu fonksiyonlar artık HİÇBİR ZAMAN sunucuyu çökertmez.
+// Yazma izni yoksa sadece uyarı basar, site çalışmaya devam eder.
 function ensureDir(p) {
-  if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+  try {
+    if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+  } catch (e) {
+    console.warn("⚠️  Dizin oluşturulamadı, veriler kalıcı olmayabilir:", p, "-", e.message);
+  }
 }
 function ensureFile(p, init = "[]") {
-  if (!fs.existsSync(p)) fs.writeFileSync(p, init, "utf8");
+  try {
+    if (!fs.existsSync(p)) fs.writeFileSync(p, init, "utf8");
+  } catch (e) {
+    console.warn("⚠️  Dosya oluşturulamadı, veriler kalıcı olmayabilir:", p, "-", e.message);
+  }
 }
 function testWritable(dirOrFilePath) {
   try {
-    const testPath = fs.lstatSync(dirOrFilePath).isDirectory()
+    const stat = fs.lstatSync(dirOrFilePath);
+    const isDir = stat.isDirectory();
+    const testPath = isDir
       ? path.join(dirOrFilePath, ".rw-test-" + Date.now())
       : dirOrFilePath + ".rw-test-" + Date.now();
     fs.writeFileSync(testPath, "ok", "utf8");
@@ -93,7 +92,51 @@ function testWritable(dirOrFilePath) {
   }
 }
 
-// Klasör/JSON başlangıcı (overwrite yapmaz)
+/**
+ * DATA_DIR seçim mantığı:
+ * 1) ENV.DATA_DIR varsa onu dener.
+ * 2) Yazılabilir değilse projedeki ./data klasörüne otomatik döner.
+ * Böylece /data EACCES hatası alsa bile site yerel ./data ile KALICI çalışır.
+ */
+const ENV_DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : null;
+let DATA_DIR = ENV_DATA_DIR || path.join(ROOT, "data");
+
+ensureDir(DATA_DIR);
+let writableData = testWritable(DATA_DIR);
+
+if (!writableData && ENV_DATA_DIR) {
+  const fallback = path.join(ROOT, "data");
+  if (fallback !== DATA_DIR) {
+    console.warn(
+      "⚠️  DATA_DIR yazılabilir değil:",
+      DATA_DIR,
+      "→ Yerel ./data klasörüne geçiliyor:",
+      fallback
+    );
+    DATA_DIR = fallback;
+    ensureDir(DATA_DIR);
+    writableData = testWritable(DATA_DIR);
+  }
+}
+
+if (!writableData) {
+  console.warn(
+    "⚠️  DATA_DIR hala yazılamıyor. Uygulama read-only çalışacak, kayıt/ürün/yorumlar kalıcı olmayabilir."
+  );
+}
+
+// Varsayılan UPLOAD_DIR kalıcı diske alındı (DATA_DIR/uploads)
+const DEFAULT_UPLOAD_DIR = path.join(DATA_DIR, "uploads");
+const UPLOAD_DIR = process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : DEFAULT_UPLOAD_DIR;
+
+// JSON dosyaları
+const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
+const MESSAGES_FILE = path.join(DATA_DIR, "messages.json");
+const COUPONS_FILE  = path.join(DATA_DIR, "coupons.json");
+const USERS_FILE    = path.join(DATA_DIR, "users.json");
+const REVIEWS_FILE  = path.join(DATA_DIR, "reviews.json");
+
+// klasör/dosya init (overwrite yapmaz)
 ensureDir(DATA_DIR);
 ensureDir(PUBLIC_DIR);
 ensureDir(UPLOAD_DIR);
@@ -104,13 +147,20 @@ ensureFile(USERS_FILE,    "[]");
 ensureFile(REVIEWS_FILE,  "[]");
 
 // Yazılabilirlik logları
-const writableData = testWritable(DATA_DIR);
 const writableUploads = testWritable(UPLOAD_DIR);
 if (!writableData) {
-  console.warn("⚠️  DATA_DIR yazılabilir değil:", DATA_DIR, " (ENV ile kalıcı dizin vermen gerekir; örn: DATA_DIR=/data)");
+  console.warn(
+    "⚠️  DATA_DIR yazılabilir değil:",
+    DATA_DIR,
+    " (Prod'da kalıcılık olmayacak; örn: DATA_DIR=/data için izin yok.)"
+  );
 }
 if (!writableUploads) {
-  console.warn("⚠️  UPLOAD_DIR yazılabilir değil:", UPLOAD_DIR, " (ENV ile kalıcı dizin vermen gerekir; örn: UPLOAD_DIR=/data/uploads)");
+  console.warn(
+    "⚠️  UPLOAD_DIR yazılabilir değil:",
+    UPLOAD_DIR,
+    " (Görsel yükleme kalıcı olmayabilir.)"
+  );
 }
 
 /* ---------------------------- Statik servisleme --------------------------- */
@@ -128,10 +178,20 @@ app.use(express.static(PUBLIC_DIR, { extensions: ["html"] }));
 
 /* ---------------------------- Yardımcı Fonksiyonlar ----------------------- */
 const readJSON = (file, fallback = []) => {
-  try { return JSON.parse(fs.readFileSync(file, "utf8") || "[]"); }
-  catch { return fallback; }
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8") || "[]");
+  } catch {
+    return fallback;
+  }
 };
-const writeJSON = (file, data) => fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
+const writeJSON = (file, data) => {
+  try {
+    fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
+  } catch (e) {
+    // ÖNEMLİ: Burada da artık sunucu ÇÖKMEZ, sadece uyarı basar.
+    console.warn("⚠️  JSON yazılamadı, değişiklikler kalıcı olmayabilir:", file, "-", e.message);
+  }
+};
 
 const containsTR   = (s = "") => /[çğıöşüÇĞİÖŞÜ]/.test(s);
 const isValidEmail = (e = "") => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
@@ -1306,7 +1366,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Mavern sunucusu çalışıyor: http://localhost:${PORT}`);
   console.log(`📦 DATA_DIR:   ${DATA_DIR}  ${writableData ? "(yazılabilir)" : "(YAZILAMAZ!)"}`);
   console.log(`🖼  UPLOAD_DIR: ${UPLOAD_DIR}  ${writableUploads ? "(yazılabilir)" : "(YAZILAMAZ!)"}`);
-  if (!process.env.DATA_DIR) {
-    console.log("ℹ️  DATA_DIR ENV tanımlı değil. Varsayılan yerel ./data kullanılıyor. Prod ortamda kalıcılık için DATA_DIR=/data ver.");
+  if (!ENV_DATA_DIR) {
+    console.log("ℹ️  DATA_DIR ENV tanımlı değil. Varsayılan yerel ./data kullanılıyor. Prod ortamda kalıcılık için istersen DATA_DIR verebilirsin (yazılabilir olmalı).");
   }
 });

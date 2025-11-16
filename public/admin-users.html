@@ -18,25 +18,52 @@
       --warn-border:#5b4f1a;
       --danger:#2a0f0f;
       --danger-border:#5d1b1b;
+      --shadow:0 18px 50px rgba(0,0,0,.55);
     }
     *{box-sizing:border-box}
-    html,body{margin:0;background:radial-gradient(1200px 600px at 20% -10%, #15192b 0%, #050815 50%, #020308 100%);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    html,body{
+      margin:0;
+      background:
+        radial-gradient(1200px 600px at 20% -10%, #15192b 0%, #050815 50%, #020308 100%);
+      color:var(--ink);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    }
     h1,h2,h3{margin:0}
     a{color:var(--accent);text-decoration:none}
     a:hover{text-decoration:underline}
-    .wrap{max-width:980px;margin:20px auto;padding:0 16px}
-    .top-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
-    .brand{display:flex;align-items:center;gap:8px}
-    .brand-dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#f0f2ff,#7e8fff);box-shadow:0 0 18px #8ea2ff}
+
+    .wrap{max-width:980px;margin:20px auto 28px;padding:0 16px}
+
+    .top-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand-dot{
+      width:10px;height:10px;border-radius:50%;
+      background:linear-gradient(135deg,#f0f2ff,#7e8fff);
+      box-shadow:0 0 18px #8ea2ff;
+    }
+    .brand-sub{
+      font-size:13px;
+      color:var(--muted);
+      margin-top:2px;
+    }
+
     .muted{color:var(--muted)}
+
     .card{
       background:linear-gradient(180deg,rgba(10,15,35,.95),rgba(5,8,20,.98));
       border:1px solid var(--border);
       border-radius:14px;
       padding:14px 16px;
-      box-shadow:0 18px 50px rgba(0,0,0,.55);
+      box-shadow:var(--shadow);
       margin-top:14px;
     }
+
     input,button,select{
       padding:8px 10px;
       border-radius:8px;
@@ -45,35 +72,184 @@
       color:var(--ink);
       font-family:inherit;
       font-size:14px;
+      outline:none;
     }
     input::placeholder{color:#657087}
+    input:focus,select:focus{
+      border-color:#6366f1;
+      box-shadow:0 0 0 1px rgba(99,102,241,.5);
+    }
     button{cursor:pointer}
     button:disabled{opacity:.6;cursor:not-allowed}
-    .btn{border-radius:10px}
-    .btn.primary{background:var(--accent);color:#050815;border-color:transparent;font-weight:600}
-    .btn.ghost{background:transparent;border-color:#2b3a57;color:var(--accent)}
-    .btn.danger{background:#3a1717;border-color:var(--danger-border);color:#ffb3b3}
+
+    .btn{
+      border-radius:10px;
+      font-weight:600;
+      font-size:13px;
+      border-width:1px;
+    }
+    .btn.primary{
+      background:var(--accent);
+      color:#050815;
+      border-color:transparent;
+    }
+    .btn.ghost{
+      background:transparent;
+      border-color:#2b3a57;
+      color:var(--accent);
+    }
+    .btn.danger{
+      background:#3a1717;
+      border-color:var(--danger-border);
+      color:#ffb3b3;
+    }
+
     .row{display:flex;gap:8px;align-items:center}
     .row.wrap{flex-wrap:wrap}
+    .row.between{justify-content:space-between}
     .grow{flex:1}
+
     .pill{
-      display:inline-flex;align-items:center;gap:4px;
-      padding:2px 8px;border-radius:999px;border:1px solid #2b3a57;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid #2b3a57;
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .pill.ok{
+      background:var(--ok);
+      border-color:var(--ok-border);
+      color:#9ff3b0;
+    }
+    .pill.warn{
+      background:var(--warn);
+      border-color:var(--warn-border);
+      color:#f2e19a;
+    }
+    .pill.danger{
+      background:var(--danger);
+      border-color:var(--danger-border);
+      color:#ffb3b3;
+    }
+    .pill.tag{
+      background:#111827;
+      border-color:#1f2937;
+      color:#cfd6ff;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      font-size:14px;
+    }
+    th,td{
+      border-bottom:1px solid #1f2937;
+      padding:8px 6px;
+      vertical-align:top;
+      text-align:left;
+    }
+    th{
+      font-weight:600;
+      color:#cbd5f5;
+      background:rgba(15,23,42,.92);
+      position:sticky;
+      top:0;
+      z-index:1;
+    }
+    tr:hover td{background:rgba(15,23,42,.5);}
+
+    code{
+      font-family:ui-monospace,Menlo,Consolas,monospace;
       font-size:12px;
     }
-    .pill.ok{background:var(--ok);border-color:var(--ok-border);color:#9ff3b0}
-    .pill.warn{background:var(--warn);border-color:var(--warn-border);color:#f2e19a}
-    .pill.danger{background:var(--danger);border-color:var(--danger-border);color:#ffb3b3}
-    .pill.tag{background:#111827;border-color:#1f2937;color:#cfd6ff}
-    table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
-    th,td{border-bottom:1px solid #1f2937;padding:8px 6px;vertical-align:top;text-align:left}
-    th{font-weight:600;color:#cbd5f5;background:rgba(15,23,42,.8);position:sticky;top:0;z-index:1}
-    tr:hover td{background:rgba(15,23,42,.55)}
-    code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
-    .status-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px;font-size:13px}
-    .filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .table-wrap{max-height:520px;overflow:auto;border-radius:10px;border:1px solid var(--border);margin-top:8px}
-    .badge-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#4ade80}
+
+    .status-bar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      margin-top:6px;
+      font-size:13px;
+      flex-wrap:wrap;
+    }
+
+    .filters{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+
+    .table-wrap{
+      max-height:520px;
+      overflow:auto;
+      border-radius:10px;
+      border:1px solid var(--border);
+      margin-top:8px;
+      background:#020617;
+    }
+
+    .metric-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .metric-chip{
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid #1f2937;
+      background:#020617;
+    }
+
+    .badge-dot{
+      display:inline-block;
+      width:7px;height:7px;
+      border-radius:50%;
+      background:#4ade80;
+    }
+
+    /* Toast */
+    .toast-wrap{
+      position:fixed;
+      top:10px;
+      right:10px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      z-index:9999;
+    }
+    .toast{
+      min-width:220px;
+      max-width:320px;
+      padding:8px 10px;
+      border-radius:10px;
+      font-size:12px;
+      box-shadow:0 10px 25px rgba(0,0,0,.7);
+      backdrop-filter:blur(8px);
+      border:1px solid #1f2937;
+    }
+    .toast.info{
+      background:rgba(15,23,42,.96);
+      color:#e5e7eb;
+    }
+    .toast.ok{
+      background:rgba(22,163,74,.94);
+      color:#ecfdf5;
+      border-color:#4ade80;
+    }
+    .toast.err{
+      background:rgba(185,28,28,.95);
+      color:#fee2e2;
+      border-color:#fecaca;
+    }
+
     @media(max-width:700px){
       .top-row{flex-direction:column;align-items:flex-start}
       .row.responsive{flex-direction:column;align-items:stretch}
@@ -84,16 +260,21 @@
   </style>
 </head>
 <body>
+<div class="toast-wrap" id="toastWrap"></div>
+
 <div class="wrap">
   <div class="top-row">
     <div class="brand">
       <span class="brand-dot" aria-hidden="true"></span>
       <div>
         <h2>Mavern Admin • Kullanıcılar</h2>
-        <div class="muted" style="font-size:13px">JWT üyeler + yorum yetkisi · Güvenli yönetim ekranı</div>
+        <div class="brand-sub">
+          JWT üyeler · Onay / Admin yetkisi · Güvenli yönetim ekranı
+        </div>
       </div>
     </div>
     <div class="row">
+      <span id="adminState" class="muted" style="font-size:12px;"></span>
       <button class="btn ghost" id="btnLogout" style="display:none">Çıkış</button>
     </div>
   </div>
@@ -108,14 +289,16 @@
     </div>
     <div class="status-bar">
       <span id="loginOut" class="muted"></span>
-      <span class="muted" style="font-size:12px">Bu sayfa <code>/api/login</code> &amp; <code>/api/admin/users</code> kullanır.</span>
+      <span class="muted" style="font-size:12px">
+        Bu sayfa <code>/api/login</code> &amp; <code>/api/admin/users</code> endpointlerini kullanır.
+      </span>
     </div>
   </div>
 
   <!-- PANEL -->
   <div class="card" id="panelBox" style="display:none">
-    <div class="row" style="justify-content:space-between;align-items:center;gap:8px">
-      <h3 style="margin:0">Kullanıcı Listesi</h3>
+    <div class="row between">
+      <h3>Kullanıcı Listesi</h3>
       <div class="row wrap">
         <button id="reloadBtn" class="btn ghost">Yenile</button>
       </div>
@@ -127,12 +310,12 @@
       </div>
       <div class="row">
         <select id="filterStatus">
-          <option value="all">Tümü</option>
+          <option value="all">Durum: Tümü</option>
           <option value="pending">Onay Bekleyenler</option>
           <option value="approved">Onaylı</option>
         </select>
         <select id="filterRole">
-          <option value="all">Tümü</option>
+          <option value="all">Rol: Tümü</option>
           <option value="admins">Sadece Adminler</option>
           <option value="members">Sadece Üyeler</option>
         </select>
@@ -141,19 +324,18 @@
 
     <div class="status-bar">
       <span id="listInfo" class="muted"></span>
-      <span class="muted" style="font-size:12px">
-        <span class="badge-dot"></span> Onaylı •
-        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#facc15;margin:0 2px"></span> Bekleyen
-      </span>
+      <div class="metric-row" id="metricsRow">
+        <!-- JS ile doldurulacak -->
+      </div>
     </div>
 
-    <div class="table-wrap" id="tableWrap">
+    <div class="table-wrap">
       <table>
         <thead>
           <tr>
             <th>ID</th>
-            <th>E-posta</th>
-            <th>Durum</th>
+            <th>Kullanıcı</th>
+            <th>Durum / Rol</th>
             <th>Oluşturma</th>
             <th>İşlem</th>
           </tr>
@@ -167,10 +349,23 @@
 <script>
   // ===== Yardımcılar =====
   const qs  = (s) => document.querySelector(s);
-  const esc = (s="") => String(s).replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[m]));
+  const esc = (s="") =>
+    String(s).replace(/[&<>"']/g, m => (
+      { "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[m]
+    ));
   const fmtDate = (iso) => iso ? new Date(iso).toLocaleString("tr-TR") : "-";
 
-  const STORAGE_KEY = "MAVERN_ADMIN_TOKEN"; // ana panel ile aynı key istersen değiştirmene gerek yok
+  function showToast(msg, type="info"){
+    const wrap = qs("#toastWrap");
+    if(!wrap) return;
+    const div = document.createElement("div");
+    div.className = "toast "+type;
+    div.textContent = msg;
+    wrap.appendChild(div);
+    setTimeout(()=>{ div.remove(); }, 3500);
+  }
+
+  const STORAGE_KEY = "MAVERN_ADMIN_TOKEN";
   let TOKEN = null;
   let USERS = [];
 
@@ -180,6 +375,17 @@
       if(TOKEN) localStorage.setItem(STORAGE_KEY, TOKEN);
       else localStorage.removeItem(STORAGE_KEY);
     }catch{}
+    updateAdminState();
+  }
+
+  function updateAdminState(){
+    const el = qs("#adminState");
+    if(!el) return;
+    if(TOKEN){
+      el.textContent = "Oturum aktif.";
+    }else{
+      el.textContent = "Oturum açılmadı.";
+    }
   }
 
   async function api(path, opts={}) {
@@ -195,15 +401,15 @@
     if(res.status === 401){
       setToken(null);
       showLogin(true);
-      const msg = (data && (data.message || data.error)) || "Yetkisiz. Tekrar giriş yapın.";
-      throw new Error(msg);
+      showToast((data && (data.message || data.error)) || "Yetkisiz. Tekrar giriş yapın.", "err");
+      throw new Error("Yetkisiz");
     }
 
     if(!res.ok){
       const msg = data && (data.message || data.error);
       throw new Error(msg || ("HTTP "+res.status));
     }
-    return data;
+    return data || {};
   }
 
   function showLogin(show){
@@ -217,7 +423,17 @@
     const u = qs("#user").value.trim();
     const p = qs("#pass").value;
     const out = qs("#loginOut");
+    const btn = qs("#loginBtn");
+
+    if(!u || !p){
+      out.textContent = "Kullanıcı adı ve şifre zorunlu.";
+      showToast("Kullanıcı adı ve şifre zorunlu.", "err");
+      return;
+    }
+
     out.textContent = "Giriş yapılıyor...";
+    if(btn) btn.disabled = true;
+
     try{
       const r = await api("/api/login",{
         method:"POST",
@@ -226,13 +442,19 @@
       if(r.success && r.token){
         setToken(r.token);
         out.textContent = "Giriş başarılı ✅";
+        showToast("Admin girişi başarılı.", "ok");
         showLogin(false);
         loadUsersList();
       }else{
-        out.textContent = (r && r.message) || "Kullanıcı adı veya şifre hatalı.";
+        const msg = (r && r.message) || "Kullanıcı adı veya şifre hatalı.";
+        out.textContent = msg;
+        showToast(msg, "err");
       }
     }catch(e){
       out.textContent = e.message || "Sunucu hatası.";
+      showToast(out.textContent, "err");
+    }finally{
+      if(btn) btn.disabled = false;
     }
   }
 
@@ -242,11 +464,36 @@
     qs("#tbody").innerHTML = "";
     qs("#listInfo").textContent = "";
     qs("#loginOut").textContent = "Oturum kapatıldı.";
+    showToast("Oturum kapatıldı.", "info");
   }
 
   // ===== Kullanıcılar =====
+  function computeMetrics(){
+    const total    = USERS.length;
+    const approved = USERS.filter(u => u.isApproved).length;
+    const pending  = USERS.filter(u => !u.isApproved).length;
+    const admins   = USERS.filter(u => u.isAdmin).length;
+    return { total, approved, pending, admins };
+  }
+
+  function renderMetrics(){
+    const row = qs("#metricsRow");
+    if(!row) return;
+    const m = computeMetrics();
+    if(!m.total){
+      row.innerHTML = "";
+      return;
+    }
+    row.innerHTML = `
+      <span class="metric-chip">Toplam: ${m.total}</span>
+      <span class="metric-chip">Onaylı: ${m.approved}</span>
+      <span class="metric-chip">Bekleyen: ${m.pending}</span>
+      <span class="metric-chip">Admin: ${m.admins}</span>
+    `;
+  }
+
   function applyFilters(){
-    const term = qs("#searchEmail").value.trim().toLowerCase();
+    const term   = qs("#searchEmail").value.trim().toLowerCase();
     const status = qs("#filterStatus").value;
     const role   = qs("#filterRole").value;
 
@@ -264,10 +511,11 @@
     if(role   === "members")   list = list.filter(u => !u.isAdmin);
 
     renderTable(list);
+    renderMetrics();
   }
 
   function renderTable(list){
-    const tb = qs("#tbody");
+    const tb   = qs("#tbody");
     const info = qs("#listInfo");
     tb.innerHTML = "";
 
@@ -280,16 +528,20 @@
     info.textContent = `${list.length} kullanıcı gösteriliyor (toplam ${USERS.length}).`;
 
     tb.innerHTML = list.map(u=>{
-      const statusLabel = u.isApproved ? "Onaylı" : "Bekliyor";
-      const statusClass = u.isApproved ? "ok" : "warn";
-      const roleLabel   = u.isAdmin ? "Admin" : "Üye";
+      const statusLabel = u.isApproved ? "Onaylı"   : "Onay Bekliyor";
+      const statusClass = u.isApproved ? "ok"       : "warn";
+      const roleLabel   = u.isAdmin    ? "Admin"    : "Üye";
+      const fullName    = u.fullName ? ` • ${esc(u.fullName)}` : "";
+      const city        = u.city ? ` • ${esc(u.city)}` : "";
 
       return `
         <tr>
           <td><code>${esc(u.id)}</code></td>
           <td>
             <div>${esc(u.email)}</div>
-            <div class="muted" style="font-size:12px">${esc(u.displayName || "")}</div>
+            <div class="muted" style="font-size:12px">
+              ${esc(u.displayName || "")}${fullName}${city}
+            </div>
           </td>
           <td>
             <span class="pill ${statusClass}">${statusLabel}</span>
@@ -298,13 +550,16 @@
           <td class="muted" style="font-size:12px">${u.createdAt ? esc(fmtDate(u.createdAt)) : "-"}</td>
           <td>
             <div class="row wrap" style="gap:6px">
-              <button class="btn ghost" style="padding:4px 8px" data-action="approve" data-id="${esc(u.id)}" data-next="${u.isApproved?'0':'1'}">
+              <button class="btn ghost" style="padding:4px 8px"
+                data-action="approve" data-id="${esc(u.id)}" data-next="${u.isApproved?'0':'1'}">
                 ${u.isApproved ? "Onayı Kaldır" : "Onayla"}
               </button>
-              <button class="btn ghost" style="padding:4px 8px" data-action="admin" data-id="${esc(u.id)}" data-next="${u.isAdmin?'0':'1'}">
+              <button class="btn ghost" style="padding:4px 8px"
+                data-action="admin" data-id="${esc(u.id)}" data-next="${u.isAdmin?'0':'1'}">
                 ${u.isAdmin ? "Adminden Al" : "Admin Yap"}
               </button>
-              <button class="btn danger" style="padding:4px 8px" data-action="delete" data-id="${esc(u.id)}">
+              <button class="btn danger" style="padding:4px 8px"
+                data-action="delete" data-id="${esc(u.id)}">
                 Sil
               </button>
             </div>
@@ -318,11 +573,17 @@
     info.textContent = "Yükleniyor...";
     try{
       const r = await api("/api/admin/users");
-      if(!r.success){ info.textContent = "Liste alınamadı."; return; }
-      USERS = (r.items || []);
+      if(!r.success){
+        info.textContent = "Liste alınamadı.";
+        showToast("Kullanıcı listesi alınamadı.", "err");
+        return;
+      }
+      USERS = r.items || [];
       applyFilters();
+      qs("#loginOut").textContent = "";
     }catch(e){
       info.textContent = e.message || "Sunucu hatası.";
+      showToast(info.textContent, "err");
     }
   }
 
@@ -332,14 +593,16 @@
       body:JSON.stringify({ approved: !!ok })
     });
   }
+
   async function setAdmin(id, ok){
     await api(`/api/admin/users/${encodeURIComponent(id)}/approve`,{
       method:"PATCH",
       body:JSON.stringify({ makeAdmin: !!ok })
     });
   }
+
   async function delUser(id){
-    if(!confirm("Kullanıcı silinsin mi? İlgili kullanıcıya ait yorumlar da temizlenecektir.")) return;
+    if(!confirm("Kullanıcı silinsin mi? İlgili kullanıcıya ait yorumlar da silinebilir.")) return;
     await api(`/api/admin/users/${encodeURIComponent(id)}`,{ method:"DELETE" });
   }
 
@@ -351,42 +614,54 @@
   qs("#filterStatus").addEventListener("change", ()=> applyFilters());
   qs("#filterRole").addEventListener("change", ()=> applyFilters());
 
-  // tablo üzerinde event delegation
+  // Tablo action delegation
   qs("#tbody").addEventListener("click", async (e)=>{
     const btn = e.target.closest("button[data-action]");
     if(!btn) return;
-    const id = btn.getAttribute("data-id");
-    const action = btn.getAttribute("data-action");
+    const id  = btn.getAttribute("data-id");
+    const act = btn.getAttribute("data-action");
+
     try{
-      if(action === "approve"){
+      if(act === "approve"){
         const next = btn.getAttribute("data-next") === "1";
         await setApprove(id, next);
-      }else if(action === "admin"){
+        showToast(next ? "Kullanıcı onaylandı." : "Kullanıcı onayı kaldırıldı.", "ok");
+      }else if(act === "admin"){
         const next = btn.getAttribute("data-next") === "1";
         await setAdmin(id, next);
-      }else if(action === "delete"){
+        showToast(next ? "Kullanıcı admin yapıldı." : "Admin yetkisi kaldırıldı.", "ok");
+      }else if(act === "delete"){
         await delUser(id);
+        showToast("Kullanıcı silindi.", "ok");
       }
       await loadUsersList();
     }catch(err){
-      alert(err.message || "İşlem başarısız.");
+      showToast(err.message || "İşlem başarısız.", "err");
     }
+  });
+
+  // ENTER ile login
+  ["user","pass"].forEach(id=>{
+    const el = qs("#"+id);
+    if(!el) return;
+    el.addEventListener("keydown",(ev)=>{
+      if(ev.key === "Enter") doLogin();
+    });
   });
 
   // ===== Init =====
   (function init(){
-    // Önceden alınmış token varsa kullan
+    updateAdminState();
     try{
       const t = localStorage.getItem(STORAGE_KEY);
       if(t){
         TOKEN = t;
         showLogin(false);
-        loadUsersList();
         qs("#loginOut").textContent = "Kayıtlı admin oturumu yüklendi.";
+        loadUsersList();
         return;
       }
     }catch{}
-
     showLogin(true);
   })();
 </script>

@@ -27,7 +27,10 @@ function loadTokenFromStorage() {
 // ===== Panel aç/kapa =====
 function openSidebar(){ qs("#sidebar")?.classList.add("open"); }
 function closeSidebar(){ qs("#sidebar")?.classList.remove("open"); }
-function openCart(){ renderCart(); qs("#cartPanel")?.classList.add("open"); }
+function openCart(){ 
+  renderCart(); 
+  qs("#cartPanel")?.classList.add("open"); 
+}
 function closeCart(){ qs("#cartPanel")?.classList.remove("open"); }
 
 function openProductsPanel(){
@@ -87,7 +90,7 @@ async function api(path, opts = {}) {
 function parsePriceTextToNumber(text){
   const t = String(text ?? "").trim();
   if(!t) return null;
-  const num = Number(t.replace(/[₺\s]/g,"").replace(",","."));
+  const num = Number(t.replace(/[₺\s]/g,"").replace(",",".")); 
   return Number.isFinite(num) ? num : null;
 }
 function normalizeProductClient(p){
@@ -169,7 +172,6 @@ function productCard(p) {
       <img class="prod"
            src="${imgSrc}"
            alt="${esc(p.name)}"
-           style="width:100%;height:180px;object-fit:cover;border-radius:12px;border:1px solid #26324a;background:#0a0f1b"
            onerror="this.src='logo.png'">
     </a>
     <h4 style="margin:.5rem 0 0">
@@ -178,7 +180,8 @@ function productCard(p) {
     <div class="price muted" style="margin:.25rem 0 .5rem">${esc(priceTag)}</div>
     ${p.desc ? `<p style="margin:0 0 .5rem" class="muted">${esc(p.desc)}</p>` : ""}
     <button class="btn"
-      ${canBuy ? `onclick="addToCart('${p.id}')"` : 'disabled title="Satın alınamaz"'}>
+      ${canBuy ? `onclick="addToCart('${p.id}')"` : 'disabled title="Satın alınamaz"'}
+    >
       ${canBuy ? "Sepete Ekle" : "Satın Alınamaz"}
     </button>
   `;
@@ -219,7 +222,8 @@ function changeQty(id, delta) {
   renderCart();
   const el = qs("#checkoutOverlay");
   if(el?.classList.contains("show")){
-    const out = qs("#chPayable"); if(out) out.textContent = fmtMoney(getPayable());
+    const out = qs("#chPayable"); 
+    if(out) out.textContent = fmtMoney(getPayable());
   }
 }
 
@@ -229,7 +233,8 @@ function removeFromCart(id) {
   renderCart();
   const el = qs("#checkoutOverlay");
   if(el?.classList.contains("show")){
-    const out = qs("#chPayable"); if(out) out.textContent = fmtMoney(getPayable());
+    const out = qs("#chPayable"); 
+    if(out) out.textContent = fmtMoney(getPayable());
   }
 }
 
@@ -253,6 +258,25 @@ function getTotals(){
 }
 function getPayable(){ return getTotals().payable; }
 
+// ===== Sticky cart bar (mobil) =====
+function updateStickyCartBar(count, payable){
+  const bar  = qs("#stickyCartBar");
+  if (!bar) return; // HTML’de yoksa sessizce çık
+
+  const totalEl = bar.querySelector("[data-sticky-total]");
+  const labelEl = bar.querySelector("[data-sticky-label]");
+
+  if (count > 0) {
+    bar.classList.add("show");
+    if (totalEl) totalEl.textContent = fmtMoney(payable);
+    if (labelEl) labelEl.textContent = `${count} ürün`;
+    document.body?.classList.add("has-sticky-pad");
+  } else {
+    bar.classList.remove("show");
+    document.body?.classList.remove("has-sticky-pad");
+  }
+}
+
 function renderCart() {
   const list = qs("#cartItems");
   if (!list) return;
@@ -270,6 +294,9 @@ function renderCart() {
   if (st) st.textContent = fmtMoney(subtotal);
   if (dc) dc.textContent = fmtMoney(discount);
   if (py) py.textContent = fmtMoney(payable);
+
+  // Sticky bar’ı güncelle (mobil)
+  updateStickyCartBar(count, payable);
 
   if (!items.length) {
     list.innerHTML = `<div class="muted">Sepetiniz boş.</div>`;
@@ -429,6 +456,108 @@ async function sendMessage() {
   }
 }
 
+// ===== SİPARİŞLERİM (JWT ile) =====
+// auth.html veya başka bir sayfada:
+// <div id="myOrders" data-orders-root></div>
+// koyduğunda otomatik dolacak.
+async function loadMyOrders() {
+  const root = qs("[data-orders-root]");
+  if (!root) return;
+
+  root.innerHTML = `<div class="muted small">Yükleniyor...</div>`;
+
+  try {
+    const res = await api("/api/orders/my", { method: "GET" });
+    if (!res.success || !Array.isArray(res.items) || res.items.length === 0) {
+      root.innerHTML = `<div class="muted small">Henüz siparişiniz yok.</div>`;
+      return;
+    }
+
+    const list = res.items;
+
+    const statusLabel = (s) => {
+      switch (s) {
+        case "pending":   return "Beklemede";
+        case "preparing": return "Hazırlanıyor";
+        case "shipped":   return "Kargoya verildi";
+        case "completed": return "Tamamlandı";
+        case "cancelled": return "İptal edildi";
+        default:          return s || "-";
+      }
+    };
+
+    root.innerHTML = "";
+    list.forEach(o => {
+      const box = document.createElement("article");
+      box.className = "order-card";
+      // basit stiller, style.css yoksa inline da çalışır
+      box.style.borderRadius    = "12px";
+      box.style.border          = "1px solid #1f2937";
+      box.style.padding         = "10px 12px";
+      box.style.marginBottom    = "8px";
+      box.style.background      = "rgba(15,23,42,.7)";
+
+      const created = o.createdAt ? new Date(o.createdAt).toLocaleString("tr-TR") : "-";
+      const items = Array.isArray(o.items) ? o.items : [];
+      const lines = items.map(it => `• ${esc(it.name)} x${it.qty || 1}`).join("<br>");
+
+      const total  = Number(o.total  ?? 0);
+      const discount = Number(o.discount ?? 0);
+      const payable  = Number(o.payable ?? (total - discount));
+
+      const statusTxt = statusLabel(o.status || "pending");
+      const tracking  = o.trackingCode || null;
+
+      box.innerHTML = `
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+          <div>
+            <div style="font-size:13px;color:#9ca3af;">Sipariş ID</div>
+            <div style="font-weight:600;font-size:13px;">${esc(o.id)}</div>
+          </div>
+          <div style="text-align:right;font-size:12px;color:#9ca3af;">
+            ${esc(created)}
+          </div>
+        </div>
+
+        <div style="margin:6px 0;font-size:13px;">
+          <strong>Durum:</strong> ${esc(statusTxt)}
+          ${tracking ? `<br><strong>Takip Kodu:</strong> ${esc(tracking)}` : ""}
+        </div>
+
+        <div style="font-size:13px;margin-bottom:6px;">
+          <strong>Ürünler:</strong><br>
+          ${lines}
+        </div>
+
+        <div style="font-size:13px;border-top:1px solid #1f2937;padding-top:6px;margin-top:4px;display:flex;justify-content:space-between;">
+          <span>Ara Toplam / İndirim / Ödenecek</span>
+          <span>
+            ${fmtMoney(total)} / ${fmtMoney(discount)} / <strong>${fmtMoney(payable)}</strong>
+          </span>
+        </div>
+      `;
+      root.appendChild(box);
+    });
+  } catch (e) {
+    const msg = e?.message || "Siparişler alınamadı.";
+    // 401 ise: giriş yok
+    if (String(msg).includes("401") || msg === "Giriş gerekli" || msg === "Geçersiz oturum") {
+      root.innerHTML = `<div class="muted small">Siparişleri görmek için giriş yapın.</div>`;
+    } else {
+      root.innerHTML = `<div class="muted small">${esc(msg)}</div>`;
+    }
+  }
+}
+
+// (İstersen auth.html'de kullanabileceğin basit logout)
+function mavernLogout() {
+  try { localStorage.removeItem(TOKEN_KEY); } catch {}
+  TOKEN = null;
+  // sepeti boşaltmak istemiyorsan aşağıyı sil
+  // clearCart();
+  location.href = "index.html";
+}
+
 // ===== utils =====
 function esc(s) {
   return String(s ?? "").replace(
@@ -448,6 +577,16 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   await loadProducts();
   renderCart();
+
+  // Sticky cart bar’a tıklayınca sepeti aç
+  qs("#stickyCartBar")?.addEventListener("click", () => {
+    if (getTotals().items.length > 0) openCart();
+  });
+
+  // Eğer sayfada Siparişlerim kökü varsa, siparişleri yükle
+  if (qs("[data-orders-root]")) {
+    loadMyOrders();
+  }
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {

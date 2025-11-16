@@ -37,12 +37,13 @@ img,video{max-width:100%;height:auto;display:block}
   width:52px;
   height:52px;
   overflow:hidden;
-  border-radius:10px;
-  background:#000;
+  border-radius:14px;
+  background:radial-gradient(circle at 20% 0%,#ffffff10 0,#000 55%,#000 100%);
   display:flex;
   align-items:flex-start;
   justify-content:center;
   box-shadow:0 8px 24px rgba(0,0,0,.6);
+  border:1px solid #1f2933;
 }
 
 /* Logo kutusundaki görüntü: yukarıdaki büyük M kısmını al */
@@ -164,6 +165,13 @@ img,video{max-width:100%;height:auto;display:block}
 .btn.primary{background:var(--accent);color:#0c0e10;border:0}
 .btn.primary:hover{filter:brightness(.92)}
 .btn.ghost{background:transparent;border-color:#2a2a2a}
+
+/* EKLENDİ: küçük butonlar */
+.btn.small{
+  padding:6px 10px;
+  font-size:12px;
+}
+
 .bullets{
   list-style:none;padding:0;margin:18px 0 0;
   color:var(--muted);display:flex;gap:16px;flex-wrap:wrap;
@@ -333,6 +341,19 @@ img,video{max-width:100%;height:auto;display:block}
 .cart-summary .row{display:flex;justify-content:space-between;margin:6px 0}
 .cart-summary .row.total{font-weight:700}
 .checkout-form input{width:100%;padding:10px;border-radius:8px;border:1px solid #2b2b2b;background:transparent;color:var(--ink);margin:6px 0}
+
+/* EKLENDİ: checkout textarea adres */
+.checkout-form textarea{
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #2b2b2b;
+  background:transparent;
+  color:var(--ink);
+  margin:6px 0;
+  resize:vertical;
+}
+
 .btn.actions{width:100%}
 
 /* ===================== Overlay ===================== */
@@ -470,5 +491,341 @@ img,video{max-width:100%;height:auto;display:block}
   .section{padding:20px 0}
   .container{padding:0 6%}
   .footer{font-size:13px;line-height:1.4}
-  
+}
+
+/* ===================== YORUM METİNLERİ (taşmayı önle) ===================== */
+.comment-text,
+.review-text,
+.admin-comment-text{
+  white-space:normal;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
+/* Ürün sayfası yorum kartları */
+.review-card{
+  background:#0d0d0d;
+  border-radius:12px;
+  border:1px solid var(--edge);
+  padding:12px 14px;
+  margin-bottom:10px;
+}
+.review-card-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  margin-bottom:4px;
+  font-size:13px;
+  color:var(--muted);
+}
+.review-rating{
+  font-size:13px;
+}
+.review-photos{
+  display:flex;
+  gap:6px;
+  margin-top:6px;
+}
+.review-photos img{
+  width:56px;
+  height:56px;
+  border-radius:8px;
+  object-fit:cover;
+  border:1px solid #2b2b2b;
+}
+
+/* ===================== LÜKS ÜRÜN DETAY SAYFASI ===================== */
+.product-page{
+  max-width:1180px;
+  margin:26px auto 40px;
+  padding:0 4%;
+}
+.product-shell{
+  background:radial-gradient(160% 220% at 80% 0%,#1b1b1b 0,#050505 52%,#050505 100%);
+  border-radius:22px;
+  border:1px solid #1c1c1c;
+  box-shadow:0 24px 80px rgba(0,0,0,.85);
+  padding:22px 22px 24px;
+}
+.product-main{
+  display:flex;
+  gap:26px;
+  align-items:flex-start;
+}
+.product-gallery{
+  flex:1;
+  max-width:420px;
+}
+.product-main-image{
+  background:#020617;
+  border-radius:18px;
+  border:1px solid #1f2937;
+  padding:10px;
+  box-shadow:0 16px 52px rgba(0,0,0,.9);
+}
+.product-main-image img{
+  width:100%;
+  border-radius:14px;
+  object-fit:cover;
+}
+.product-thumbs{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+.product-thumbs img{
+  width:62px;
+  height:62px;
+  border-radius:10px;
+  object-fit:cover;
+  border:1px solid #1f2937;
+  cursor:pointer;
+  opacity:.7;
+}
+.product-thumbs img.active{
+  opacity:1;
+  box-shadow:0 0 0 1px #cbd5f5;
+}
+
+.product-info{
+  flex:1.1;
+  min-width:0;
+}
+.product-info-title{
+  font-family:'Playfair Display',serif;
+  font-size:28px;
+  letter-spacing:1px;
+  margin:0 0 6px;
+}
+.product-info-sub{
+  margin:0 0 10px;
+  color:var(--muted);
+  font-size:14px;
+}
+.product-info-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 16px;
+  align-items:center;
+  margin-bottom:12px;
+}
+.product-price{
+  font-size:24px;
+  font-weight:700;
+}
+.product-badges{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.product-badge{
+  padding:4px 9px;
+  border-radius:999px;
+  border:1px solid #2a2a2a;
+  font-size:11px;
+  color:var(--muted);
+}
+.product-cta-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin:14px 0 6px;
+}
+.product-cta-row .btn.primary{
+  padding:11px 20px;
+  border-radius:999px;
+  background:linear-gradient(135deg,#e5e9f5,#cbd5f5);
+  color:#020617;
+  border:0;
+}
+.product-cta-row .btn.secondary{
+  border-radius:999px;
+}
+
+.product-sections{
+  display:grid;
+  grid-template-columns: minmax(0,2.1fr) minmax(0,1.2fr);
+  gap:18px;
+  margin-top:22px;
+}
+.product-section-card{
+  background:#050505;
+  border-radius:16px;
+  border:1px solid #171717;
+  padding:14px 16px;
+}
+.product-section-card h3{
+  margin:0 0 8px;
+  font-size:15px;
+}
+.product-section-card p,
+.product-section-card li{
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.5;
+}
+.product-section-card ul{
+  padding-left:18px;
+  margin:6px 0 0;
+}
+
+/* ===================== ÜYELİK / HESAP SAYFALARI ===================== */
+.auth-shell{
+  min-height:calc(100vh - 120px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:30px 16px 40px;
+}
+.auth-card{
+  width:min(420px,100%);
+  background:radial-gradient(160% 220% at 80% 0%,#151515 0,#050505 52%,#050505 100%);
+  border-radius:20px;
+  border:1px solid #1c1c1c;
+  box-shadow:0 22px 70px rgba(0,0,0,.85);
+  padding:22px 20px 20px;
+}
+.auth-title{
+  margin:0 0 4px;
+  font-size:22px;
+  letter-spacing:.6px;
+  font-family:'Playfair Display',serif;
+}
+.auth-sub{
+  margin:0 0 16px;
+  font-size:13px;
+  color:var(--muted);
+}
+.auth-back{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:10px;
+}
+.auth-back svg{
+  width:14px;
+  height:14px;
+}
+.auth-grid{
+  display:grid;
+  gap:10px;
+}
+.auth-grid label{
+  font-size:13px;
+  color:var(--muted);
+}
+.auth-grid input,
+.auth-grid textarea,
+.auth-grid select{
+  width:100%;
+  margin-top:4px;
+  padding:10px 11px;
+  border-radius:10px;
+  border:1px solid #2a2a2a;
+  background:#050505;
+  color:var(--ink);
+  font-size:14px;
+}
+.auth-grid textarea{
+  min-height:80px;
+  resize:vertical;
+}
+.auth-submit{
+  margin-top:10px;
+  width:100%;
+  padding:11px;
+  border-radius:999px;
+  border:0;
+  background:linear-gradient(135deg,#e5e9f5,#cbd5f5);
+  color:#020617;
+  font-weight:600;
+  cursor:pointer;
+}
+
+/* Hesap üst menüsü (Profilim / Siparişlerim) */
+.account-tabs{
+  display:flex;
+  gap:6px;
+  margin:0 0 14px;
+  padding:3px;
+  border-radius:999px;
+  background:#050505;
+  border:1px solid #171717;
+}
+.account-tabs button{
+  flex:1;
+  padding:7px 10px;
+  border-radius:999px;
+  border:none;
+  background:transparent;
+  color:var(--muted);
+  font-size:13px;
+  cursor:pointer;
+}
+.account-tabs button.active{
+  background:#e5e9f5;
+  color:#020617;
+}
+
+/* Sipariş listesi */
+.orders-list{
+  margin-top:8px;
+  display:grid;
+  gap:10px;
+}
+.order-card{
+  background:#050505;
+  border-radius:12px;
+  border:1px solid #171717;
+  padding:10px 12px;
+}
+.order-card-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:4px;
+}
+.order-card-total{
+  font-weight:600;
+}
+.order-status{
+  padding:3px 8px;
+  border-radius:999px;
+  font-size:11px;
+  border:1px solid #2a2a2a;
+}
+.order-status.pending{border-color:#f97316;color:#fed7aa;background:#451a03;}
+.order-status.preparing{border-color:#22c55e;color:#bbf7d0;background:#022c22;}
+.order-status.shipped{border-color:#38bdf8;color:#bae6fd;background:#082f49;}
+.order-status.completed{border-color:#a3e635;color:#d9f99d;background:#1a2e05;}
+.order-status.cancelled{border-color:#f87171;color:#fecaca;background:#450a0a;}
+
+/* ===================== RESPONSIVE ÜRÜN DETAY & AUTH ===================== */
+@media (max-width:900px){
+  .product-main{
+    flex-direction:column;
+  }
+  .product-gallery{
+    max-width:100%;
+  }
+  .product-sections{
+    grid-template-columns:1fr;
+  }
+  .product-shell{
+    padding:18px 16px 18px;
+  }
+  .product-page{
+    padding:0 5%;
+  }
+}
+
+@media (max-width:600px){
+  .auth-card{
+    padding:18px 16px 18px;
+  }
 }

@@ -115,6 +115,110 @@
       stroke-linecap:round;
       stroke-linejoin:round;
     }
+
+    /* ===== Güven şeridi (hero altında) ===== */
+    .trust-strip-wrap{
+      border-bottom:1px solid var(--edge);
+      border-top:1px solid var(--edge);
+      background:radial-gradient(120% 200% at 0 0,rgba(148,163,184,.15),transparent),
+                 rgba(10,10,10,.9);
+    }
+    .trust-strip{
+      max-width:1180px;
+      margin:0 auto;
+      padding:10px 4%;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px 18px;
+      justify-content:center;
+      font-size:.85rem;
+      color:var(--muted);
+    }
+    .trust-item{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.25);
+      background:rgba(15,23,42,.6);
+    }
+    .trust-dot{
+      width:8px;height:8px;border-radius:999px;
+      background:radial-gradient(circle at 30% 30%,#e5e7eb,#4ade80);
+      box-shadow:0 0 8px rgba(74,222,128,.8);
+    }
+
+    /* ===== Neden Mavern bölümü ===== */
+    .benefits-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:14px;
+      margin-top:10px;
+    }
+    .benefit{
+      background:#0e0e0e;
+      border:1px solid var(--edge);
+      border-radius:12px;
+      padding:14px;
+      box-shadow:0 12px 36px rgba(0,0,0,.45);
+    }
+    .benefit h4{
+      margin:0 0 4px;
+      font-size:1rem;
+    }
+    .benefit p{
+      margin:0;
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    /* ===== SSS bölümü ===== */
+    .faq-list{
+      border-radius:14px;
+      border:1px solid var(--edge);
+      background:#0e0e0e;
+      box-shadow:0 12px 36px rgba(0,0,0,.45);
+      padding:10px 12px;
+    }
+    .faq-list details{
+      border-bottom:1px solid #1b1b1b;
+      padding:6px 0;
+    }
+    .faq-list details:last-child{
+      border-bottom:none;
+    }
+    .faq-list summary{
+      list-style:none;
+      cursor:pointer;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      font-size:.95rem;
+    }
+    .faq-list summary::-webkit-details-marker{display:none}
+    .faq-list summary span{
+      color:var(--ink);
+    }
+    .faq-list summary small{
+      color:var(--muted);
+      font-size:.8rem;
+    }
+    .faq-list p{
+      margin:6px 0 2px;
+      font-size:.9rem;
+      color:var(--muted);
+    }
+    .faq-list details[open] summary span{
+      color:var(--accent);
+    }
+
+    @media (max-width:600px){
+      .trust-strip{
+        justify-content:flex-start;
+      }
+    }
   </style>
 </head>
 <body>
@@ -192,7 +296,12 @@
   <div class="hero-inner">
     <div class="hero-copy">
       <h2 class="elegant">MAVERN</h2>
-      <p class="lead">Kalite, zarafet, sizler...</p>
+      <p class="lead">Günlük bakımı, kişisel ritüele dönüştüren seçkin formüller.</p>
+      <ul class="bullets">
+        <li>Özenle seçilmiş içerikler</li>
+        <li>Sınırlı üretim seriler</li>
+        <li>Online sipariş, kapına teslim</li>
+      </ul>
       <div class="hero-actions">
         <button class="btn primary" type="button" onclick="openProductsPanel()">Koleksiyonu Gör</button>
         <button class="btn ghost" type="button" onclick="scrollToSection('about')">Hakkımızda</button>
@@ -206,6 +315,28 @@
     </div>
   </div>
 </section>
+
+<!-- Güven şeridi -->
+<div class="trust-strip-wrap" aria-hidden="false">
+  <div class="trust-strip">
+    <div class="trust-item">
+      <span class="trust-dot"></span>
+      <span>Hızlı ve özenli kargo</span>
+    </div>
+    <div class="trust-item">
+      <span class="trust-dot"></span>
+      <span>Güvenli form & e-posta bildirimi</span>
+    </div>
+    <div class="trust-item">
+      <span class="trust-dot"></span>
+      <span>Küçük parti üretim, taze stok</span>
+    </div>
+    <div class="trust-item">
+      <span class="trust-dot"></span>
+      <span>KVKK uyumlu veri işleme</span>
+    </div>
+  </div>
+</div>
 
 <main class="container">
   <!-- Öne çıkanlar -->
@@ -221,20 +352,116 @@
     </div>
   </section>
 
+  <!-- Neden Mavern -->
+  <section class="section">
+    <div class="section-head">
+      <h3 class="elegant">Neden Mavern?</h3>
+      <span class="muted small">Raf ürünü değil, karakterli formüller.</span>
+    </div>
+    <div class="benefits-grid">
+      <article class="benefit">
+        <h4>Formüle önem veren marka</h4>
+        <p>
+          İçerik listesine gerçekten takılanlar için tasarlandı.
+          Gereksiz gösteriş değil, amaca yönelik aktifler.
+        </p>
+      </article>
+      <article class="benefit">
+        <h4>Sınırlı seri üretim</h4>
+        <p>
+          Küçük partiler halinde üreterek taze stok, daha sıkı kalite kontrol
+          ve aynı formülden tutarlı sonuçlar hedefliyoruz.
+        </p>
+      </article>
+      <article class="benefit">
+        <h4>Net iletişim & destek</h4>
+        <p>
+          Sipariş sonrası durum takibi, sorularınız için ulaşılabilir destek
+          ve samimi bir dil; Mavern topluluğunu önemsiyoruz.
+        </p>
+      </article>
+    </div>
+  </section>
+
   <!-- Hakkımızda -->
   <section id="about" class="section about">
     <div class="about-card">
       <h3 class="elegant">Hakkımızda</h3>
       <p class="muted">
         Mavern; müşteri odaklı, yenilikçi ve topluluğuyla birlikte gelişen bir markadır.
-        Kaliteyi, sadelikle buluşturur.
+        Hedefimiz, banyodaki her ürünün “idare eder” değil, gerçekten kullanmak istediğiniz
+        bir seçim olması.
       </p>
+      <p class="muted" style="margin-top:6px">
+        Ürünlerimizi geliştirirken şunlara dikkat ediyoruz:
+      </p>
+      <ul class="muted" style="padding-left:18px;margin:4px 0 0;font-size:.9rem">
+        <li>İşlevini gerçekten yerine getiren formüller</li>
+        <li>Gösterişli değil, zamansız ve sade tasarım dili</li>
+        <li>Küçük ama güçlü bir toplulukla birlikte şekillenen seri ve yorumlar</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- SSS -->
+  <section id="faq" class="section">
+    <div class="section-head">
+      <h3 class="elegant">Sık Sorulan Sorular</h3>
+      <span class="muted small">Aklınıza takılanlar için kısa cevaplar.</span>
+    </div>
+    <div class="faq-list">
+      <details>
+        <summary>
+          <span>Ödemeyi nasıl yapıyorum?</span>
+          <small>Form üzerinden ön talep</small>
+        </summary>
+        <p>
+          Şu an sitemiz üzerinden “ön talep” topluyoruz. Sepetinizi gönderdiğinizde
+          sipariş detaylarınız bize e-posta olarak iletiliyor, uygun kargo ve ödeme
+          seçenekleri size dönüş yapılarak netleştiriliyor.
+        </p>
+      </details>
+      <details>
+        <summary>
+          <span>Ürünler ne kadar sürede kargoya verilir?</span>
+          <small>Stok durumuna göre</small>
+        </summary>
+        <p>
+          Stokta olan ürünler için genellikle 1–3 iş günü içinde kargoya verme hedeflenir.
+          Özel seriler ve ön siparişler için süre ürün sayfasında ayrıca belirtilir.
+        </p>
+      </details>
+      <details>
+        <summary>
+          <span>İade veya değişim yapabiliyor muyum?</span>
+          <small>Koşullara göre</small>
+        </summary>
+        <p>
+          Kişisel bakım ürünlerinde yasal çerçeveye uygun şekilde,
+          açılmamış ve kullanılmamış ürünler için iade/değişim taleplerini inceleyerek
+          çözüm odaklı yaklaşmaya çalışıyoruz. Detaylar için bizimle iletişime geçebilirsiniz.
+        </p>
+      </details>
+      <details>
+        <summary>
+          <span>Cildim / saç tipime uygun ürünü nasıl seçerim?</span>
+          <small>İletişim formu</small>
+        </summary>
+        <p>
+          Emin değilseniz, iletişim formundan cilt / saç tipinizi kısaca anlatarak
+          bize yazabilirsiniz. Kullandığınız ürünleri ve beklentinizi belirtirseniz,
+          size daha isabetli bir öneri ile dönebiliriz.
+        </p>
+      </details>
     </div>
   </section>
 
   <!-- İletişim -->
   <section id="contact" class="section">
-    <h3 class="elegant">İletişim</h3>
+    <div class="section-head">
+      <h3 class="elegant">İletişim</h3>
+      <span class="muted small">Sipariş, işbirliği veya merak ettikleriniz için.</span>
+    </div>
     <div class="contact-form">
       <input id="contactName" placeholder="Adınız" />
       <input id="contactEmail" placeholder="E-posta" />
