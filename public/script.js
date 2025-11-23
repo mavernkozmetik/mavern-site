@@ -11,9 +11,52 @@ let TOKEN = null;
 // ==== Sepet kalıcılık anahtarı ====
 const CART_KEY = "mavern_cart";
 
+// ==== Tema kalıcılık anahtarı ====
+const THEME_KEY = "mavern_theme";
+
 let PRODUCTS = [];
 let CART = {};        // { id: {id,name,price,image,qty} }
 let COUPON = null;    // { code, percent, expiresAt? }
+
+// ===== Tema yardımcıları =====
+function applyTheme(theme) {
+  const html = document.documentElement;
+  const btn  = document.getElementById("themeToggle");
+
+  // CSS'de varsayılan koyu, light için :root[data-theme="light"] override kullanıyoruz.
+  if (theme === "light") {
+    html.setAttribute("data-theme", "light");
+  } else {
+    html.removeAttribute("data-theme"); // koyu tema
+    theme = "dark";
+  }
+
+  // Toggle butonunun yazısını güncelle
+  if (btn) {
+    if (theme === "light") {
+      // Şu anda açık tema, tıklayınca koyuya geçecek
+      btn.textContent = "☾ Koyu tema";
+    } else {
+      // Şu anda koyu tema, tıklayınca açığa geçecek
+      btn.textContent = "☀ Açık tema";
+    }
+  }
+}
+
+function initTheme() {
+  let theme = "dark";
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "light" || saved === "dark") {
+      theme = saved;
+    } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
+      theme = "light";
+    }
+  } catch {
+    theme = "dark";
+  }
+  applyTheme(theme);
+}
 
 // ===== Token / session helper =====
 function loadTokenFromStorage() {
@@ -27,9 +70,9 @@ function loadTokenFromStorage() {
 // ===== Panel aç/kapa =====
 function openSidebar(){ qs("#sidebar")?.classList.add("open"); }
 function closeSidebar(){ qs("#sidebar")?.classList.remove("open"); }
-function openCart(){ 
-  renderCart(); 
-  qs("#cartPanel")?.classList.add("open"); 
+function openCart(){
+  renderCart();
+  qs("#cartPanel")?.classList.add("open");
 }
 function closeCart(){ qs("#cartPanel")?.classList.remove("open"); }
 
@@ -48,15 +91,15 @@ function closeProductsPanel(){ qs("#productsPanel")?.classList.remove("open"); }
 function openCheckout(){
   const items = Object.values(CART);
   const msg = qs("#checkoutMsg");
-  if(!items.length){
+  if (!items.length) {
     if (msg) msg.textContent = "Sepet boş.";
     return;
   }
   const payable = getPayable();
   const out = qs("#chPayable");
-  if(out) out.textContent = fmtMoney(payable);
+  if (out) out.textContent = fmtMoney(payable);
   const st = qs("#chStatus");
-  if(st) st.textContent = "";
+  if (st) st.textContent = "";
   qs("#checkoutOverlay")?.classList.add("show");
 }
 function closeCheckout(){
@@ -89,7 +132,7 @@ async function api(path, opts = {}) {
 // ===== Ürün normalize (istemci fallback) =====
 function parsePriceTextToNumber(text){
   const t = String(text ?? "").trim();
-  if(!t) return null;
+  if (!t) return null;
   const num = Number(t.replace(/[₺\s]/g,"").replace(",",".")); 
   return Number.isFinite(num) ? num : null;
 }
@@ -175,7 +218,7 @@ function productCard(p) {
            onerror="this.src='logo.png'">
     </a>
     <h4 style="margin:.5rem 0 0">
-      <a href="${link}" style="color:#e6edf3;text-decoration:none">${esc(p.name)}</a>
+      <a href="${link}" style="color:inherit;text-decoration:none">${esc(p.name)}</a>
     </h4>
     <div class="price muted" style="margin:.25rem 0 .5rem">${esc(priceTag)}</div>
     ${p.desc ? `<p style="margin:0 0 .5rem" class="muted">${esc(p.desc)}</p>` : ""}
@@ -221,9 +264,9 @@ function changeQty(id, delta) {
   saveCartToStorage();
   renderCart();
   const el = qs("#checkoutOverlay");
-  if(el?.classList.contains("show")){
+  if (el?.classList.contains("show")) {
     const out = qs("#chPayable"); 
-    if(out) out.textContent = fmtMoney(getPayable());
+    if (out) out.textContent = fmtMoney(getPayable());
   }
 }
 
@@ -232,9 +275,9 @@ function removeFromCart(id) {
   saveCartToStorage();
   renderCart();
   const el = qs("#checkoutOverlay");
-  if(el?.classList.contains("show")){
+  if (el?.classList.contains("show")) {
     const out = qs("#chPayable"); 
-    if(out) out.textContent = fmtMoney(getPayable());
+    if (out) out.textContent = fmtMoney(getPayable());
   }
 }
 
@@ -242,10 +285,10 @@ function clearCart() {
   CART = {};
   saveCartToStorage();
   COUPON = null;
-  const ci = qs("#couponInput"); if(ci) ci.value = "";
-  const cm = qs("#couponMsg"); if(cm) cm.textContent = "";
+  const ci = qs("#couponInput"); if (ci) ci.value = "";
+  const cm = qs("#couponMsg"); if (cm) cm.textContent = "";
   renderCart();
-  const out = qs("#chPayable"); if(out) out.textContent = fmtMoney(0);
+  const out = qs("#chPayable"); if (out) out.textContent = fmtMoney(0);
 }
 
 function getTotals(){
@@ -261,7 +304,7 @@ function getPayable(){ return getTotals().payable; }
 // ===== Sticky cart bar (mobil) =====
 function updateStickyCartBar(count, payable){
   const bar  = qs("#stickyCartBar");
-  if (!bar) return; // HTML’de yoksa sessizce çık
+  if (!bar) return;
 
   const totalEl = bar.querySelector("[data-sticky-total]");
   const labelEl = bar.querySelector("[data-sticky-label]");
@@ -309,7 +352,7 @@ function renderCart() {
     const imgSrc = sanitize(it.image || "logo.png");
     row.innerHTML = `
       <img src="${imgSrc}" alt=""
-           style="width:64px;height:48px;object-fit:cover;border-radius:6px;border:1px solid #26324a;background:#0a0f1b"
+           style="width:64px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--edge);background:#111"
            onerror="this.src='logo.png'">
       <div class="meta" style="min-width:0">
         <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.name)}</div>
@@ -358,8 +401,8 @@ async function applyCoupon() {
     }
     renderCart();
     const el = qs("#checkoutOverlay");
-    if(el?.classList.contains("show")){
-      const out = qs("#chPayable"); if(out) out.textContent = fmtMoney(getPayable());
+    if (el?.classList.contains("show")) {
+      const out = qs("#chPayable"); if (out) out.textContent = fmtMoney(getPayable());
     }
   } catch {
     msgEl.textContent = "Sunucu hatası.";
@@ -390,16 +433,16 @@ async function submitCheckout(){
   }
 
   const { items } = getTotals();
-  if(!items.length){ st.textContent="Sepet boş."; return; }
+  if (!items.length){ st.textContent="Sepet boş."; return; }
 
   // Zorunlu alanlar
-  if(!name || !email || !phone || !addr){ st.textContent="Lütfen tüm alanları doldurun."; return; }
-  if(hasTr(email)){ st.textContent="E-posta adresinde Türkçe karakter kullanmayın."; return; }
-  if(!isValidEmail(email)){ st.textContent="Geçerli bir e-posta girin."; return; }
-  if(!isValidPhone(phone)){ st.textContent="Geçerli bir telefon girin."; return; }
-  if(addr.length < 10){ st.textContent="Adres çok kısa (min 10 karakter)."; return; }
-  if(addr.length > 600){ st.textContent="Adres çok uzun (max 600 karakter)."; return; }
-  if(!kvkkOk){ st.textContent="KVKK onayı zorunludur."; return; }
+  if (!name || !email || !phone || !addr){ st.textContent="Lütfen tüm alanları doldurun."; return; }
+  if (hasTr(email)){ st.textContent="E-posta adresinde Türkçe karakter kullanmayın."; return; }
+  if (!isValidEmail(email)){ st.textContent="Geçerli bir e-posta girin."; return; }
+  if (!isValidPhone(phone)){ st.textContent="Geçerli bir telefon girin."; return; }
+  if (addr.length < 10){ st.textContent="Adres çok kısa (min 10 karakter)."; return; }
+  if (addr.length > 600){ st.textContent="Adres çok uzun (max 600 karakter)."; return; }
+  if (!kvkkOk){ st.textContent="KVKK onayı zorunludur."; return; }
 
   const payload = {
     items: items.map(i => ({ id:i.id, name:i.name, price:Number(i.price), qty:i.qty })),
@@ -415,17 +458,17 @@ async function submitCheckout(){
   st.textContent = "Gönderiliyor...";
   try{
     const res = await api("/api/checkout", { method:"POST", body: JSON.stringify(payload) });
-    if(res.success){
+    if (res.success){
       st.textContent = "Sipariş iletildi. Teşekkürler!";
       clearCart();
       setTimeout(()=>{ closeCheckout(); }, 600);
-      const msg = qs("#checkoutMsg"); if(msg) msg.textContent = "Sipariş iletildi. Teşekkürler!";
-    }else{
+      const msg = qs("#checkoutMsg"); if (msg) msg.textContent = "Sipariş iletildi. Teşekkürler!";
+    } else {
       st.textContent = res.message || "Gönderilemedi.";
     }
-  }catch(e){
+  } catch(e){
     st.textContent = e.message || "Sunucu hatası.";
-  }finally{
+  } finally {
     // sunucuda idempotency var; kilit 20sn sonra otomatik kalkıyor (timer yukarıda)
   }
 }
@@ -447,9 +490,9 @@ async function sendMessage() {
     const res = await api("/api/contact", { method: "POST", body: JSON.stringify({ name, email, message }) });
     status.textContent = res.success ? "Mesaj alındı. Teşekkürler!" : res.message || "Gönderilemedi.";
     if (res.success) {
-      const n = qs("#contactName"); if(n) n.value = "";
-      const e = qs("#contactEmail"); if(e) e.value = "";
-      const m = qs("#contactMsg"); if(m) m.value = "";
+      const n = qs("#contactName"); if (n) n.value = "";
+      const e = qs("#contactEmail"); if (e) e.value = "";
+      const m = qs("#contactMsg"); if (m) m.value = "";
     }
   } catch (e) {
     status.textContent = e.message || "Sunucu hatası.";
@@ -457,9 +500,6 @@ async function sendMessage() {
 }
 
 // ===== SİPARİŞLERİM (JWT ile) =====
-// auth.html veya başka bir sayfada:
-// <div id="myOrders" data-orders-root></div>
-// koyduğunda otomatik dolacak.
 async function loadMyOrders() {
   const root = qs("[data-orders-root]");
   if (!root) return;
@@ -490,12 +530,6 @@ async function loadMyOrders() {
     list.forEach(o => {
       const box = document.createElement("article");
       box.className = "order-card";
-      // basit stiller, style.css yoksa inline da çalışır
-      box.style.borderRadius    = "12px";
-      box.style.border          = "1px solid #1f2937";
-      box.style.padding         = "10px 12px";
-      box.style.marginBottom    = "8px";
-      box.style.background      = "rgba(15,23,42,.7)";
 
       const created = o.createdAt ? new Date(o.createdAt).toLocaleString("tr-TR") : "-";
       const items = Array.isArray(o.items) ? o.items : [];
@@ -511,10 +545,10 @@ async function loadMyOrders() {
       box.innerHTML = `
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
           <div>
-            <div style="font-size:13px;color:#9ca3af;">Sipariş ID</div>
+            <div style="font-size:13px;color:var(--muted);">Sipariş ID</div>
             <div style="font-weight:600;font-size:13px;">${esc(o.id)}</div>
           </div>
-          <div style="text-align:right;font-size:12px;color:#9ca3af;">
+          <div style="text-align:right;font-size:12px;color:var(--muted);">
             ${esc(created)}
           </div>
         </div>
@@ -529,7 +563,7 @@ async function loadMyOrders() {
           ${lines}
         </div>
 
-        <div style="font-size:13px;border-top:1px solid #1f2937;padding-top:6px;margin-top:4px;display:flex;justify-content:space-between;">
+        <div style="font-size:13px;border-top:1px solid var(--edge);padding-top:6px;margin-top:4px;display:flex;justify-content:space-between;">
           <span>Ara Toplam / İndirim / Ödenecek</span>
           <span>
             ${fmtMoney(total)} / ${fmtMoney(discount)} / <strong>${fmtMoney(payable)}</strong>
@@ -540,7 +574,6 @@ async function loadMyOrders() {
     });
   } catch (e) {
     const msg = e?.message || "Siparişler alınamadı.";
-    // 401 ise: giriş yok
     if (String(msg).includes("401") || msg === "Giriş gerekli" || msg === "Geçersiz oturum") {
       root.innerHTML = `<div class="muted small">Siparişleri görmek için giriş yapın.</div>`;
     } else {
@@ -549,12 +582,10 @@ async function loadMyOrders() {
   }
 }
 
-// (İstersen auth.html'de kullanabileceğin basit logout)
+// (Basit logout)
 function mavernLogout() {
   try { localStorage.removeItem(TOKEN_KEY); } catch {}
   TOKEN = null;
-  // sepeti boşaltmak istemiyorsan aşağıyı sil
-  // clearCart();
   location.href = "index.html";
 }
 
@@ -566,12 +597,24 @@ function esc(s) {
   );
 }
 function sanitize(s) {
-  // src / href gibi attribute’lar için sadece çift tırnak temizliyoruz
   return String(s ?? "").replace(/"/g, "&quot;");
 }
 
 // ===== init =====
 window.addEventListener("DOMContentLoaded", async () => {
+  // 1) Tema
+  initTheme();
+  const themeBtn = document.getElementById("themeToggle");
+  if (themeBtn) {
+    themeBtn.addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+      const next = current === "light" ? "dark" : "light";
+      try { localStorage.setItem(THEME_KEY, next); } catch {}
+      applyTheme(next);
+    });
+  }
+
+  // 2) Oturum & sepet & ürünler
   loadTokenFromStorage();
   loadCartFromStorage();
 
@@ -588,6 +631,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     loadMyOrders();
   }
 
+  // ESC ile panelleri kapat
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       closeCart();

@@ -1,4 +1,4 @@
-// server.js — Mavern (Simplified Admin: only legacy panel, no JWT admin)
+// server.js — Mavern (Auth + Reviews + SMTP + Coupons + Messages + Secure Upload + Rate Limit + Helmet + HTTPS + 20s Idempotency + Products Normalize + Persistent DATA_DIR + Extended User Fields + Limited Admin Creation)
 
 require("dotenv").config();
 const express = require("express");
@@ -61,7 +61,8 @@ const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
 
 /* ----- Yardımcı: dizin/ dosya oluşturma ve yazılabilirlik testi ----- */
-// Bu fonksiyonlar asla sunucuyu çökertmez, sadece uyarı basar.
+// ÖNEMLİ NOT: Bu fonksiyonlar artık HİÇBİR ZAMAN sunucuyu çökertmez.
+// Yazma izni yoksa sadece uyarı basar, site çalışmaya devam eder.
 function ensureDir(p) {
   try {
     if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
@@ -95,6 +96,7 @@ function testWritable(dirOrFilePath) {
  * DATA_DIR seçim mantığı:
  * 1) ENV.DATA_DIR varsa onu dener.
  * 2) Yazılabilir değilse projedeki ./data klasörüne otomatik döner.
+ * Böylece /data EACCES hatası alsa bile site yerel ./data ile KALICI çalışır.
  */
 const ENV_DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : null;
 let DATA_DIR = ENV_DATA_DIR || path.join(ROOT, "data");
@@ -186,6 +188,7 @@ const writeJSON = (file, data) => {
   try {
     fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
   } catch (e) {
+    // ÖNEMLİ: Burada da artık sunucu ÇÖKMEZ, sadece uyarı basar.
     console.warn("⚠️  JSON yazılamadı, değişiklikler kalıcı olmayabilir:", file, "-", e.message);
   }
 };
@@ -234,7 +237,7 @@ function tryGetJWTUser(req) {
   const token = auth.slice(7);
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    return decoded; // { uid }
+    return decoded; // { uid, isAdmin?, ... }
   } catch {
     return null;
   }
@@ -332,8 +335,8 @@ app.use("/api/", apiLimiter);
 
 const tightLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: "draft-7", legacyHeaders: false });
 
-/* ----------------------------- Admin (legacy panel) ----------------------- */
-// Sadece bu admin, sadece admin.html üzerinden işlem yapabilir
+/* ----------------------------- Admin (eski panel) -------------------------- */
+// ENV’e taşındı (fallback’ler var ama ENV girmen önerilir)
 const ADMIN_USER = process.env.ADMIN_USER || "EDE";
 const ADMIN_PASS = process.env.ADMIN_PASS || "M@v3rn!2025@Kozm0tik";
 let CURRENT_TOKEN = null;
@@ -345,11 +348,19 @@ function requireLegacyAdmin(req, res, next) {
   return res.status(401).json({ success: false, message: "Yetkisiz işlem" });
 }
 
+// Sadece LEGACY admin (super admin) — yeni admin yaratma vb.
+function requireSuperAdmin(req, res, next) {
+  const hdr = req.headers.authorization || "";
+  const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
+  if (token && token === CURRENT_TOKEN) return next();
+  return res.status(401).json({ success:false, message:"Süper admin yetkisi gerekli" });
+}
+
 app.post("/api/login", (req, res) => {
   const { username, password } = req.body || {};
   if (username === ADMIN_USER && password === ADMIN_PASS) {
     CURRENT_TOKEN = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    return res.json({ success: true, token: CURRENT_TOKEN, username });
+    return res.json({ success: true, token: CURRENT_TOKEN });
   }
   return res.status(401).json({ success: false, message: "Kullanıcı adı veya şifre hatalı" });
 });
@@ -361,15 +372,33 @@ function requireJWT(req, res, next) {
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
   if (!token) return res.status(401).json({ success: false, message: "Giriş gerekli" });
   try {
-    const decoded = jwt.verify(token, JWT_SECRET); // { uid }
-    req.user = decoded;
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded; // { uid, isAdmin }
     next();
   } catch {
     return res.status(401).json({ success: false, message: "Geçersiz oturum" });
   }
 }
 
-// Register — ek alanlar: fullName, phone, city, address, zip, notes
+// Admin kontrolü: önce eski token, yoksa JWT admin
+function requireAdmin(req, res, next) {
+  const hdr = req.headers.authorization || "";
+  const bearer = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
+
+  // eski panel token'ı (super admin)
+  if (bearer && bearer === CURRENT_TOKEN) return next();
+
+  // jwt admin (sınırlı admin dâhil)
+  if (bearer) {
+    try {
+      const dec = jwt.verify(bearer, JWT_SECRET);
+      if (dec?.isAdmin) { req.user = dec; return next(); }
+    } catch {}
+  }
+  return res.status(401).json({ success: false, message: "Admin yetkisi gerekli" });
+}
+
+// Register (rate limited) — EK ALANLAR: fullName, phone, city, address, zip, notes
 app.post("/api/auth/register", tightLimiter, async (req, res) => {
   const {
     email,
@@ -396,6 +425,7 @@ app.post("/api/auth/register", tightLimiter, async (req, res) => {
     return res.status(400).json({ success:false, message:"Bu e-posta zaten kayıtlı" });
   }
 
+  // bazı ek alanlarda hafif validasyon
   const safeFullName = String(fullName || "").trim();
   const safePhone    = String(phone || "").trim();
   const safeCity     = String(city || "").trim();
@@ -420,7 +450,7 @@ app.post("/api/auth/register", tightLimiter, async (req, res) => {
     zip: safeZip || null,
     notes: safeNotes || null,
     isApproved: false,  // admin onayı gerekir
-    isAdmin: false,     // anlamı yok ama field kalsın
+    isAdmin: false,
     createdAt: new Date().toISOString(),
     lastLoginAt: null,
     lastLoginIp: null
@@ -430,7 +460,7 @@ app.post("/api/auth/register", tightLimiter, async (req, res) => {
   return res.json({ success:true, pendingApproval:true });
 });
 
-// Login — lastLoginAt / lastLoginIp set
+// Login (rate limited) — lastLoginAt / lastLoginIp set
 app.post("/api/auth/login", tightLimiter, async (req, res) => {
   const { email, password } = req.body || {};
   const e = String(email || "").trim().toLowerCase();
@@ -443,13 +473,12 @@ app.post("/api/auth/login", tightLimiter, async (req, res) => {
   if (!ok) return res.status(400).json({ success:false, message:"Şifre hatalı" });
   if (!u.isApproved) return res.status(403).json({ success:false, message:"Hesabınız onay bekliyor" });
 
+  // login bilgilerini güncelle
   users[idx].lastLoginAt = new Date().toISOString();
   users[idx].lastLoginIp = clientIP(req) || null;
   writeUsers(users);
 
-  // Artık JWT içinde isAdmin yok, sadece uid
-  const token = signToken({ uid: u.id });
-
+  const token = signToken({ uid: u.id, isAdmin: !!u.isAdmin });
   return res.json({
     success:true,
     token,
@@ -496,7 +525,7 @@ app.get("/api/auth/me", requireJWT, (req, res) => {
   });
 });
 
-// Profil güncelle
+// Profil güncelle (displayName + ek alanlar + opsiyonel şifre)
 app.patch("/api/auth/profile", requireJWT, async (req, res) => {
   const {
     displayName,
@@ -575,8 +604,8 @@ app.patch("/api/auth/profile", requireJWT, async (req, res) => {
 });
 
 /* ----------------------------- Admin: Users -------------------------------- */
-// Tüm kullanıcılar — sadece legacy admin
-app.get("/api/admin/users", requireLegacyAdmin, (_req, res) => {
+// Tüm kullanıcıları göster — tüm alanlar
+app.get("/api/admin/users", requireAdmin, (_req, res) => {
   const users = readUsers().map(u => ({
     id:u.id,
     email:u.email,
@@ -596,8 +625,8 @@ app.get("/api/admin/users", requireLegacyAdmin, (_req, res) => {
   res.json({ success:true, items: users });
 });
 
-// Sadece onay durumu değişir (admin yapma yok)
-app.patch("/api/admin/users/:id/approve", requireLegacyAdmin, (req, res) => {
+// Sadece onay durumunu değiştirme (artık makeAdmin yok)
+app.patch("/api/admin/users/:id/approve", requireAdmin, (req, res) => {
   const id = String(req.params.id || "");
   const { approved } = req.body || {};
   const users = readUsers();
@@ -607,7 +636,7 @@ app.patch("/api/admin/users/:id/approve", requireLegacyAdmin, (req, res) => {
   if (typeof approved === "boolean") {
     users[idx].isApproved = approved;
   }
-  // isAdmin burada değiştirilmez
+  // isAdmin burada değiştirilmez — admin verme/kaldırma yasaklandı
 
   writeUsers(users);
   const u = users[idx];
@@ -622,19 +651,74 @@ app.patch("/api/admin/users/:id/approve", requireLegacyAdmin, (req, res) => {
   });
 });
 
-// Kullanıcı silme
-app.delete("/api/admin/users/:id", requireLegacyAdmin, (req, res) => {
+// Kullanıcı silme (admin veya super admin kullanır)
+app.delete("/api/admin/users/:id", requireAdmin, (req, res) => {
   const id = String(req.params.id || "");
   let users = readUsers();
   const before = users.length;
   users = users.filter(u => u.id !== id);
   if (users.length === before) return res.status(404).json({ success:false, message:"Kullanıcı bulunamadı" });
   writeUsers(users);
-  // kullanıcının yorumlarını da sil
+  // kullanıcının yorumlarını da silelim
   let revs = readReviews();
   const newRevs = revs.filter(r => r.userId !== id);
   if (newRevs.length !== revs.length) writeReviews(newRevs);
   res.json({ success:true });
+});
+
+// YENİ: Yeni admin ekleme (sadece Süper Admin / legacy panel)
+// Bu adminler JWT ile giriş yapacak, isAdmin:true, fakat yeni admin oluşturamaz (limited admin)
+app.post("/api/admin/admins", requireSuperAdmin, async (req, res) => {
+  const { email, password, displayName, fullName, phone } = req.body || {};
+  const e = String(email || "").trim().toLowerCase();
+  if (!e || containsTR(e) || !isValidEmail(e)) {
+    return res.status(400).json({ success:false, message:"Geçerli e-posta gerekli" });
+  }
+  if (!password || String(password).length < 8) {
+    return res.status(400).json({ success:false, message:"Admin şifresi en az 8 karakter olmalı" });
+  }
+
+  const users = readUsers();
+  if (users.find(u => u.email === e)) {
+    return res.status(400).json({ success:false, message:"Bu e-posta zaten kayıtlı" });
+  }
+
+  const safeFullName = String(fullName || "").trim();
+  const safePhone    = String(phone || "").trim();
+  if (safePhone && !isValidPhone(safePhone)) {
+    return res.status(400).json({ success:false, message:"Telefon formatı geçersiz" });
+  }
+
+  const hash = await bcrypt.hash(String(password), 10);
+  const user = {
+    id: "u" + Date.now(),
+    email: e,
+    passHash: hash,
+    displayName: String(displayName || "").trim() || e.split("@")[0],
+    fullName: safeFullName || null,
+    phone: safePhone || null,
+    city: null,
+    address: null,
+    zip: null,
+    notes: "Otomatik eklenen admin (limited).",
+    isApproved: true,    // hazır onaylı
+    isAdmin: true,       // JWT admin
+    createdAt: new Date().toISOString(),
+    lastLoginAt: null,
+    lastLoginIp: null
+  };
+  users.push(user);
+  writeUsers(users);
+  res.json({
+    success:true,
+    user:{
+      id:user.id,
+      email:user.email,
+      displayName:user.displayName,
+      isAdmin:true,
+      isApproved:true
+    }
+  });
 });
 
 /* --------------------------------- SMTP (Brevo) --------------------------- */
@@ -681,6 +765,7 @@ app.get("/api/mail/verify", async (_req, res) => {
 
 /* ---------------------------- ÜRÜNLER (müşteri) --------------------------- */
 app.get("/api/products", (_req, res) => {
+  // cache kapat — her seferinde taze liste
   res.set("Cache-Control", "no-store");
   res.json(readProductsNormalized());
 });
@@ -705,7 +790,7 @@ const upload = multer({
   }
 });
 
-// Admin upload (legacy admin)
+// Admin upload (eski panel)
 app.post("/api/admin/upload", requireLegacyAdmin, upload.single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ success: false, message: "Dosya yok" });
   res.json({ success: true, path: "/uploads/" + req.file.filename });
@@ -897,8 +982,8 @@ app.delete("/api/admin/messages/:id", requireLegacyAdmin, (req, res) => {
   res.json({ success: true });
 });
 
-// Admin: sipariş durum & takip kodu
-app.patch("/api/admin/orders/:id", requireLegacyAdmin, (req, res) => {
+// Admin: sipariş özel endpoint (durum & takip kodu yönetimi)
+app.patch("/api/admin/orders/:id", requireAdmin, (req, res) => {
   const id = String(req.params.id || "");
   const { status, trackingCode, read } = req.body || {};
   const list = readMessages();
@@ -1090,9 +1175,9 @@ app.post("/api/checkout", tightLimiter, idempGuard(["items","email","name","phon
     total,
     discount,
     payable,
-    userId: userId,
-    status: "pending",
-    trackingCode: null,
+    userId: userId,                 // siparişi hangi kullanıcı verdi
+    status: "pending",              // sipariş durumu
+    trackingCode: null,             // kargo takip kodu
     createdAt: new Date().toISOString(),
     read: false,
     mailSent: false,
@@ -1146,6 +1231,7 @@ app.get("/api/orders/my", requireJWT, (req, res) => {
     .filter(m => m.type === "order" && m.userId === uid)
     .sort((a,b) => (a.createdAt > b.createdAt ? -1 : 1));
 
+  // status / trackingCode alanları eski kayıtlarda yoksa default atayalım
   list = list.map(o => ({
     ...o,
     status: o.status || "pending",
@@ -1155,7 +1241,7 @@ app.get("/api/orders/my", requireJWT, (req, res) => {
   res.json({ success:true, items:list });
 });
 
-// Login'li kullanıcının tek siparişi
+// Login'li kullanıcının tek siparişi (id ile)
 app.get("/api/orders/:id", requireJWT, (req, res) => {
   const uid = req.user.uid;
   const id = String(req.params.id || "");
@@ -1185,16 +1271,20 @@ app.post("/api/products/:pid/reviews", requireJWT, async (req, res) => {
   const pid = String(req.params.pid || "");
   const { rating, comment, photos, anonymous } = req.body || {};
 
+  // Ürün var mı?
   const prod = readProductsNormalized().find(p => p.id === pid);
   if (!prod) return res.status(404).json({ success:false, message:"Ürün bulunamadı" });
 
+  // Kullanıcı
   const users = readUsers();
   const me = users.find(u => u.id === req.user.uid);
   if (!me || !me.isApproved) return res.status(403).json({ success:false, message:"Hesabınız onaylı değil" });
 
+  // Puan 1..5
   const r = Number(rating);
   if (!(r >= 1 && r <= 5)) return res.status(400).json({ success:false, message:"Puan 1-5 arası olmalı" });
 
+  // Fotoğraflar: /uploads/... listesi
   let ph = [];
   if (Array.isArray(photos)) {
     ph = photos
@@ -1213,7 +1303,7 @@ app.post("/api/products/:pid/reviews", requireJWT, async (req, res) => {
     rating: r,
     comment: String(comment || "").trim(),
     photos: ph,
-    approved: false,
+    approved: false, // admin onayı
     createdAt: new Date().toISOString()
   };
   revs.push(rec);
@@ -1222,14 +1312,14 @@ app.post("/api/products/:pid/reviews", requireJWT, async (req, res) => {
   res.json({ success:true, pendingApproval:true, itemId: rec.id });
 });
 
-// Admin: yorumlar (legacy admin)
-app.get("/api/admin/reviews", requireLegacyAdmin, (req, res) => {
+// Admin: yorumlar
+app.get("/api/admin/reviews", requireAdmin, (req, res) => {
   const pid = String(req.query.productId || "");
   let items = readReviews().sort((a,b)=> (a.createdAt > b.createdAt ? -1 : 1));
   if (pid) items = items.filter(r => r.productId === pid);
   res.json({ success:true, items });
 });
-app.patch("/api/admin/reviews/:id/approve", requireLegacyAdmin, (req, res) => {
+app.patch("/api/admin/reviews/:id/approve", requireAdmin, (req, res) => {
   const id = String(req.params.id || "");
   const { approved } = req.body || {};
   let revs = readReviews();
@@ -1239,7 +1329,7 @@ app.patch("/api/admin/reviews/:id/approve", requireLegacyAdmin, (req, res) => {
   writeReviews(revs);
   res.json({ success:true, item: revs[idx] });
 });
-app.delete("/api/admin/reviews/:id", requireLegacyAdmin, (req, res) => {
+app.delete("/api/admin/reviews/:id", requireAdmin, (req, res) => {
   const id = String(req.params.id || "");
   let revs = readReviews();
   const before = revs.length;
@@ -1250,7 +1340,7 @@ app.delete("/api/admin/reviews/:id", requireLegacyAdmin, (req, res) => {
 });
 
 /* ------------------------------- Fallback/Server --------------------------- */
-app.get("/api/version", (_req, res) => res.json({ name: "mavern", version: "1.2.0-admin-simplified" }));
+app.get("/api/version", (_req, res) => res.json({ name: "mavern", version: "1.1.0" }));
 
 app.get("*", (_req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, "index.html"));
