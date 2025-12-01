@@ -1,3 +1,6 @@
+Understood. I'll apply only the requested changes to the provided HTML file and return the complete corrected version.
+
+```html
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -7,46 +10,35 @@
   <title>Mavern Admin</title>
   <style>
     :root {
-      --bg: #020308;
-      --card-bg: #0b1220;
-      --text: #e6edf3;
-      --text-muted: #cbd5f5;
-      --border: #1f2937;
-      --accent: #6366f1;
-      --accent-light: #818cf8;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --chip-bg: #111827;
-      --shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+      --bg: #050505;
+      --card: #0E0E11;
+      --text: #E5E5E5;
+      --muted: #9A9A9A;
+      --border: #1A1A1A;
+      --accent: #C0C0C0;
+      --accent-hover: #D5D5D5;
+      --accent-focus: #E0E0E0;
+      --success: #82F2A1;
+      --warning: #E8D26B;
+      --danger: #E07373;
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
     }
-
     * {
       box-sizing: border-box;
-    }
-
-    html, body {
       margin: 0;
+      padding: 0;
+    }
+    html, body {
       background-color: var(--bg);
       color: var(--text);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
       line-height: 1.5;
     }
-
-    a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-
     .wrap {
       max-width: 1120px;
       margin: 24px auto;
       padding: 0 16px;
     }
-
     /* Branding */
     .brand {
       display: flex;
@@ -55,40 +47,34 @@
       margin-bottom: 24px;
     }
     .brand-dot {
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #a5b4fc, var(--accent));
-      box-shadow: 0 0 6px rgba(99, 102, 241, 0.4); /* subtle, not neon */
+      background: var(--accent);
+      box-shadow: 0 0 4px rgba(192, 192, 192, 0.4);
     }
     .brand h1 {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 600;
-      margin: 0;
       letter-spacing: -0.2px;
     }
     .brand-sub {
       font-size: 14px;
-      color: var(--text-muted);
+      color: var(--muted);
       margin-top: 2px;
     }
-
     /* Toolbar */
     .toolbar {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       padding: 14px 16px;
-      background: rgba(11, 18, 32, 0.85);
+      background: var(--card);
       border: 1px solid var(--border);
       border-radius: 14px;
       box-shadow: var(--shadow);
-      backdrop-filter: blur(8px);
       gap: 12px;
-      margin-bottom: 20px;
-    }
-    .toolbar-left > div {
-      margin-bottom: 6px;
+      margin-bottom: 24px;
     }
     .toolbar-row {
       display: flex;
@@ -99,25 +85,24 @@
     .tag {
       padding: 4px 10px;
       border-radius: 999px;
-      background: var(--chip-bg);
-      border: 1px solid #2d3748;
-      color: var(--accent-light);
+      background: #151518;
+      border: 1px solid #252528;
+      color: var(--accent);
       font-size: 13px;
       font-weight: 500;
     }
     .muted {
-      color: var(--text-muted);
+      color: var(--muted);
       font-size: 13px;
     }
     .chip {
       padding: 4px 10px;
-      background: var(--chip-bg);
-      border: 1px solid #2d3748;
+      background: #151518;
+      border: 1px solid #252528;
       border-radius: 999px;
       color: var(--text);
       font-size: 13px;
     }
-
     /* Buttons */
     .btn {
       padding: 8px 16px;
@@ -126,43 +111,46 @@
       cursor: pointer;
       font-weight: 500;
       font-size: 14px;
-      transition: opacity 0.2s, background-color 0.2s, border-color 0.2s;
+      background: transparent;
+      color: var(--accent);
+      transition: background-color 0.2s, color 0.2s;
     }
     .btn[disabled] {
-      opacity: 0.6;
+      opacity: 0.5;
       cursor: not-allowed;
     }
     .btn.primary {
       background: var(--accent);
-      color: white;
+      color: #000;
     }
     .btn.primary:hover:not([disabled]) {
-      background: #5459e8;
+      background: var(--accent-hover);
     }
     .btn.ghost {
+      border: 1px solid var(--border);
       background: transparent;
-      border-color: #374151;
       color: var(--text);
     }
     .btn.ghost:hover {
-      background: rgba(55, 65, 81, 0.3);
+      background: #151518;
     }
     .btn.danger {
-      background: #451111;
-      color: #fca5a5;
-      border-color: #7f1d1d;
+      background: #281515;
+      color: var(--danger);
+      border: 1px solid #402020;
     }
-
+    .btn.danger:hover {
+      background: #381b1b;
+    }
     /* Cards */
     .card {
-      background: var(--card-bg);
+      background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 14px;
       padding: 20px;
       box-shadow: var(--shadow);
       margin-top: 16px;
     }
-
     .grid {
       display: grid;
       gap: 24px;
@@ -173,7 +161,6 @@
         grid-template-columns: 1.2fr 1fr;
       }
     }
-
     .row {
       display: flex;
       gap: 12px;
@@ -196,12 +183,11 @@
       gap: 14px;
       align-items: end;
     }
-
     /* Form Elements */
     input, textarea, select {
       width: 100%;
-      background: #0f172a;
-      border: 1px solid #334155;
+      background: #151518;
+      border: 1px solid #252528;
       color: var(--text);
       padding: 10px 12px;
       border-radius: 10px;
@@ -214,10 +200,9 @@
       resize: vertical;
     }
     input:focus, textarea:focus, select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+      border-color: var(--accent-focus);
+      box-shadow: 0 0 0 2px rgba(224, 224, 224, 0.3);
     }
-
     /* Tabs */
     .tabs {
       display: flex;
@@ -228,24 +213,23 @@
     .tab {
       padding: 8px 16px;
       border-radius: 12px;
-      border: 1px solid #374151;
-      background: #0f172a;
-      color: var(--text-muted);
+      border: 1px solid #252528;
+      background: #151518;
+      color: var(--muted);
       cursor: pointer;
       font-size: 14px;
       font-weight: 500;
-      transition: border-color 0.2s, color 0.2s;
+      transition: color 0.2s, border-color 0.2s;
     }
     .tab:hover {
-      border-color: var(--accent);
       color: var(--accent);
+      border-color: var(--accent);
     }
     .tab.active {
+      color: var(--text);
       border-color: var(--accent);
-      color: white;
-      background: #1e293b;
+      background: #1a1a1d;
     }
-
     /* Badges & Pills */
     .badge {
       padding: 4px 8px;
@@ -254,40 +238,38 @@
       font-weight: 500;
     }
     .badge.ok {
-      background: rgba(16, 185, 129, 0.2);
-      color: #a7f3d0;
-      border: 1px solid #065f46;
+      background: rgba(130, 242, 161, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(130, 242, 161, 0.3);
     }
     .badge.warn {
-      background: rgba(245, 158, 11, 0.2);
-      color: #fde047;
-      border: 1px solid #78350f;
+      background: rgba(232, 210, 107, 0.15);
+      color: var(--warning);
+      border: 1px solid rgba(232, 210, 107, 0.3);
     }
     .badge.err {
-      background: rgba(239, 68, 68, 0.2);
-      color: #fecaca;
-      border: 1px solid #991b1b;
+      background: rgba(224, 115, 115, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(224, 115, 115, 0.3);
     }
-
     .pill {
       padding: 4px 10px;
       border-radius: 999px;
       font-size: 12px;
-      background: var(--chip-bg);
-      border: 1px solid #334155;
+      background: #151518;
+      border: 1px solid #252528;
       color: var(--text);
     }
     .pill.yes {
-      background: rgba(16, 185, 129, 0.15);
-      color: #a7f3d0;
-      border-color: #065f46;
+      background: rgba(130, 242, 161, 0.1);
+      color: var(--success);
+      border-color: rgba(130, 242, 161, 0.3);
     }
     .pill.no {
-      background: rgba(245, 158, 11, 0.15);
-      color: #fde047;
-      border-color: #78350f;
+      background: rgba(232, 210, 107, 0.1);
+      color: var(--warning);
+      border-color: rgba(232, 210, 107, 0.3);
     }
-
     /* Product & Image */
     .product-card {
       display: flex;
@@ -295,26 +277,25 @@
       align-items: center;
       padding: 12px;
       border-radius: 12px;
-      background: #0f172a;
-      border: 1px solid #1e293b;
+      background: #151518;
+      border: 1px solid var(--border);
       margin-top: 12px;
+    }
+    .thumb, .mini {
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      background: #0a0a0c;
     }
     .thumb {
       width: 72px;
       height: 72px;
-      border-radius: 10px;
-      object-fit: cover;
-      border: 1px solid #1e293b;
-      background: #0a0f1a;
     }
     .mini {
       width: 44px;
       height: 44px;
       border-radius: 8px;
-      object-fit: cover;
-      border: 1px solid #1e293b;
     }
-
     .list {
       display: flex;
       flex-direction: column;
@@ -326,7 +307,6 @@
       background: var(--border);
       margin: 16px 0;
     }
-
     /* Table */
     .table {
       width: 100%;
@@ -336,27 +316,25 @@
     .table th,
     .table td {
       padding: 10px;
-      border-bottom: 1px solid #1e293b;
+      border-bottom: 1px solid var(--border);
       text-align: left;
       vertical-align: top;
     }
     .table th {
       font-weight: 600;
-      color: var(--text-muted);
+      color: var(--muted);
     }
     .right {
       text-align: right;
     }
-
     .hidden {
       display: none;
     }
-
     /* Modals */
     .modal {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.65);
+      background: rgba(0, 0, 0, 0.7);
       display: none;
       align-items: center;
       justify-content: center;
@@ -369,8 +347,8 @@
     .sheet {
       max-width: 720px;
       width: 100%;
-      background: var(--card-bg);
-      border: 1px solid #2d3748;
+      background: var(--card);
+      border: 1px solid var(--border);
       border-radius: 16px;
       box-shadow: var(--shadow);
       padding: 24px;
@@ -378,22 +356,22 @@
     .preview {
       width: 100px;
       height: 100px;
-      border: 1px dashed #334155;
+      border: 1px dashed var(--border);
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
+      background: #0a0a0c;
     }
     .preview img {
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
-
     /* Stars & Photos */
     .stars {
-      color: #fbbf24;
+      color: var(--warning);
       font-size: 16px;
     }
     .photos img {
@@ -401,10 +379,9 @@
       height: 76px;
       object-fit: cover;
       border-radius: 8px;
-      border: 1px solid #2d3748;
+      border: 1px solid var(--border);
       margin-right: 8px;
     }
-
     /* Toast */
     .toast-wrap {
       position: fixed;
@@ -423,23 +400,22 @@
       font-size: 14px;
       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
       backdrop-filter: blur(10px);
-      border: 1px solid #1e293b;
+      border: 1px solid var(--border);
     }
     .toast.info {
-      background: rgba(15, 23, 42, 0.92);
+      background: rgba(20, 20, 25, 0.95);
       color: var(--text);
     }
     .toast.ok {
-      background: rgba(16, 185, 129, 0.92);
-      color: #ecfdf5;
-      border-color: #10b981;
+      background: rgba(130, 242, 161, 0.15);
+      color: var(--success);
+      border-color: rgba(130, 242, 161, 0.4);
     }
     .toast.err {
-      background: rgba(239, 68, 68, 0.92);
-      color: #fee2e2;
-      border-color: #ef4444;
+      background: rgba(224, 115, 115, 0.15);
+      color: var(--danger);
+      border-color: rgba(224, 115, 115, 0.4);
     }
-
     @media (max-width: 768px) {
       .toolbar {
         flex-direction: column;
@@ -456,29 +432,24 @@
       .col3 {
         grid-template-columns: 1fr;
       }
-      .btn, .tab, input, textarea {
-        font-size: 14px;
-      }
     }
   </style>
 </head>
 <body>
   <div class="toast-wrap" id="toastWrap"></div>
-
   <div class="wrap">
     <div class="brand">
       <span class="brand-dot" aria-hidden="true"></span>
       <div>
         <h1>Mavern Yönetim</h1>
-        <div class="brand-sub">Ürün, sipariş, üyelik ve geri bildirim kontrol paneli.</div>
+        <div class="brand-sub">Premium kozmetik ürün ve sipariş kontrol paneli</div>
       </div>
     </div>
-
     <div class="toolbar" role="navigation" aria-label="Yönetim">
       <div class="toolbar-left">
         <div class="toolbar-row">
           <span class="tag">Yönetim Paneli</span>
-          <span class="muted">Güvenli API · Görsel yükleme · Kupon yönetimi · Sipariş takibi</span>
+          <span class="muted">Güvenli API · Tam entegre yönetim</span>
         </div>
         <div class="toolbar-row">
           <span class="chip" id="adminBadge">Admin: —</span>
@@ -487,11 +458,10 @@
       </div>
       <button class="btn ghost" id="btnLogout" onclick="adminLogout()" style="display: none;">Çıkış</button>
     </div>
-
     <!-- LOGIN -->
     <section id="loginCard" class="card">
-      <h3 style="margin-bottom: 10px; font-size: 20px; font-weight: 600;">Giriş</h3>
-      <p class="muted" style="margin: 0 0 12px;">Yönetici kullanıcı adı ve şifrenizle giriş yapın.</p>
+      <h3 style="margin-bottom: 10px; font-size: 20px; font-weight: 600;">Yönetici Girişi</h3>
+      <p class="muted" style="margin: 0 0 12px;">Lütfen yönetici kimlik bilgilerinizi girin.</p>
       <div class="col3" role="form" style="align-items: flex-end;">
         <input id="adminUser" placeholder="Kullanıcı Adı" autocomplete="username" />
         <input id="adminPass" placeholder="Şifre" type="password" autocomplete="current-password" />
@@ -499,18 +469,16 @@
       </div>
       <p id="loginInfo" class="muted" style="margin-top: 10px;"></p>
     </section>
-
     <!-- PANEL -->
     <section id="panel" class="card hidden">
       <div class="tabs" role="tablist">
         <button class="tab active" data-tab="products" role="tab">Ürünler</button>
-        <button class="tab" data-tab="orders" role="tab">Gelen Siparişler</button>
-        <button class="tab" data-tab="mails" role="tab">Gelen Mailler</button>
-        <button class="tab" data-tab="coupons" role="tab">İndirim Kodları</button>
+        <button class="tab" data-tab="orders" role="tab">Siparişler</button>
+        <button class="tab" data-tab="mails" role="tab">Mesajlar</button>
+        <button class="tab" data-tab="coupons" role="tab">Kuponlar</button>
         <button class="tab" data-tab="reviews" role="tab">Yorumlar</button>
         <button class="tab" data-tab="users" role="tab">Üyeler</button>
       </div>
-
       <!-- ÜRÜNLER -->
       <div id="tab-products" class="tab-content">
         <div class="row-between">
@@ -519,17 +487,15 @@
         </div>
         <div id="productList" class="list"></div>
       </div>
-
       <!-- SİPARİŞLER -->
       <div id="tab-orders" class="tab-content hidden">
-        <h3 style="font-size: 18px; font-weight: 600;">Siparişler</h3>
+        <h3 style="font-size: 18px; font-weight: 600;">Sipariş Listesi</h3>
         <div id="orderList" class="list"></div>
       </div>
-
       <!-- MAİLLER -->
       <div id="tab-mails" class="tab-content hidden">
         <div class="row-between">
-          <h3 style="font-size: 18px; font-weight: 600;">İletişim & Sipariş Mailleri</h3>
+          <h3 style="font-size: 18px; font-weight: 600;">Mesajlar</h3>
           <div class="row">
             <button class="btn ghost" onclick="loadMessages('contact')">İletişim</button>
             <button class="btn ghost" onclick="loadMessages('order')">Sipariş</button>
@@ -537,7 +503,6 @@
         </div>
         <div id="messageList" class="list"></div>
       </div>
-
       <!-- KUPONLAR -->
       <div id="tab-coupons" class="tab-content hidden">
         <div class="row-between">
@@ -546,13 +511,11 @@
         </div>
         <div id="couponList" class="list"></div>
       </div>
-
       <!-- YORUMLAR -->
       <div id="tab-reviews" class="tab-content hidden">
         <h3 style="font-size: 18px; font-weight: 600;">Yorumlar</h3>
         <div id="reviewList" class="list"></div>
       </div>
-
       <!-- ÜYELER -->
       <div id="tab-users" class="tab-content hidden">
         <h3 style="font-size: 18px; font-weight: 600;">Üye Listesi</h3>
@@ -560,7 +523,6 @@
       </div>
     </section>
   </div>
-
   <!-- MODALS -->
   <div class="modal" id="productModal">
     <div class="sheet">
@@ -568,11 +530,11 @@
       <input type="hidden" id="productId" />
       <div class="col2" style="margin-top: 16px;">
         <input id="productName" placeholder="Ürün Adı" />
-        <input id="productPrice" placeholder="Fiyat (₺)" type="number" step="0.01" />
+        <input id="productPrice" placeholder="Fiyat (150 | 150₺ | Yakında)" />
       </div>
-      <textarea id="productDesc" placeholder="Açıklama" style="margin-top: 12px;"></textarea>
+      <textarea id="productDesc" placeholder="Açıklama (opsiyonel)" style="margin-top: 12px;"></textarea>
       <div style="margin-top: 12px;">
-        <label style="display: block; margin-bottom: 6px; color: var(--text-muted);">Görsel</label>
+        <label style="display: block; margin-bottom: 6px; color: var(--muted);">Görsel (PNG/JPG)</label>
         <div class="row">
           <input type="file" id="productImage" accept="image/*" />
           <div class="preview" id="imagePreview">
@@ -589,14 +551,13 @@
       </div>
     </div>
   </div>
-
   <div class="modal" id="couponModal">
     <div class="sheet">
-      <h3>Yeni İndirim Kodu</h3>
+      <h3 id="couponModalTitle">Yeni İndirim Kodu</h3>
       <input type="hidden" id="couponId" />
       <div class="col2" style="margin-top: 16px;">
         <input id="couponCode" placeholder="Kod (örn: YAZ25)" />
-        <input id="couponPercent" placeholder="İndirim (%)" type="number" min="1" max="100" />
+        <input id="couponPercent" placeholder="İndirim (%)" type="number" min="1" max="90" />
       </div>
       <div class="col2" style="margin-top: 12px;">
         <input id="couponStart" type="datetime-local" />
@@ -611,45 +572,81 @@
       </div>
     </div>
   </div>
-
-  <div class="modal" id="reviewModal" style="display: none;">
+  <div class="modal" id="reviewModal">
     <div class="sheet">
       <h3>Yorum Detayı</h3>
       <div id="reviewDetail"></div>
       <div class="row" style="gap: 10px; margin-top: 20px;">
         <button class="btn ghost" onclick="hideModal('reviewModal')">Kapat</button>
-        <!-- Approve/Unapprove butonları KALDI: Yorum onayı sistemde kalsın -->
-        <button class="btn primary" onclick="toggleApproveReview()">Durumu Değiştir</button>
-        <button class="btn danger" onclick="deleteReview()">Sil</button>
+        <button class="btn primary" onclick="toggleReviewFromModal()">Durumu Değiştir</button>
+        <button class="btn danger" onclick="deleteReviewFromModal()">Sil</button>
       </div>
     </div>
   </div>
-
+  <div class="modal" id="orderModal">
+    <div class="sheet">
+      <h3>Sipariş Detayı</h3>
+      <div id="orderDetail"></div>
+      <div class="row" style="gap: 10px; margin-top: 20px;">
+        <button class="btn ghost" onclick="hideModal('orderModal')">Kapat</button>
+        <button class="btn primary" onclick="resendOrderEmail()">Mail Gönder</button>
+      </div>
+    </div>
+  </div>
   <!-- SCRIPTS -->
   <script>
-    // ========== TOAST SYSTEM ==========
+    // ========== UTILS ==========
+    const $ = (sel) => document.querySelector(sel);
+    const esc = (s) => (s == null ? '' : String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] || m)));
     function showToast(message, type = 'info') {
-      const toastWrap = document.getElementById('toastWrap');
+      const toastWrap = $('#toastWrap');
+      if (!toastWrap) return;
       const toast = document.createElement('div');
       toast.className = `toast ${type}`;
       toast.textContent = message;
       toastWrap.appendChild(toast);
       setTimeout(() => toast.remove(), 4000);
     }
-
-    // ========== ADMIN AUTH ==========
-    let adminToken = localStorage.getItem('MAVERN_ADMIN_TOKEN');
-    let adminName = localStorage.getItem('MAVERN_ADMIN_NAME');
-
-    function updateAdminUI() {
-      const badge = document.getElementById('adminBadge');
-      const status = document.getElementById('adminStatus');
-      const logoutBtn = document.getElementById('btnLogout');
-      const loginCard = document.getElementById('loginCard');
-      const panel = document.getElementById('panel');
-
-      if (adminToken && adminName) {
-        badge.textContent = `Admin: ${adminName}`;
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      const d = new Date(dateStr);
+      return d.toLocaleString('tr-TR');
+    }
+    // ========== PREVIEW LIVE IMAGE ==========
+    $('#productImage')?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      const preview = $('#previewImg');
+      if (file) {
+        const url = URL.createObjectURL(file);
+        preview.src = url;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+    });
+    // ========== AUTH HELPERS ==========
+    let ADMIN_TOKEN = localStorage.getItem('MAVERN_ADMIN_TOKEN') || '';
+    let ADMIN_NAME = localStorage.getItem('MAVERN_ADMIN_NAME') || '';
+    function withAuth(opts = {}) {
+      const headers = { ...(opts.headers || {}) };
+      if (ADMIN_TOKEN) headers['Authorization'] = `Bearer ${ADMIN_TOKEN}`;
+      return { cache: 'no-store', ...opts, headers };
+    }
+    function handle401(res) {
+      if (res && res.status === 401) {
+        adminLogout(true);
+        showToast('Oturum süresi dolmuş. Lütfen tekrar giriş yapın.', 'err');
+        throw new Error('Yetkisiz');
+      }
+    }
+    function setLoggedInUI(isLoggedIn) {
+      const badge = $('#adminBadge');
+      const status = $('#adminStatus');
+      const logoutBtn = $('#btnLogout');
+      const loginCard = $('#loginCard');
+      const panel = $('#panel');
+      if (isLoggedIn) {
+        badge.textContent = `Admin: ${ADMIN_NAME || '—'}`;
         status.textContent = 'Oturum açık.';
         logoutBtn.style.display = 'block';
         loginCard.classList.add('hidden');
@@ -663,26 +660,25 @@
         panel.classList.add('hidden');
       }
     }
-
+    // ========== LOGIN / LOGOUT ==========
     async function adminLogin() {
-      const user = document.getElementById('adminUser').value.trim();
-      const pass = document.getElementById('adminPass').value;
+      const user = $('#adminUser').value.trim();
+      const pass = $('#adminPass').value;
       if (!user || !pass) return showToast('Lütfen kullanıcı adı ve şifre girin.', 'err');
-
       try {
         const res = await fetch('/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: user, password: pass })
+          body: JSON.stringify({ username: user, password: pass }),
         });
         const data = await res.json();
         if (res.ok && data.token) {
-          localStorage.setItem('MAVERN_ADMIN_TOKEN', data.token);
-          localStorage.setItem('MAVERN_ADMIN_NAME', user);
-          adminToken = data.token;
-          adminName = user;
+          ADMIN_TOKEN = data.token;
+          ADMIN_NAME = data.username || user;
+          localStorage.setItem('MAVERN_ADMIN_TOKEN', ADMIN_TOKEN);
+          localStorage.setItem('MAVERN_ADMIN_NAME', ADMIN_NAME);
           showToast('Giriş başarılı.', 'ok');
-          updateAdminUI();
+          setLoggedInUI(true);
         } else {
           showToast(data.message || 'Giriş başarısız.', 'err');
         }
@@ -690,15 +686,14 @@
         showToast('Sunucu hatası. Lütfen daha sonra tekrar deneyin.', 'err');
       }
     }
-
-    function adminLogout() {
+    function adminLogout(silent = false) {
+      ADMIN_TOKEN = '';
+      ADMIN_NAME = '';
       localStorage.removeItem('MAVERN_ADMIN_TOKEN');
       localStorage.removeItem('MAVERN_ADMIN_NAME');
-      adminToken = null;
-      adminName = null;
-      updateAdminUI();
+      setLoggedInUI(false);
+      if (!silent) showToast('Oturum kapatıldı.', 'info');
     }
-
     // ========== TAB NAVIGATION ==========
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -706,13 +701,11 @@
         document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
         tab.classList.add('active');
         const target = tab.dataset.tab;
-        document.getElementById(`tab-${target}`).classList.remove('hidden');
-        loadTab(target);
+        $('#tab-' + target).classList.remove('hidden');
+        if (ADMIN_TOKEN) loadTab(target);
       });
     });
-
     function loadTab(tabName) {
-      if (!adminToken) return;
       switch (tabName) {
         case 'products': loadProducts(); break;
         case 'orders': loadOrders(); break;
@@ -722,240 +715,600 @@
         case 'users': loadUsers(); break;
       }
     }
-
     // ========== MODAL UTILS ==========
-    function showModal(modalId) {
-      document.getElementById(modalId).classList.add('show');
-    }
-    function hideModal(modalId) {
-      document.getElementById(modalId).classList.remove('show');
-    }
-
+    function showModal(id) { $(`#${id}`).classList.add('show'); }
+    function hideModal(id) { $(`#${id}`).classList.remove('show'); }
     // ========== PRODUCTS ==========
-    function loadProducts() {
-      fetch('/api/admin/products', {
-        headers: { 'Authorization': `Bearer ${adminToken}` }
-      })
-      .then(r => r.json())
-      .then(products => {
-        const container = document.getElementById('productList');
-        container.innerHTML = '';
-        products.forEach(p => {
-          const div = document.createElement('div');
-          div.className = 'product-card';
-          div.innerHTML = `
-            <img src="/uploads/${p.image}" class="thumb" onerror="this.src='/placeholder.jpg'">
-            <div style="flex:1;">
-              <div style="font-weight:600;">${p.name}</div>
-              <div class="muted" style="margin:4px 0;">${p.price.toFixed(2)} ₺</div>
-            </div>
-            <button class="btn ghost" onclick="editProduct('${p.id}')">Düzenle</button>
-          `;
-          container.appendChild(div);
-        });
-      })
-      .catch(e => {
+    async function loadProducts() {
+      try {
+        const res = await fetch('/api/products', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Ürünler yüklenemedi.');
+        const products = await res.json();
+        const container = $('#productList');
+        if (!Array.isArray(products) || products.length === 0) {
+          container.innerHTML = '<p class="muted">Kayıtlı ürün bulunmuyor.</p>';
+          return;
+        }
+        container.innerHTML = products.map(p => {
+          const priceDisplay = (typeof p.price === 'number' && isFinite(p.price))
+            ? `${p.price.toLocaleString('tr-TR')} ₺`
+            : (p.priceText || '—');
+          const purchasable = p.purchasable ? '<span class="badge ok">Satılabilir</span>' : '<span class="badge err">Satılamaz</span>';
+          const imgSrc = p.image ? `/uploads/${p.image}` : '/placeholder.jpg';
+          return `
+            <div class="product-card">
+              <img src="${esc(imgSrc)}" class="thumb" onerror="this.src='/placeholder.jpg'">
+              <div style="flex:1;">
+                <div style="font-weight:600;">${esc(p.name)}</div>
+                <div class="muted" style="margin:4px 0;">${esc(p.desc || '')}</div>
+                <div class="row" style="gap:6px;margin-top:6px;">
+                  <span class="chip">${esc(priceDisplay)}</span>
+                  ${p.image ? `<span class="chip">${esc(p.image.slice(0, 20))}${p.image.length > 20 ? '…' : ''}</span>` : ''}
+                  ${purchasable}
+                </div>
+              </div>
+              <button class="btn ghost" onclick="editProduct('${esc(p.id)}')">Düzenle</button>
+            </div>`;
+        }).join('');
+      } catch (e) {
         console.error(e);
-        showToast('Ürünler yüklenemedi.', 'err');
-      });
+        $('#productList').innerHTML = '<p class="muted">Ürünler yüklenemedi.</p>';
+      }
     }
-
     function showProductModal(productId = null) {
+      $('#productId').value = productId || '';
+      $('#productName').value = '';
+      $('#productPrice').value = '';
+      $('#productDesc').value = '';
+      $('#previewImg').style.display = 'none';
+      $('#deleteProductBtn').style.display = productId ? 'inline-block' : 'none';
+      $('#modalTitle').textContent = productId ? 'Ürünü Düzenle' : 'Yeni Ürün';
       if (productId) {
-        // Fetch and fill
-      } else {
-        document.getElementById('productId').value = '';
-        document.getElementById('productName').value = '';
-        document.getElementById('productPrice').value = '';
-        document.getElementById('productDesc').value = '';
-        document.getElementById('previewImg').style.display = 'none';
-        document.getElementById('deleteProductBtn').style.display = 'none';
-        document.getElementById('modalTitle').textContent = 'Yeni Ürün';
+        fetch('/api/products', { cache: 'no-store' })
+          .then(r => r.json())
+          .then(products => {
+            const p = products.find(prod => prod.id === productId);
+            if (p) {
+              $('#productName').value = p.name || '';
+              $('#productPrice').value = (p.priceText !== undefined ? p.priceText : (typeof p.price === 'number' ? String(p.price) : ''));
+              $('#productDesc').value = p.desc || '';
+              if (p.image) {
+                $('#previewImg').src = `/uploads/${p.image}`;
+                $('#previewImg').style.display = 'block';
+              }
+            }
+          });
       }
       showModal('productModal');
     }
-
-    function editProduct(id) {
-      // For simplicity: reload full list after save. In real app, fetch detail.
-      showProductModal(id);
+    function editProduct(id) { showProductModal(id); }
+    async function saveProduct() {
+      const id = $('#productId').value;
+      const name = $('#productName').value.trim();
+      const priceText = $('#productPrice').value.trim();
+      const desc = $('#productDesc').value.trim();
+      if (!name) return showToast('Ürün adı gerekli.', 'err');
+      const payload = { name, priceText, desc };
+      if ($('#productImage').files[0]) {
+        const formData = new FormData();
+        formData.append('file', $('#productImage').files[0]);
+        try {
+          const res = await fetch('/api/admin/upload', withAuth({ method: 'POST', body: formData }));
+          await handle401(res);
+          const data = await res.json();
+          if (data.success && data.path) {
+            payload.image = data.path;
+          } else {
+            return showToast(data.message || 'Görsel yüklenemedi.', 'err');
+          }
+        } catch (e) {
+          return showToast('Görsel yükleme hatası.', 'err');
+        }
+      }
+      try {
+        const url = id ? `/api/admin/products/${encodeURIComponent(id)}` : '/api/admin/products';
+        const method = id ? 'PUT' : 'POST';
+        const res = await fetch(url, withAuth({
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }));
+        await handle401(res);
+        const data = await res.json();
+        if (data.success) {
+          showToast(id ? 'Ürün güncellendi.' : 'Ürün eklendi.', 'ok');
+          hideModal('productModal');
+          loadProducts();
+        } else {
+          showToast(data.message || 'İşlem başarısız.', 'err');
+        }
+      } catch (e) {
+        console.error(e);
+        showToast('Sunucu hatası.', 'err');
+      }
+    }
+    async function deleteProduct() {
+      const id = $('#productId').value;
+      if (!id || !confirm('Bu ürünü silmek istiyor musunuz?')) return;
+      try {
+        const res = await fetch(`/api/admin/products/${encodeURIComponent(id)}`, withAuth({ method: 'DELETE' }));
+        await handle401(res);
+        const data = await res.json();
+        if (data.success) {
+          showToast('Ürün silindi.', 'ok');
+          hideModal('productModal');
+          loadProducts();
+        } else {
+          showToast(data.message || 'Silme başarısız.', 'err');
+        }
+      } catch (e) {
+        console.error(e);
+        showToast('Sunucu hatası.', 'err');
+      }
+    }
+    // ========== COUPONS ==========
+    function couponStatus(c) {
+      const now = Date.now();
+      if (c.active === false) return { label: 'Pasif', cls: 'warn' };
+      if (c.startsAt) {
+        const st = Date.parse(c.startsAt);
+        if (!isNaN(st) && now < st) return { label: 'Başlamadı', cls: 'warn' };
+      }
+      if (c.expiresAt) {
+        const exp = Date.parse(c.expiresAt);
+        if (!isNaN(exp) && now > exp) return { label: 'Süresi Doldu', cls: 'err' };
+      }
+      return { label: 'Aktif', cls: 'ok' };
+    }
+    async function loadCoupons() {
+      try {
+        const res = await fetch('/api/admin/coupons', withAuth());
+        await handle401(res);
+        const data = await res.json();
+        if (!data.success) throw new Error('Kuponlar yüklenemedi.');
+        const container = $('#couponList');
+        if (!data.items || data.items.length === 0) {
+          container.innerHTML = '<p class="muted">Kupon bulunmuyor.</p>';
+          return;
+        }
+        container.innerHTML = data.items.map(c => {
+          const st = couponStatus(c);
+          return `
+            <div class="card" style="padding:14px;">
+              <div class="row-between">
+                <div><strong>${esc(c.code)}</strong> — %${Number(c.percent || 0)} indirim</div>
+                <span class="badge ${st.cls}">${st.label}</span>
+              </div>
+              <div class="muted" style="font-size:13px;margin-top:6px;">
+                ${formatDate(c.startsAt)} – ${formatDate(c.expiresAt)}
+              </div>
+              <div class="row" style="margin-top:12px;">
+                <button class="btn ghost" onclick="editCoupon('${esc(c.code)}')">Düzenle</button>
+                <button class="btn danger" onclick="deleteCoupon('${esc(c.code)}')">Sil</button>
+              </div>
+            </div>`;
+        }).join('');
+      } catch (e) {
+        console.error(e);
+        $('#couponList').innerHTML = '<p class="muted">Kuponlar yüklenemedi.</p>';
+      }
+    }
+    function showCouponModal(code = null) {
+      $('#couponId').value = code || '';
+      $('#couponCode').value = '';
+      $('#couponPercent').value = '';
+      $('#couponStart').value = '';
+      $('#couponEnd').value = '';
+      $('#deleteCouponBtn').style.display = code ? 'inline-block' : 'none';
+      $('#couponModalTitle').textContent = code ? 'Kuponu Düzenle' : 'Yeni Kupon';
+      if (code) {
+        fetch('/api/admin/coupons', withAuth())
+          .then(r => r.json())
+          .then(data => {
+            if (data.success) {
+              const c = data.items.find(cp => cp.code === code);
+              if (c) {
+                $('#couponCode').value = c.code;
+                $('#couponPercent').value = c.percent;
+                $('#couponStart').value = c.startsAt ? new Date(c.startsAt).toISOString().slice(0, 16) : '';
+                $('#couponEnd').value = c.expiresAt ? new Date(c.expiresAt).toISOString().slice(0, 16) : '';
+              }
+            }
+          });
+      }
+      showModal('couponModal');
+    }
+    function editCoupon(code) { showCouponModal(code); }
+    async function saveCoupon() {
+      const code = $('#couponCode').value.trim().toUpperCase();
+      const percent = parseInt($('#couponPercent').value);
+      const starts = $('#couponStart').value || null;
+      const expires = $('#couponEnd').value || null;
+      if (!code || isNaN(percent) || percent < 1 || percent > 90) {
+        return showToast('Geçerli kod ve indirim oranı girin.', 'err');
+      }
+      try {
+        const res = await fetch('/api/admin/coupons', withAuth({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, percent, active: true, startsAt: starts, expiresAt: expires })
+        }));
+        await handle401(res);
+        const data = await res.json();
+        if (data.success) {
+          showToast('Kupon kaydedildi.', 'ok');
+          hideModal('couponModal');
+          loadCoupons();
+        } else {
+          showToast(data.message || 'Kayıt başarısız.', 'err');
+        }
+      } catch (e) {
+        console.error(e);
+        showToast('Sunucu hatası.', 'err');
+      }
+    }
+    async function deleteCoupon(code) {
+      if (!code) code = $('#couponId').value;
+      if (!code || !confirm(`${code} kuponu silinsin mi?`)) return;
+      try {
+        const res = await fetch(`/api/admin/coupons/${encodeURIComponent(code)}`, withAuth({ method: 'DELETE' }));
+        await handle401(res);
+        const data = await res.json();
+        if (data.success) {
+          showToast('Kupon silindi.', 'ok');
+          hideModal('couponModal');
+          loadCoupons();
+        } else {
+          showToast(data.message || 'Silme başarısız.', 'err');
+        }
+      } catch (e) {
+        console.error(e);
+        showToast('Sunucu hatası.', 'err');
+      }
+    }
+    // ========== MESSAGES & ORDERS ==========
+    let currentMessageType = 'contact';
+    async function loadMessages(type) {
+      currentMessageType = type;
+      try {
+        const res = await fetch(`/api/admin/messages?type=${type}`, withAuth());
+        await handle401(res);
+        const data = await res.json();
+        if (!data.success) throw new Error('Mesajlar yüklenemedi.');
+        const container = $('#messageList');
+        if (!data.items || data.items.length === 0) {
+          container.innerHTML = `<p class="muted">${type === 'order' ? 'Sipariş mesajı bulunmuyor.' : 'İletişim mesajı bulunmuyor.'}</p>`;
+          return;
+        }
+        container.innerHTML = data.items.map(m => {
+          const title = type === 'order' ? `Sipariş #${m.orderId}` : 'İletişim Mesajı';
+          const mailStatus = m.mailSent ? '<span class="pill yes">Mail: Gönderildi</span>' : '<span class="pill no">Mail: Gönderilemedi</span>';
+          const readBadge = m.read ? '<span class="badge ok">Okundu</span>' : '<span class="badge warn">Yeni</span>';
+          return `
+            <div class="card" style="padding:14px;">
+              <div class="row-between">
+                <strong>${esc(title)}</strong>
+                ${readBadge}
+              </div>
+              <div style="margin:8px 0;">${esc(m.name)} — ${esc(m.email)} — ${esc(m.phone || '')}</div>
+              <div style="margin:8px 0; white-space: pre-wrap;">${esc(m.message)}</div>
+              <div class="muted" style="font-size:13px;">${formatDate(m.createdAt)}</div>
+              <div class="row" style="margin-top:12px;">
+                <button class="btn ghost" onclick="markMessageRead('${esc(m.id)}')">Okundu</button>
+                <button class="btn primary" onclick="resendMessageEmail('${esc(m.id)}')">Mail Gönder</button>
+                <button class="btn danger" onclick="deleteMessage('${esc(m.id)}')">Sil</button>
+              </div>
+            </div>`;
+        }).join('');
+      } catch (e) {
+        console.error(e);
+        $('#messageList').innerHTML = '<p class="muted">Mesajlar yüklenemedi.</p>';
+      }
+    }
+    async function markMessageRead(id) {
+      try {
+        const res = await fetch(`/api/admin/messages/${encodeURIComponent(id)}/read`, withAuth({ method: 'PATCH' }));
+        await handle401(res);
+        if (res.ok) {
+          showToast('Okundu olarak işaretlendi.', 'ok');
+          loadMessages(currentMessageType);
+        }
+      } catch (e) {
+        console.error(e);
+        showToast('İşlem başarısız.', 'err');
+      }
+    }
+    async function resendMessageEmail(id) {
+      try {
+        const res = await fetch(`/api/admin/messages/${encodeURIComponent(id)}/resend`, withAuth({ method: 'POST' }));
+        await handle401(res);
+        const data = await res.json();
+        if (data.success) {
+          showToast('Mail yeniden gönderildi.', 'ok');
+        } else {
+          showToast(data.message || 'Gönderim başarısız.', 'err');
+        }
+      } catch (e) {
+        console.error(e);
+        showToast('Sunucu hatası.', 'err');
+      }
+    }
+    async function deleteMessage(id) {
+      if (!confirm('Bu mesajı silmek istiyor musunuz?')) return;
+      try {
+        const res = await fetch(`/api/admin/messages/${encodeURIComponent(id)}`, withAuth({ method: 'DELETE' }));
+        await handle401(res);
+        const data = await res.json();
+        if (data.success) {
+          showToast('Mesaj silindi.', 'ok');
+          loadMessages(currentMessageType);
+        } else {
+          showToast(data.message || 'Silme başarısız.', 'err');
+        }
+      } catch (e) {
+        console.error(e);
+        showToast('Sunucu hatası.', 'err');
+      }
+    }
+    async function loadOrders() {
+      try {
+        const res = await fetch('/api/admin/messages?type=order', withAuth());
+        await handle401(res);
+        const data = await res.json();
+        if (!data.success) throw new Error('Siparişler yüklenemedi.');
+        const container = $('#orderList');
+        if (!data.items || data.items.length === 0) {
+          container.innerHTML = '<p class="muted">Sipariş bulunmuyor.</p>';
+          return;
+        }
+        container.innerHTML = data.items.map(o => {
+          const statusInfo = {
+            pending: { label: 'Bekliyor', cls: 'warn' },
+            preparing: { label: 'Hazırlanıyor', cls: 'warn' },
+            shipped: { label: 'Kargoda', cls: 'ok' },
+            completed: { label: 'Tamamlandı', cls: 'ok' },
+            cancelled: { label: 'İptal', cls: 'err' }
+          }[o.status] || { label: 'Bilinmiyor', cls: 'warn' };
+          return `
+            <div class="card" style="padding:14px;">
+              <div class="row-between">
+                <strong>Sipariş #${esc(o.orderId)}</strong>
+                <span class="badge ${statusInfo.cls}">${statusInfo.label}</span>
+              </div>
+              <div style="margin:6px 0;">${esc(o.name)} — ${esc(o.total)} ₺</div>
+              <div class="muted" style="font-size:13px;">${formatDate(o.createdAt)}</div>
+              <div class="row" style="margin-top:12px;">
+                <button class="btn ghost" onclick="showOrderDetail('${esc(o.id)}')">Detay</button>
+                <button class="btn primary" onclick="updateOrderStatus('${esc(o.id)}', 'shipped')">Kargoya Ver</button>
+                <button class="btn danger" onclick="deleteMessage('${esc(o.id)}')">Sil</button>
+              </div>
+            </div>`;
+        }).join('');
+      } catch (e) {
+        console.error(e);
+        $('#orderList').innerHTML = '<p class="muted">Siparişler yüklenemedi.</p>';
+      }
+    }
+    async function showOrderDetail(id) {
+      try {
+        const res = await fetch(`/api/admin/messages/${encodeURIComponent(id)}`, withAuth());
+        await handle401(res);
+        const order = await res.json();
+        if (!order) throw new Error();
+        const html = `
+          <p><strong>Sipariş ID:</strong> ${esc(order.orderId)}</p>
+          <p><strong>Müşteri:</strong> ${esc(order.name)}</p>
+          <p><strong>E-posta:</strong> ${esc(order.email)}</p>
+          <p><strong>Telefon:</strong> ${esc(order.phone)}</p>
+          <p><strong>Adres:</strong> ${esc(order.address)}</p>
+          <p><strong>Not:</strong> ${esc(order.notes || '-')}</p>
+          <p><strong>Toplam:</strong> ${esc(order.total)} ₺</p>
+          <p><strong>Durum:</strong> ${esc(order.status)}</p>
+          <div style="margin-top:10px;">
+            <label>Kargo Takip Kodu:</label>
+            <input type="text" id="trackingCodeInput" value="${esc(order.trackingCode || '')}" style="margin-top:4px; width:100%;" />
+          </div>
+          <input type="hidden" id="orderIdInput" value="${esc(id)}" />
+        `;
+        $('#orderDetail').innerHTML = html;
+        showModal('orderModal');
+      } catch (e) {
+        console.error(e);
+        showToast('Sipariş detayı yüklenemedi.', 'err');
+      }
+    }
+    async function updateOrderStatus(id, newStatus) {
+      const trackingCode = $('#trackingCodeInput')?.value || '';
+      try {
+        const res = await fetch(`/api/admin/orders/${encodeURIComponent(id)}`, withAuth({
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus, trackingCode })
+        }));
+        await handle401(res);
+        const data = await res.json();
+        if (data.success) {
+          showToast('Sipariş durumu güncellendi.', 'ok');
+          loadOrders();
+          if ($('#orderModal').classList.contains('show')) {
+            hideModal('orderModal');
+          }
+        } else {
+          showToast('Güncelleme başarısız.', 'err');
+        }
+      } catch (e) {
+        console.error(e);
+        showToast('Sunucu hatası.', 'err');
+      }
+    }
+    function resendOrderEmail() {
+      const id = $('#orderIdInput')?.value;
+      if (id) resendMessageEmail(id);
+    }
+    // ========== REVIEWS ==========
+    async function loadReviews() {
+      try {
+        const res = await fetch('/api/admin/reviews', withAuth());
+        await handle401(res);
+        const data = await res.json();
+        if (!data.success) throw new Error('Yorumlar yüklenemedi.');
+        const container = $('#reviewList');
+        if (!data.items || data.items.length === 0) {
+          container.innerHTML = '<p class="muted">Yorum bulunmuyor.</p>';
+          return;
+        }
+        container.innerHTML = data.items.map(r => {
+          const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+          const photos = (r.photos || []).map(p => `<img src="/uploads/${esc(p)}" onerror="this.style.display='none'">`).join('');
+          return `
+            <div class="card" style="padding:14px;">
+              <div class="row-between">
+                <div>
+                  <strong>${esc(r.displayName || 'Gizli Kullanıcı')}</strong>
+                  <span class="stars" style="margin-left:8px;">${stars}</span>
+                  <div class="muted" style="font-size:13px;">${formatDate(r.createdAt)}</div>
+                </div>
+                <div>
+                  ${r.approved ? '<span class="badge ok">Onaylı</span>' : '<span class="badge warn">Beklemede</span>'}
+                </div>
+              </div>
+              <div style="margin:10px 0;">${esc(r.comment)}</div>
+              ${photos ? `<div class="photos">${photos}</div>` : ''}
+              <div class="row" style="margin-top:12px;">
+                <button class="btn ghost" onclick="showReviewDetail('${esc(r.id)}', '${esc(r.userId)}', ${r.approved})">Detay</button>
+                <button class="btn primary" onclick="toggleApproveReview('${esc(r.id)}', ${r.approved})">${r.approved ? 'Onayı Kaldır' : 'Onayla'}</button>
+                <button class="btn danger" onclick="deleteReview('${esc(r.id)}')">Sil</button>
+              </div>
+            </div>`;
+        }).join('');
+      } catch (e) {
+        console.error(e);
+        $('#reviewList').innerHTML = '<p class="muted">Yorumlar yüklenemedi.</p>';
+      }
+    }
+    function showReviewDetail(id, userId, approved) {
+      const detail = $('#reviewDetail');
+      detail.innerHTML = `<p><strong>Kullanıcı ID:</strong> ${esc(userId)}</p>`;
+      detail.dataset.reviewId = id;
+      detail.dataset.approved = approved ? 'true' : 'false';
+      showModal('reviewModal');
+    }
+    async function toggleApproveReview(reviewId, currentApproved) {
+      try {
+        const res = await fetch(`/api/admin/reviews/${encodeURIComponent(reviewId)}/approve`, withAuth({
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ approved: !currentApproved })
+        }));
+        await handle401(res);
+        const data = await res.json();
+        if (data.success) {
+          showToast(currentApproved ? 'Yorum onayı kaldırıldı.' : 'Yorum onaylandı.', 'ok');
+          loadReviews();
+        } else {
+          showToast(data.message || 'İşlem başarısız.', 'err');
+        }
+      } catch (e) {
+        showToast('Sunucu hatası.', 'err');
+      }
+    }
+    async function deleteReview(reviewId) {
+      if (!confirm('Bu yorumu silmek istiyor musunuz?')) return;
+      try {
+        const res = await fetch(`/api/admin/reviews/${encodeURIComponent(reviewId)}`, withAuth({ method: 'DELETE' }));
+        await handle401(res);
+        const data = await res.json();
+        if (data.success) {
+          showToast('Yorum silindi.', 'ok');
+          loadReviews();
+        } else {
+          showToast(data.message || 'Silme başarısız.', 'err');
+        }
+      } catch (e) {
+        showToast('Sunucu hatası.', 'err');
+      }
+    }
+    // Helper functions for review modal
+    function toggleReviewFromModal() {
+      const detail = $('#reviewDetail');
+      const reviewId = detail.dataset.reviewId;
+      const currentApproved = detail.dataset.approved === 'true';
+      if (!reviewId) return showToast('Yorum bulunmuyor.', 'err');
+      toggleApproveReview(reviewId, currentApproved);
     }
 
-    function saveProduct() {
-      showToast('Ürün kaydetme özelliği backend ile entegre edilecektir.', 'info');
+    function deleteReviewFromModal() {
+      const detail = $('#reviewDetail');
+      const reviewId = detail.dataset.reviewId;
+      if (!reviewId) return showToast('Yorum bulunmuyor.', 'err');
+      deleteReview(reviewId);
     }
-
-    function deleteProduct() {
-      showToast('Ürün silme özelliği backend ile entegre edilecektir.', 'info');
-    }
-
-    // ========== USERS (CRITICAL: NO ADMIN/ONAY BUTTONS) ==========
-    function loadUsers() {
-      fetch('/api/admin/users', {
-        headers: { 'Authorization': `Bearer ${adminToken}` }
-      })
-      .then(r => r.json())
-      .then(users => {
-        const container = document.getElementById('userList');
+    
+    // ========== USERS ==========
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/admin/users', withAuth());
+        await handle401(res);
+        const data = await res.json();
+        if (!data.success) throw new Error('Üyeler yüklenemedi.');
+        const container = $('#userList');
+        if (!data.items || data.items.length === 0) {
+          container.innerHTML = '<p class="muted">Üye bulunmuyor.</p>';
+          return;
+        }
         container.innerHTML = `
           <table class="table">
             <thead>
               <tr>
                 <th>E-posta</th>
-                <th>Ad Soyad</th>
-                <th>Rol</th>
+                <th>Görünen Ad</th>
                 <th>Durum</th>
-                <th>İşlem</th>
+                <th>Rol</th>
+                <th class="right">İşlem</th>
               </tr>
             </thead>
             <tbody id="userTableBody"></tbody>
-          </table>
-        `;
-        const tbody = document.getElementById('userTableBody');
-        users.forEach(u => {
+          </table>`;
+        const tbody = $('#userTableBody');
+        data.items.forEach(u => {
           const tr = document.createElement('tr');
-          const isRealAdmin = u.isAdmin === true;
           const isApproved = u.isApproved === true;
-
+          const isAdmin = u.isAdmin === true;
           tr.innerHTML = `
-            <td>${u.email}</td>
-            <td>${u.fullName || '-'}</td>
-            <td>${isRealAdmin ? '<span class="pill yes">Admin</span>' : '<span class="pill">Kullanıcı</span>'}</td>
-            <td>${isApproved ? '<span class="pill yes">Onaylı</span>' : '<span class="pill no">Bekliyor</span>'}</td>
-            <td>
-              <button class="btn danger" onclick="deleteUser('${u.id}')">Sil</button>
-            </td>
-          `;
+            <td>${esc(u.email)}</td>
+            <td>${esc(u.displayName || '-')}</td>
+            <td>${isApproved ? '<span class="badge ok">Onaylı</span>' : '<span class="badge warn">Beklemede</span>'}</td>
+            <td>${isAdmin ? '<span class="pill yes">Admin</span>' : '<span class="pill">Kullanıcı</span>'}</td>
+            <td class="right">
+              <button class="btn danger" onclick="deleteUser('${esc(u.id)}')">Sil</button>
+            </td>`;
           tbody.appendChild(tr);
         });
-      })
-      .catch(e => {
+      } catch (e) {
         console.error(e);
-        showToast('Üyeler yüklenemedi.', 'err');
-      });
+        $('#userList').innerHTML = '<p class="muted">Üyeler yüklenemedi.</p>';
+      }
     }
-
-    // NOTE: toggleAdminUser() and toggleApproveUser() are REMOVED from UI per brand rules.
-    // The backend endpoints may exist, but no button calls them.
-
-    function deleteUser(userId) {
+    async function deleteUser(userId) {
       if (!confirm('Bu kullanıcıyı kalıcı olarak silmek istiyor musunuz?')) return;
-      fetch(`/api/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${adminToken}` }
-      })
-      .then(r => {
-        if (r.ok) {
+      try {
+        const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, withAuth({ method: 'DELETE' }));
+        await handle401(res);
+        const data = await res.json();
+        if (data.success) {
           showToast('Kullanıcı silindi.', 'ok');
           loadUsers();
         } else {
-          showToast('Silme işlemi başarısız.', 'err');
+          showToast(data.message || 'Silme başarısız.', 'err');
         }
-      })
-      .catch(e => {
+      } catch (e) {
         console.error(e);
         showToast('Sunucu hatası.', 'err');
-      });
+      }
     }
-
-    // ========== REVIEWS ==========
-    function loadReviews() {
-      fetch('/api/admin/reviews', {
-        headers: { 'Authorization': `Bearer ${adminToken}` }
-      })
-      .then(r => r.json())
-      .then(reviews => {
-        const container = document.getElementById('reviewList');
-        container.innerHTML = '';
-        reviews.forEach(r => {
-          const div = document.createElement('div');
-          div.className = 'card';
-          div.style.padding = '14px';
-          const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
-          div.innerHTML = `
-            <div class="row-between">
-              <div>
-                <strong>${r.displayName || 'Gizli Kullanıcı'}</strong>
-                <span class="stars" style="margin-left:8px;">${stars}</span>
-                <div class="muted" style="font-size:13px;">${new Date(r.createdAt).toLocaleString('tr-TR')}</div>
-              </div>
-              <div>
-                ${r.isApproved ? '<span class="badge ok">Onaylı</span>' : '<span class="badge warn">Beklemede</span>'}
-              </div>
-            </div>
-            <div style="margin:10px 0;">${r.comment}</div>
-            ${r.photos && r.photos.length ? `
-              <div class="photos">
-                ${r.photos.map(p => `<img src="/uploads/${p}" onerror="this.style.display='none'">`).join('')}
-              </div>
-            ` : ''}
-            <div class="row" style="margin-top:12px;">
-              <button class="btn ghost" onclick="showReviewDetail('${r.id}')">Detay</button>
-              <button class="btn primary" onclick="toggleApproveReview('${r.id}')">${r.isApproved ? 'Onayı Kaldır' : 'Onayla'}</button>
-              <button class="btn danger" onclick="deleteReview('${r.id}')">Sil</button>
-            </div>
-          `;
-          container.appendChild(div);
-        });
-      })
-      .catch(e => {
-        console.error(e);
-        showToast('Yorumlar yüklenemedi.', 'err');
-      });
-    }
-
-    function toggleApproveReview(reviewId) {
-      fetch(`/api/admin/reviews/${reviewId}/approve`, {
-        method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${adminToken}` }
-      })
-      .then(r => {
-        if (r.ok) {
-          showToast('Yorum durumu güncellendi.', 'ok');
-          loadReviews();
-        } else {
-          showToast('İşlem başarısız.', 'err');
-        }
-      })
-      .catch(e => {
-        console.error(e);
-        showToast('Sunucu hatası.', 'err');
-      });
-    }
-
-    function deleteReview(reviewId) {
-      if (!confirm('Bu yorumu silmek istiyor musunuz?')) return;
-      fetch(`/api/admin/reviews/${reviewId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${adminToken}` }
-      })
-      .then(r => {
-        if (r.ok) {
-          showToast('Yorum silindi.', 'ok');
-          loadReviews();
-        } else {
-          showToast('Silme başarısız.', 'err');
-        }
-      })
-      .catch(e => {
-        console.error(e);
-        showToast('Sunucu hatası.', 'err');
-      });
-    }
-
-    function showReviewDetail(id) {
-      // In real app: fetch detail with userId, show in modal
-      showToast('Detay görünümü geliştirilecektir.', 'info');
-    }
-
-    // ========== STUBS FOR OTHER TABS (to preserve existing logic) ==========
-    function loadOrders() { /* Existing logic preserved */ }
-    function loadMessages(type) { /* Existing logic preserved */ }
-    function loadCoupons() { /* Existing logic preserved */ }
-    function saveCoupon() { /* Existing logic preserved */ }
-    function deleteCoupon() { /* Existing logic preserved */ }
-
     // ========== INIT ==========
-    updateAdminUI();
+    setLoggedInUI(!!ADMIN_TOKEN);
   </script>
 </body>
 </html>
+```
