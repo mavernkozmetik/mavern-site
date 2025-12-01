@@ -1,6 +1,3 @@
-Understood. I'll apply only the requested changes to the provided HTML file and return the complete corrected version.
-
-```html
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -612,7 +609,30 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
       const d = new Date(dateStr);
       return d.toLocaleString('tr-TR');
     }
-    // ========== PREVIEW LIVE IMAGE ==========
+
+    // ========== AKILLI GÖRSEL ÇÖZÜMLEYİCİ ==========
+    function resolveImageUrl(image) {
+      if (!image) return '/placeholder.jpg';
+      const trimmed = image.trim();
+      if (trimmed.startsWith('http')) return trimmed;
+      if (trimmed.startsWith('/')) return trimmed;
+      if (trimmed.includes('uploads/')) return '/' + trimmed.replace(/^\/?/, '');
+      return '/uploads/' + trimmed;
+    }
+
+    // ========== FİYAT PARSING ==========
+    function parsePrice(priceText) {
+      if (!priceText) return null;
+      // Remove non-numeric except comma/dot
+      const cleaned = priceText.replace(/[^\d,.-]/g, '');
+      if (!cleaned) return null;
+      // Replace comma with dot for parseFloat
+      const normalized = cleaned.replace(',', '.');
+      const num = parseFloat(normalized);
+      return isNaN(num) ? null : num;
+    }
+
+    // ========== LIVE IMAGE PREVIEW ==========
     $('#productImage')?.addEventListener('change', (e) => {
       const file = e.target.files[0];
       const preview = $('#previewImg');
@@ -624,6 +644,12 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
         preview.style.display = 'none';
       }
     });
+
+    // ========== KUPON OTOMATİK BÜYÜK HARF ==========
+    $('#couponCode')?.addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase();
+    });
+
     // ========== AUTH HELPERS ==========
     let ADMIN_TOKEN = localStorage.getItem('MAVERN_ADMIN_TOKEN') || '';
     let ADMIN_NAME = localStorage.getItem('MAVERN_ADMIN_NAME') || '';
@@ -660,6 +686,7 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
         panel.classList.add('hidden');
       }
     }
+
     // ========== LOGIN / LOGOUT ==========
     async function adminLogin() {
       const user = $('#adminUser').value.trim();
@@ -694,6 +721,7 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
       setLoggedInUI(false);
       if (!silent) showToast('Oturum kapatıldı.', 'info');
     }
+
     // ========== TAB NAVIGATION ==========
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -715,9 +743,11 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
         case 'users': loadUsers(); break;
       }
     }
+
     // ========== MODAL UTILS ==========
     function showModal(id) { $(`#${id}`).classList.add('show'); }
     function hideModal(id) { $(`#${id}`).classList.remove('show'); }
+
     // ========== PRODUCTS ==========
     async function loadProducts() {
       try {
@@ -734,7 +764,7 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
             ? `${p.price.toLocaleString('tr-TR')} ₺`
             : (p.priceText || '—');
           const purchasable = p.purchasable ? '<span class="badge ok">Satılabilir</span>' : '<span class="badge err">Satılamaz</span>';
-          const imgSrc = p.image ? `/uploads/${p.image}` : '/placeholder.jpg';
+          const imgSrc = resolveImageUrl(p.image);
           return `
             <div class="product-card">
               <img src="${esc(imgSrc)}" class="thumb" onerror="this.src='/placeholder.jpg'">
@@ -751,10 +781,10 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
             </div>`;
         }).join('');
       } catch (e) {
-        console.error(e);
         $('#productList').innerHTML = '<p class="muted">Ürünler yüklenemedi.</p>';
       }
     }
+
     function showProductModal(productId = null) {
       $('#productId').value = productId || '';
       $('#productName').value = '';
@@ -773,7 +803,8 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
               $('#productPrice').value = (p.priceText !== undefined ? p.priceText : (typeof p.price === 'number' ? String(p.price) : ''));
               $('#productDesc').value = p.desc || '';
               if (p.image) {
-                $('#previewImg').src = `/uploads/${p.image}`;
+                const imgSrc = resolveImageUrl(p.image);
+                $('#previewImg').src = imgSrc;
                 $('#previewImg').style.display = 'block';
               }
             }
@@ -781,14 +812,17 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
       }
       showModal('productModal');
     }
+
     function editProduct(id) { showProductModal(id); }
+
     async function saveProduct() {
       const id = $('#productId').value;
       const name = $('#productName').value.trim();
       const priceText = $('#productPrice').value.trim();
       const desc = $('#productDesc').value.trim();
       if (!name) return showToast('Ürün adı gerekli.', 'err');
-      const payload = { name, priceText, desc };
+      const price = parsePrice(priceText);
+      const payload = { name, price, priceText, desc };
       if ($('#productImage').files[0]) {
         const formData = new FormData();
         formData.append('file', $('#productImage').files[0]);
@@ -823,10 +857,10 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
           showToast(data.message || 'İşlem başarısız.', 'err');
         }
       } catch (e) {
-        console.error(e);
         showToast('Sunucu hatası.', 'err');
       }
     }
+
     async function deleteProduct() {
       const id = $('#productId').value;
       if (!id || !confirm('Bu ürünü silmek istiyor musunuz?')) return;
@@ -842,10 +876,10 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
           showToast(data.message || 'Silme başarısız.', 'err');
         }
       } catch (e) {
-        console.error(e);
         showToast('Sunucu hatası.', 'err');
       }
     }
+
     // ========== COUPONS ==========
     function couponStatus(c) {
       const now = Date.now();
@@ -860,6 +894,7 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
       }
       return { label: 'Aktif', cls: 'ok' };
     }
+
     async function loadCoupons() {
       try {
         const res = await fetch('/api/admin/coupons', withAuth());
@@ -889,10 +924,10 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
             </div>`;
         }).join('');
       } catch (e) {
-        console.error(e);
         $('#couponList').innerHTML = '<p class="muted">Kuponlar yüklenemedi.</p>';
       }
     }
+
     function showCouponModal(code = null) {
       $('#couponId').value = code || '';
       $('#couponCode').value = '';
@@ -918,7 +953,9 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
       }
       showModal('couponModal');
     }
+
     function editCoupon(code) { showCouponModal(code); }
+
     async function saveCoupon() {
       const code = $('#couponCode').value.trim().toUpperCase();
       const percent = parseInt($('#couponPercent').value);
@@ -943,10 +980,10 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
           showToast(data.message || 'Kayıt başarısız.', 'err');
         }
       } catch (e) {
-        console.error(e);
         showToast('Sunucu hatası.', 'err');
       }
     }
+
     async function deleteCoupon(code) {
       if (!code) code = $('#couponId').value;
       if (!code || !confirm(`${code} kuponu silinsin mi?`)) return;
@@ -962,10 +999,10 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
           showToast(data.message || 'Silme başarısız.', 'err');
         }
       } catch (e) {
-        console.error(e);
         showToast('Sunucu hatası.', 'err');
       }
     }
+
     // ========== MESSAGES & ORDERS ==========
     let currentMessageType = 'contact';
     async function loadMessages(type) {
@@ -1001,10 +1038,10 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
             </div>`;
         }).join('');
       } catch (e) {
-        console.error(e);
         $('#messageList').innerHTML = '<p class="muted">Mesajlar yüklenemedi.</p>';
       }
     }
+
     async function markMessageRead(id) {
       try {
         const res = await fetch(`/api/admin/messages/${encodeURIComponent(id)}/read`, withAuth({ method: 'PATCH' }));
@@ -1014,10 +1051,10 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
           loadMessages(currentMessageType);
         }
       } catch (e) {
-        console.error(e);
         showToast('İşlem başarısız.', 'err');
       }
     }
+
     async function resendMessageEmail(id) {
       try {
         const res = await fetch(`/api/admin/messages/${encodeURIComponent(id)}/resend`, withAuth({ method: 'POST' }));
@@ -1029,10 +1066,10 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
           showToast(data.message || 'Gönderim başarısız.', 'err');
         }
       } catch (e) {
-        console.error(e);
         showToast('Sunucu hatası.', 'err');
       }
     }
+
     async function deleteMessage(id) {
       if (!confirm('Bu mesajı silmek istiyor musunuz?')) return;
       try {
@@ -1046,10 +1083,47 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
           showToast(data.message || 'Silme başarısız.', 'err');
         }
       } catch (e) {
-        console.error(e);
         showToast('Sunucu hatası.', 'err');
       }
     }
+
+    // ========== YENİ: PUBLIC MAIL GÖNDERİMİ ==========
+    async function sendContactMail({ name, email, phone, message }) {
+      try {
+        const res = await fetch('/api/mail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, phone, message })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast('Mail gönderildi.', 'ok');
+        } else {
+          showToast(data.message || 'Gönderim başarısız.', 'err');
+        }
+      } catch (e) {
+        showToast('Sunucu hatası.', 'err');
+      }
+    }
+
+    // ========== ORDERS ==========
+    const ORDER_STATUS_LABELS = {
+      pending: 'Sipariş alındı',
+      preparing: 'Hazırlanıyor',
+      shipped: 'Kargoya verildi',
+      completed: 'Teslim edildi',
+      returned: 'İade sürecinde',
+      cancelled: 'İptal edildi'
+    };
+
+    function getOrderStatusInfo(status) {
+      const label = ORDER_STATUS_LABELS[status] || 'Bilinmiyor';
+      let cls = 'warn';
+      if (status === 'completed') cls = 'ok';
+      if (status === 'returned' || status === 'cancelled') cls = 'err';
+      return { label, cls };
+    }
+
     async function loadOrders() {
       try {
         const res = await fetch('/api/admin/messages?type=order', withAuth());
@@ -1062,33 +1136,32 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
           return;
         }
         container.innerHTML = data.items.map(o => {
-          const statusInfo = {
-            pending: { label: 'Bekliyor', cls: 'warn' },
-            preparing: { label: 'Hazırlanıyor', cls: 'warn' },
-            shipped: { label: 'Kargoda', cls: 'ok' },
-            completed: { label: 'Tamamlandı', cls: 'ok' },
-            cancelled: { label: 'İptal', cls: 'err' }
-          }[o.status] || { label: 'Bilinmiyor', cls: 'warn' };
+          const stInfo = getOrderStatusInfo(o.status);
           return `
             <div class="card" style="padding:14px;">
               <div class="row-between">
                 <strong>Sipariş #${esc(o.orderId)}</strong>
-                <span class="badge ${statusInfo.cls}">${statusInfo.label}</span>
+                <span class="badge ${stInfo.cls}">${stInfo.label}</span>
               </div>
               <div style="margin:6px 0;">${esc(o.name)} — ${esc(o.total)} ₺</div>
               <div class="muted" style="font-size:13px;">${formatDate(o.createdAt)}</div>
-              <div class="row" style="margin-top:12px;">
-                <button class="btn ghost" onclick="showOrderDetail('${esc(o.id)}')">Detay</button>
-                <button class="btn primary" onclick="updateOrderStatus('${esc(o.id)}', 'shipped')">Kargoya Ver</button>
+              <div class="row" style="margin-top:12px; gap:4px; flex-wrap:wrap;">
+                <button class="btn ghost" onclick="updateOrderStatus('${esc(o.id)}', 'pending')">Sipariş alındı</button>
+                <button class="btn ghost" onclick="updateOrderStatus('${esc(o.id)}', 'preparing')">Hazırlanıyor</button>
+                <button class="btn ghost" onclick="updateOrderStatus('${esc(o.id)}', 'shipped')">Kargoya verildi</button>
+                <button class="btn ghost" onclick="updateOrderStatus('${esc(o.id)}', 'completed')">Teslim edildi</button>
+                <button class="btn ghost" onclick="updateOrderStatus('${esc(o.id)}', 'returned')">İade sürecinde</button>
+                <button class="btn ghost" onclick="updateOrderStatus('${esc(o.id)}', 'cancelled')">İptal edildi</button>
+                <button class="btn primary" onclick="showOrderDetail('${esc(o.id)}')">Detay</button>
                 <button class="btn danger" onclick="deleteMessage('${esc(o.id)}')">Sil</button>
               </div>
             </div>`;
         }).join('');
       } catch (e) {
-        console.error(e);
         $('#orderList').innerHTML = '<p class="muted">Siparişler yüklenemedi.</p>';
       }
     }
+
     async function showOrderDetail(id) {
       try {
         const res = await fetch(`/api/admin/messages/${encodeURIComponent(id)}`, withAuth());
@@ -1103,7 +1176,7 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
           <p><strong>Adres:</strong> ${esc(order.address)}</p>
           <p><strong>Not:</strong> ${esc(order.notes || '-')}</p>
           <p><strong>Toplam:</strong> ${esc(order.total)} ₺</p>
-          <p><strong>Durum:</strong> ${esc(order.status)}</p>
+          <p><strong>Durum:</strong> ${esc(ORDER_STATUS_LABELS[order.status] || order.status)}</p>
           <div style="margin-top:10px;">
             <label>Kargo Takip Kodu:</label>
             <input type="text" id="trackingCodeInput" value="${esc(order.trackingCode || '')}" style="margin-top:4px; width:100%;" />
@@ -1113,10 +1186,10 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
         $('#orderDetail').innerHTML = html;
         showModal('orderModal');
       } catch (e) {
-        console.error(e);
         showToast('Sipariş detayı yüklenemedi.', 'err');
       }
     }
+
     async function updateOrderStatus(id, newStatus) {
       const trackingCode = $('#trackingCodeInput')?.value || '';
       try {
@@ -1134,17 +1207,18 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
             hideModal('orderModal');
           }
         } else {
-          showToast('Güncelleme başarısız.', 'err');
+          showToast(data.message || 'Güncelleme başarısız.', 'err');
         }
       } catch (e) {
-        console.error(e);
         showToast('Sunucu hatası.', 'err');
       }
     }
+
     function resendOrderEmail() {
       const id = $('#orderIdInput')?.value;
       if (id) resendMessageEmail(id);
     }
+
     // ========== REVIEWS ==========
     async function loadReviews() {
       try {
@@ -1182,10 +1256,10 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
             </div>`;
         }).join('');
       } catch (e) {
-        console.error(e);
         $('#reviewList').innerHTML = '<p class="muted">Yorumlar yüklenemedi.</p>';
       }
     }
+
     function showReviewDetail(id, userId, approved) {
       const detail = $('#reviewDetail');
       detail.innerHTML = `<p><strong>Kullanıcı ID:</strong> ${esc(userId)}</p>`;
@@ -1193,6 +1267,7 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
       detail.dataset.approved = approved ? 'true' : 'false';
       showModal('reviewModal');
     }
+
     async function toggleApproveReview(reviewId, currentApproved) {
       try {
         const res = await fetch(`/api/admin/reviews/${encodeURIComponent(reviewId)}/approve`, withAuth({
@@ -1212,6 +1287,7 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
         showToast('Sunucu hatası.', 'err');
       }
     }
+
     async function deleteReview(reviewId) {
       if (!confirm('Bu yorumu silmek istiyor musunuz?')) return;
       try {
@@ -1228,7 +1304,7 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
         showToast('Sunucu hatası.', 'err');
       }
     }
-    // Helper functions for review modal
+
     function toggleReviewFromModal() {
       const detail = $('#reviewDetail');
       const reviewId = detail.dataset.reviewId;
@@ -1243,7 +1319,7 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
       if (!reviewId) return showToast('Yorum bulunmuyor.', 'err');
       deleteReview(reviewId);
     }
-    
+
     // ========== USERS ==========
     async function loadUsers() {
       try {
@@ -1262,7 +1338,6 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
               <tr>
                 <th>E-posta</th>
                 <th>Görünen Ad</th>
-                <th>Durum</th>
                 <th>Rol</th>
                 <th class="right">İşlem</th>
               </tr>
@@ -1272,12 +1347,10 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
         const tbody = $('#userTableBody');
         data.items.forEach(u => {
           const tr = document.createElement('tr');
-          const isApproved = u.isApproved === true;
           const isAdmin = u.isAdmin === true;
           tr.innerHTML = `
             <td>${esc(u.email)}</td>
             <td>${esc(u.displayName || '-')}</td>
-            <td>${isApproved ? '<span class="badge ok">Onaylı</span>' : '<span class="badge warn">Beklemede</span>'}</td>
             <td>${isAdmin ? '<span class="pill yes">Admin</span>' : '<span class="pill">Kullanıcı</span>'}</td>
             <td class="right">
               <button class="btn danger" onclick="deleteUser('${esc(u.id)}')">Sil</button>
@@ -1285,10 +1358,10 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
           tbody.appendChild(tr);
         });
       } catch (e) {
-        console.error(e);
         $('#userList').innerHTML = '<p class="muted">Üyeler yüklenemedi.</p>';
       }
     }
+
     async function deleteUser(userId) {
       if (!confirm('Bu kullanıcıyı kalıcı olarak silmek istiyor musunuz?')) return;
       try {
@@ -1302,13 +1375,12 @@ Understood. I'll apply only the requested changes to the provided HTML file and 
           showToast(data.message || 'Silme başarısız.', 'err');
         }
       } catch (e) {
-        console.error(e);
         showToast('Sunucu hatası.', 'err');
       }
     }
+
     // ========== INIT ==========
     setLoggedInUI(!!ADMIN_TOKEN);
   </script>
 </body>
 </html>
-```
