@@ -525,10 +525,6 @@
       <div id="tab-mails" class="tab-content hidden">
         <div class="row-between">
           <h3 style="font-size: 18px; font-weight: 600;">Mesajlar</h3>
-          <div class="row">
-            <button class="btn ghost" onclick="loadMessages('contact')">İletişim</button>
-            <button class="btn ghost" onclick="loadMessages('order')">Sipariş</button>
-          </div>
         </div>
         <div id="messageList" class="list"></div>
       </div>
@@ -740,6 +736,7 @@
     function resolveImageUrl(image) {
       if (!image) return '/placeholder.jpg';
       const trimmed = String(image).trim();
+      if (trimmed.startsWith('data:')) return trimmed;
       if (trimmed.startsWith('http')) return trimmed;
       if (trimmed.startsWith('/')) return trimmed;
       return '/uploads/' + trimmed;
@@ -860,7 +857,7 @@
       switch (tabName) {
         case 'products': loadProducts(); break;
         case 'orders': loadOrders(); break;
-        case 'mails': loadMessages('contact'); break;
+        case 'mails': loadMessages(); break;
         case 'coupons': loadCoupons(); break;
         case 'reviews': loadReviews(); break;
         case 'customize': loadCustomization(); break;
@@ -1133,34 +1130,30 @@
       }
     }
     // ========== MESSAGES ==========
-    let currentMessageType = 'contact';
-    async function loadMessages(type) {
-      currentMessageType = type;
+    async function loadMessages() {
       try {
-        const res = await fetch(`/api/admin/messages?type=${type}`, withAuth());
+        const res = await fetch('/api/admin/messages', withAuth());
         await handle401(res);
         const data = await res.json();
         if (!data.success) throw new Error('Mesajlar yüklenemedi.');
         const container = $('#messageList');
         if (!data.items || data.items.length === 0) {
-          container.innerHTML = `<p class="muted">${type === 'order' ? 'Sipariş mesajı bulunmuyor.' : 'İletişim mesajı bulunmuyor.'}</p>`;
+          container.innerHTML = '<p class="muted">Mesaj bulunmuyor.</p>';
           return;
         }
         container.innerHTML = data.items.map(m => {
-          const title = type === 'order' ? `Sipariş #${m.orderId}` : 'İletişim Mesajı';
           const readBadge = m.read ? '<span class="badge ok">Okundu</span>' : '<span class="badge warn">Yeni</span>';
           return `
             <div class="card" style="padding:14px;">
               <div class="row-between">
-                <strong>${esc(title)}</strong>
+                <strong>${esc(m.name)}</strong>
                 ${readBadge}
               </div>
-              <div style="margin:8px 0;">${esc(m.name)} — ${esc(m.email)} — ${esc(m.phone || '')}</div>
+              <div style="margin:8px 0;">${esc(m.email)} — ${esc(m.phone || '')}</div>
               <div style="margin:8px 0; white-space: pre-wrap;">${esc(m.message)}</div>
               <div class="muted" style="font-size:13px;">${formatDate(m.createdAt)}</div>
               <div class="row" style="margin-top:12px;">
                 <button class="btn ghost" onclick="markMessageRead('${esc(m.id)}')">Okundu</button>
-                <button class="btn primary" onclick="resendMessageEmail('${esc(m.id)}')">Mail Gönder</button>
                 <button class="btn danger" onclick="deleteMessage('${esc(m.id)}')">Sil</button>
               </div>
             </div>`;
@@ -1175,26 +1168,10 @@
         await handle401(res);
         if (res.ok) {
           showToast('Okundu olarak işaretlendi.', 'ok');
-          loadMessages(currentMessageType);
+          loadMessages();
         }
       } catch (e) {
         showToast('İşlem başarısız.', 'err');
-      }
-    }
-    async function resendMessageEmail(id) {
-      try {
-        const res = await fetch(`/api/admin/messages/${encodeURIComponent(id)}`, withAuth());
-        await handle401(res);
-        const msg = await res.json();
-        if (!msg) throw new Error();
-        const to = msg.email || '';
-        const subject = msg.orderId
-          ? `Mavern Siparişiniz (#${msg.orderId})`
-          : 'Mavern İletişim Yanıtı';
-        const body = `Merhaba ${msg.name || ''},%0D%0A%0D%0A`;
-        window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${body}`;
-      } catch (e) {
-        showToast('Mail açılamadı.', 'err');
       }
     }
     async function deleteMessage(id) {
@@ -1205,7 +1182,7 @@
         const data = await res.json();
         if (data.success) {
           showToast('Mesaj silindi.', 'ok');
-          loadMessages(currentMessageType);
+          loadMessages();
         } else {
           showToast(data.message || 'Silme başarısız.', 'err');
         }
@@ -1214,7 +1191,6 @@
       }
     }
     // ========== ORDERS ==========
-      // ========== ORDERS ==========
     let CURRENT_ORDER = null;
 
     async function loadOrders() {
@@ -1253,7 +1229,9 @@
                 </div>
                 <div class="row" style="gap:8px;">
                   <span class="badge ${stInfo.cls}">${stInfo.label}</span>
-                  <span class="pill ${payInfo.cls === 'ok' ? 'yes' : payInfo.cls === 'err' ? 'no' : ''}">
+                  <span class="pill ${
+                    payInfo.cls === 'ok' ? 'yes' : payInfo.cls === 'err' ? 'no' : ''
+                  }">
                     ${payInfo.label}
                   </span>
                   <span class="chip">${esc(totalDisplay)}</span>
@@ -1289,7 +1267,6 @@
         const oils = recipe.oils || [];
         const scents = recipe.scents || [];
         const colors = recipe.colors || [];
-
         const items = o.items || [];
 
         $('#orderDetail').innerHTML = `
@@ -1303,7 +1280,9 @@
             </div>
             <div class="row" style="gap:8px;">
               <span class="badge ${stInfo.cls}">${stInfo.label}</span>
-              <span class="pill ${payInfo.cls === 'ok' ? 'yes' : payInfo.cls === 'err' ? 'no' : ''}">
+              <span class="pill ${
+                payInfo.cls === 'ok' ? 'yes' : payInfo.cls === 'err' ? 'no' : ''
+              }">
                 ${payInfo.label}
               </span>
             </div>
@@ -1486,7 +1465,7 @@
 
     async function loadCustomization() {
       try {
-        // 1) Ürünleri çek → baz şampuan select doldur
+        // ürünleri çek -> baz select
         const prodRes = await fetch('/api/products', { cache: 'no-store' });
         const products = prodRes.ok ? await prodRes.json() : [];
         const baseSelect = $('#baseProductSelect');
@@ -1500,7 +1479,6 @@
           });
         }
 
-        // 2) Customization yapılarını çek
         const res = await fetch('/api/admin/customization', withAuth());
         await handle401(res);
         const data = await res.json();
@@ -1660,11 +1638,19 @@
           const id = u.id || u._id;
           const sub = u.subscription || {};
           const hasSub = !!sub.active;
+
+          const displayName =
+            u.name ||
+            u.fullName ||
+            ((u.firstName || '') + ' ' + (u.lastName || '')).trim() ||
+            u.email ||
+            'İsimsiz Kullanıcı';
+
           return `
             <div class="card" style="padding:12px;">
               <div class="row-between">
                 <div>
-                  <div style="font-weight:600;">${esc(u.name || 'İsimsiz Kullanıcı')}</div>
+                  <div style="font-weight:600;">${esc(displayName)}</div>
                   <div class="muted" style="font-size:13px;margin-top:4px;">
                     ${esc(u.email || '')}
                   </div>
@@ -1697,8 +1683,15 @@
         const u = data.user;
         const sub = u.subscription || {};
 
+        const displayName =
+          u.name ||
+          u.fullName ||
+          ((u.firstName || '') + ' ' + (u.lastName || '')).trim() ||
+          u.email ||
+          'İsimsiz Kullanıcı';
+
         $('#userDetail').innerHTML = `
-          <div style="font-weight:600; font-size:16px;">${esc(u.name || 'İsimsiz Kullanıcı')}</div>
+          <div style="font-weight:600; font-size:16px;">${esc(displayName)}</div>
           <div class="muted" style="font-size:13px;margin-top:4px;">
             ${esc(u.email || '')}
           </div>
