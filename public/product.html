@@ -12,6 +12,59 @@
 
   <!-- Ortak stil -->
   <link rel="stylesheet" href="style.css"/>
+
+  <!-- Bu sayfaya özel küçük dokunuşlar -->
+  <style>
+    /* Yorum formu interaktif yıldız girişi */
+    .rating-input {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 20px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .rating-input button {
+      background: none;
+      border: none;
+      padding: 0 2px;
+      cursor: pointer;
+      font-size: 22px;
+      line-height: 1;
+      color: #555;
+      transition: transform .12s ease, color .12s ease;
+    }
+    .rating-input button.active,
+    .rating-input button.hovered {
+      color: #f1c40f;
+      transform: translateY(-1px);
+    }
+    .rating-hint {
+      margin-left: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    /* Ortalama puan satırındaki yıldız */
+    .avg-stars {
+      font-size: 15px;
+      margin-right: 4px;
+    }
+    /* Ürün stoğu / kampanya bandı */
+    .product-meta-band {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .meta-pill {
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--edge);
+      background: var(--bg);
+    }
+  </style>
 </head>
 <body>
 
@@ -182,14 +235,16 @@
         </p>
 
         <div id="rfFields" style="display:none">
-          <label for="rfRating" class="muted small">Puan</label>
-          <select id="rfRating">
-            <option value="5">5 - Mükemmel</option>
-            <option value="4">4 - İyi</option>
-            <option value="3">3 - Orta</option>
-            <option value="2">2 - Zayıf</option>
-            <option value="1">1 - Kötü</option>
-          </select>
+          <label class="muted small" for="rfRatingValue">Puan</label>
+          <div id="rfStars" class="rating-input" role="radiogroup" aria-label="Puan seçin">
+            <button type="button" data-value="1" aria-label="1 yıldız">★</button>
+            <button type="button" data-value="2" aria-label="2 yıldız">★</button>
+            <button type="button" data-value="3" aria-label="3 yıldız">★</button>
+            <button type="button" data-value="4" aria-label="4 yıldız">★</button>
+            <button type="button" data-value="5" aria-label="5 yıldız">★</button>
+            <span id="rfHint" class="rating-hint"></span>
+          </div>
+          <input type="hidden" id="rfRatingValue" value="5">
 
           <div style="margin-top:8px">
             <label for="rfComment" class="muted small">Yorumunuz</label>
@@ -244,12 +299,12 @@
 
 <!-- ===== ÜRÜN SAYFASI ÖZEL JS ===== -->
 <script>
-  // script.js zaten qs, api, fmtMoney, normalizeProductClient, addToCart fonksiyonlarını sağlıyor.
+  // script.js zaten qs, api, fmtMoney, normalizeProductClient, addToCart, getTotals, mavernTrack fonksiyonlarını sağlıyor.
 
   const escLocal = (s) =>
     String(s ?? "").replace(/[&<>"']/g, (m) =>
-      ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[m])
-    );
+      ({ "&":"&amp;","<":"&lt;"," >":"&gt;","\"":"&quot;","'":"&#39;" }[m] || m)
+    ).replace(" >", "&gt;");
 
   const sanitizeAttr = (s) =>
     String(s ?? "").replace(/"/g, "&quot;");
@@ -293,11 +348,57 @@
       return;
     }
 
-    const priceText = PRODUCT.purchasable
+    // AI sinyali: ürün detayı görüntülendi
+    try {
+      if (typeof window.mavernTrack === "function") {
+        window.mavernTrack("view_product_detail", {
+          productId: PRODUCT.id,
+          price: PRODUCT.price ?? null,
+          purchasable: !!PRODUCT.purchasable
+        });
+      }
+    } catch {}
+
+    const hasNumPrice =
+      PRODUCT.purchasable &&
+      typeof PRODUCT.price === "number" &&
+      isFinite(PRODUCT.price);
+
+    const currentPriceText = hasNumPrice
       ? fmtMoney(PRODUCT.price)
       : (PRODUCT.priceText || "—");
 
+    let priceHTML = `<div class="product-price">${escLocal(currentPriceText)}</div>`;
+
+    // Kampanya / eski fiyat desteği (varsa)
+    if (hasNumPrice && typeof PRODUCT.oldPrice === "number" && isFinite(PRODUCT.oldPrice) && PRODUCT.oldPrice > PRODUCT.price) {
+      const old = fmtMoney(PRODUCT.oldPrice);
+      const diff = PRODUCT.oldPrice - PRODUCT.price;
+      const perc = Math.round((diff / PRODUCT.oldPrice) * 100);
+      priceHTML = `
+        <div class="product-price">
+          <span style="text-decoration:line-through;font-size:14px;color:var(--muted);margin-right:6px;">
+            ${escLocal(old)}
+          </span>
+          <span>${escLocal(currentPriceText)}</span>
+        </div>
+        <div class="product-badges">
+          <span class="product-badge">-%${perc}</span>
+        </div>
+      `;
+    }
+
     const imgSrc = sanitizeAttr(PRODUCT.image || "logo.png");
+
+    const volume = PRODUCT.volumeMl ? `${PRODUCT.volumeMl} ml` : null;
+    const stockText = PRODUCT.stockText || (PRODUCT.inStock === false ? "Stokta yok" : null);
+    const campaignLabel = PRODUCT.campaignLabel || null;
+
+    const metaPills = [];
+    if (volume) metaPills.push(volume);
+    if (PRODUCT.inStock === false) metaPills.push("Stokta yok");
+    else if (PRODUCT.inStock === true) metaPills.push(stockText || "Stokta");
+    if (campaignLabel) metaPills.push(campaignLabel);
 
     box.innerHTML = `
       <div class="product-gallery">
@@ -312,12 +413,16 @@
         </p>
 
         <div class="product-info-meta">
-          <div class="product-price">${escLocal(priceText)}</div>
-          <div class="product-badges">
-            <span class="product-badge">Hızlı kargo</span>
-            <span class="product-badge">Sınırlı stok</span>
-          </div>
+          ${priceHTML}
         </div>
+
+        ${
+          metaPills.length
+            ? `<div class="product-meta-band">${metaPills
+                .map((m) => `<span class="meta-pill">${escLocal(m)}</span>`)
+                .join("")}</div>`
+            : ""
+        }
 
         <div class="product-cta-row">
           ${
@@ -359,9 +464,11 @@
     }
 
     const sum = items.reduce((s, x) => s + Number(x.rating || 0), 0);
-    const avg = (sum / items.length).toFixed(1);
+    const avg = sum / items.length;
+    const avgText = avg.toFixed(1);
+
     avgBlock.innerHTML =
-      `Ortalama: <span class="stars">★</span> ${avg} / 5 • ${items.length} yorum`;
+      `<span class="avg-stars">${starsRow(avg)}</span>${avgText} / 5 • ${items.length} yorum`;
 
     items.forEach((rv) => {
       const d = document.createElement("article");
@@ -487,7 +594,7 @@
       return;
     }
 
-    const rating = Number(qs("#rfRating")?.value || 0);
+    const rating = Number(qs("#rfRatingValue")?.value || 0);
     const comment = (qs("#rfComment")?.value || "").trim();
     const anonymous = !!qs("#rfAnon")?.checked;
     const fileInput = qs("#rfPhoto");
@@ -524,6 +631,17 @@
       const cmt = qs("#rfComment");
       if (cmt) cmt.value = "";
       if (fileInput) fileInput.value = "";
+
+      // AI sinyali: yorum gönderildi
+      try {
+        if (typeof window.mavernTrack === "function") {
+          window.mavernTrack("review_submitted", {
+            productId: PID,
+            rating
+          });
+        }
+      } catch {}
+
       // Yorumları tazele
       await loadReviews();
     } catch (e) {
@@ -531,6 +649,62 @@
     } finally {
       btn.disabled = false;
     }
+  }
+
+  // ===== INTERAKTİF YILDIZ GİRİŞİ =====
+  function initRatingStars() {
+    const wrap = qs("#rfStars");
+    const hidden = qs("#rfRatingValue");
+    const hint = qs("#rfHint");
+    if (!wrap || !hidden) return;
+
+    const buttons = Array.from(wrap.querySelectorAll("button[data-value]"));
+    const hints = {
+      1: "Hiç memnun kalmadım",
+      2: "Beklediğimin altında",
+      3: "Fena değil",
+      4: "Gayet iyi",
+      5: "Mükemmel"
+    };
+
+    let current = Number(hidden.value || 5) || 5;
+
+    function render(val) {
+      buttons.forEach((b) => {
+        const v = Number(b.dataset.value || 0);
+        b.classList.toggle("active", v <= val);
+        b.classList.remove("hovered");
+      });
+      if (hint) {
+        hint.textContent = hints[val] || "";
+      }
+    }
+
+    render(current);
+
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const v = Number(btn.dataset.value || 0);
+        if (!v) return;
+        current = v;
+        hidden.value = String(v);
+        render(current);
+      });
+      btn.addEventListener("mouseenter", () => {
+        const v = Number(btn.dataset.value || 0);
+        buttons.forEach((b) => {
+          const bv = Number(b.dataset.value || 0);
+          b.classList.toggle("hovered", bv <= v);
+        });
+        if (hint) {
+          hint.textContent = hints[v] || "";
+        }
+      });
+    });
+
+    wrap.addEventListener("mouseleave", () => {
+      render(current);
+    });
   }
 
   // ===== INIT =====
@@ -557,6 +731,7 @@
       await loadProduct();
       await loadReviews();
       await checkAuthAndGate();
+      initRatingStars();
     })();
   })();
 </script>

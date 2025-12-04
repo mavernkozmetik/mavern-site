@@ -1,158 +1,74 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Cache-Control" content="no-store" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Mavern</title>
+
+  <!-- Temel açıklama / SEO -->
+  <meta name="description" content="Mavern: Günlük bakımı kişisel bir ritüele dönüştüren, minimal ve seçkin kişisel bakım ürünleri. Yakında yapay zekâ destekli kişiselleştirilmiş öneriler.">
+  <meta name="robots" content="index,follow">
+
+  <!-- Open Graph / sosyal önizleme -->
+  <meta property="og:title" content="Mavern">
+  <meta property="og:description" content="Günlük bakımı kişisel bir ritüele dönüştüren seçkin formüller. Yakında yapay zekâ destekli kişiselleştirme.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mavern.example/">
+  <meta property="og:image" content="logo.png">
+
+  <!-- Favicon (şimdilik logo.png) -->
+  <link rel="icon" type="image/png" href="logo.png">
+
+  <!-- Fontlar -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;1,500&family=Poppins:ital,wght@0,300;0,500;1,300;1,500&display=swap" rel="stylesheet">
+
+  <!-- Stil -->
   <link rel="stylesheet" href="style.css" />
-  <style>
-    /* ===== Güven şeridi (hero altında) ===== */
-    .trust-strip-wrap{
-      border-bottom:1px solid var(--edge);
-      border-top:1px solid var(--edge);
-      background:radial-gradient(120% 200% at 0 0,rgba(148,163,184,.10),transparent),
-                 rgba(10,10,10,.95);
-    }
-    .trust-strip{
-      max-width:1180px;
-      margin:0 auto;
-      padding:10px 4%;
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px 18px;
-      justify-content:center;
-      font-size:.85rem;
-      color:var(--muted);
-    }
-    .trust-item{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:4px 10px;
-      border-radius:999px;
-      border:1px solid rgba(148,163,184,.25);
-      background:#111;
-    }
-    .trust-dot{
-      width:8px;height:8px;border-radius:999px;
-      background:radial-gradient(circle at 30% 30%,#e5e7eb,#4ade80);
-      box-shadow:0 0 8px rgba(74,222,128,.8);
-    }
-
-    /* ===== Neden Mavern bölümü ===== */
-    .benefits-grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      gap:14px;
-      margin-top:10px;
-    }
-    .benefit{
-      background:#0e0e0e;
-      border:1px solid var(--edge);
-      border-radius:12px;
-      padding:14px;
-      box-shadow:0 12px 36px rgba(0,0,0,.45);
-    }
-    .benefit h4{
-      margin:0 0 4px;
-      font-size:1rem;
-    }
-    .benefit p{
-      margin:0;
-      font-size:.9rem;
-      color:var(--muted);
-    }
-
-    /* ===== SSS bölümü ===== */
-    .faq-list{
-      border-radius:14px;
-      border:1px solid var(--edge);
-      background:#0e0e0e;
-      box-shadow:0 12px 36px rgba(0,0,0,.45);
-      padding:10px 12px;
-    }
-    .faq-list details{
-      border-bottom:1px solid #1b1b1b;
-      padding:6px 0;
-    }
-    .faq-list details:last-child{
-      border-bottom:none;
-    }
-    .faq-list summary{
-      list-style:none;
-      cursor:pointer;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:8px;
-      font-size:.95rem;
-    }
-    .faq-list summary::-webkit-details-marker{display:none}
-    .faq-list summary span{
-      color:var(--ink);
-    }
-    .faq-list summary small{
-      color:var(--muted);
-      font-size:.8rem;
-    }
-    .faq-list p{
-      margin:6px 0 2px;
-      font-size:.9rem;
-      color:var(--muted);
-    }
-    .faq-list details[open] summary span{
-      color:var(--accent);
-    }
-
-    @media (max-width:600px){
-      .trust-strip{
-        justify-content:flex-start;
-      }
-    }
-  </style>
 </head>
 <body>
 
-<header class="topbar">
+<header class="topbar" role="banner">
   <div class="logo-area">
     <!-- Sadece M harfinin göründüğü crop’lu logo -->
-    <div class="logo-mark">
-      <img src="logo.png" alt="Mavern" class="brand-logo" onerror="this.style.display='none'"/>
-    </div>
+    <a href="index.html" class="logo-mark" aria-label="Mavern ana sayfa">
+      <img src="logo.png" alt="Mavern Logosu" class="brand-logo" onerror="this.style.display='none'"/>
+    </a>
     <!-- Yanında metin olarak MAVERN -->
     <h1 class="brand">Mavern</h1>
   </div>
-  <nav class="topnav">
+
+  <nav class="topnav" aria-label="Ana menü">
     <a href="#" onclick="openSidebar();return false;">☰ Menü</a>
     <a href="#" onclick="openProductsPanel();return false;">Ürünler</a>
     <a href="#" onclick="scrollToSection('contact');return false;">İletişim</a>
 
     <!-- Yeni sepet ikonu -->
-    <a href="#" onclick="openCart();return false;" class="cart-link">
+    <a href="#" onclick="openCart();return false;" class="cart-link" aria-label="Sepeti aç">
       <span class="cart-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" focusable="false">
+        <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
           <path d="M6.5 9.5h11l-1 8.5H7.5l-1-8.5Z" />
           <path d="M9 9.5V7.2A3.2 3.2 0 0 1 12.2 4 3.2 3.2 0 0 1 15.4 7.2v2.3" />
         </svg>
       </span>
       <span>Sepet</span>
-      <span id="cartCount" class="badge"></span>
+      <span id="cartCount" class="badge" aria-live="polite"></span>
     </a>
 
     <!-- HESAP / GİRİŞ BUTONU -->
     <a href="auth.html" id="accountLink" class="account-link">Giriş / Kayıt</a>
 
-    <!-- TEMA BUTONU -->
-    <button id="themeToggle" class="theme-toggle" type="button">☾ Koyu tema</button>
+    <!-- TEMA BUTONU (menü içinde, script.js yönetiyor) -->
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="Tema değiştir">
+      ☾ Koyu tema
+    </button>
   </nav>
 </header>
 
 <!-- Sol menü -->
-<aside id="sidebar" class="panel left" aria-hidden="true">
-  <button class="close-btn" type="button" onclick="closeSidebar()">×</button>
+<aside id="sidebar" class="panel left" aria-hidden="true" aria-label="Yan menü">
+  <button class="close-btn" type="button" onclick="closeSidebar()" aria-label="Menüyü kapat">×</button>
   <a href="#" onclick="scrollToSection('about'); closeSidebar(); return false;">Hakkımızda</a>
   <a href="#" onclick="openProductsPanel(); closeSidebar(); return false;">Ürünler</a>
   <a href="#" onclick="scrollToSection('contact'); closeSidebar(); return false;">İletişim</a>
@@ -160,23 +76,32 @@
 </aside>
 
 <!-- Sepet -->
-<aside id="cartPanel" class="panel right" aria-hidden="true">
-  <button class="close-btn" type="button" onclick="closeCart()">×</button>
+<aside id="cartPanel" class="panel right" aria-hidden="true" aria-label="Sepet paneli">
+  <button class="close-btn" type="button" onclick="closeCart()" aria-label="Sepeti kapat">×</button>
   <h2>Sepet</h2>
   <div id="cartItems" class="cart-list"></div>
 
   <div class="coupon-row">
-    <input id="couponInput" placeholder="İndirim kodu" />
+    <input id="couponInput" placeholder="İndirim kodu" aria-label="İndirim kodu" />
     <button class="btn" type="button" onclick="applyCoupon()">Uygula</button>
-    <div id="couponMsg" class="muted small"></div>
+    <div id="couponMsg" class="muted small" aria-live="polite"></div>
   </div>
 
   <div class="cart-summary">
-    <div class="row"><span class="muted">Ara Toplam</span><span id="subtotal">0 ₺</span></div>
-    <div class="row"><span class="muted">İndirim</span><span id="discount">0 ₺</span></div>
-    <div class="row total"><span>Ödenecek</span><span id="payable">0 ₺</span></div>
+    <div class="row">
+      <span class="muted">Ara Toplam</span>
+      <span id="subtotal">0 ₺</span>
+    </div>
+    <div class="row">
+      <span class="muted">İndirim</span>
+      <span id="discount">0 ₺</span>
+    </div>
+    <div class="row total">
+      <span>Ödenecek</span>
+      <span id="payable">0 ₺</span>
+    </div>
 
-    <!-- Artık sadece TEK ödeme butonu var; form modalda açılacak -->
+    <!-- Tek ödeme butonu; form overlay’de açılıyor -->
     <div class="row actions" style="margin-top:10px;gap:8px;flex-wrap:wrap">
       <button class="btn primary" type="button" onclick="openCheckout()">Ödeme</button>
       <button class="btn" type="button" onclick="clearCart()">Sepeti Boşalt</button>
@@ -186,34 +111,46 @@
 </aside>
 
 <!-- Mobil sticky sepet bar -->
-<div id="stickyCartBar" class="sticky-cart-bar">
+<div id="stickyCartBar" class="sticky-cart-bar" aria-hidden="true">
   <div class="sum">
     <strong data-sticky-total>0 ₺</strong>
     <small data-sticky-label>0 ürün</small>
   </div>
-  <button class="btn primary" type="button">Sepeti Aç</button>
+  <button class="btn primary" type="button" onclick="openCart()">Sepeti Aç</button>
 </div>
 
 <!-- HERO -->
-<section class="hero hero-dark">
+<section class="hero hero-dark" aria-labelledby="hero-title">
   <div class="grain"></div>
   <div class="vignette"></div>
   <div class="hero-inner">
     <div class="hero-copy">
-      <h2 class="elegant">MAVERN</h2>
-      <p class="lead">Günlük bakımı, kişisel ritüele dönüştüren seçkin formüller.</p>
+      <h2 id="hero-title" class="elegant">MAVERN</h2>
+      <p class="lead">
+        Günlük bakımı, kişisel bir ritüele dönüştüren minimal ve seçkin kişisel bakım ürünleri.
+      </p>
+
+      <!-- AI / kişiselleştirme satırı (giriş yapınca script.js / inline script dolduruyor) -->
+      <p id="heroPersonalLine"
+         class="muted small"
+         style="margin:4px 0 10px;display:none;"
+         aria-live="polite"></p>
+
       <ul class="bullets">
-        <li>Özenle seçilmiş içerikler</li>
-        <li>Sınırlı üretim seriler</li>
-        <li>Online sipariş, kapına teslim</li>
+        <li>Saç ve cilt tipine odaklanan formüller</li>
+        <li>Küçük partilerde taze üretim</li>
+        <li>Yapay zekâ destekli öneriler (yakında)</li>
       </ul>
       <div class="hero-actions">
         <button class="btn primary" type="button" onclick="openProductsPanel()">Koleksiyonu Gör</button>
         <button class="btn ghost" type="button" onclick="scrollToSection('about')">Hakkımızda</button>
       </div>
+      <p class="muted small" style="margin-top:8px;">
+        Hesabınız açıldığında, buradaki içerikler alışveriş davranışlarınıza ve tercihlerinize göre kademeli olarak kişiselleştirilecek.
+      </p>
     </div>
 
-    <div class="hero-art">
+    <div class="hero-art" aria-hidden="true">
       <div class="spotlight ring">
         <img src="logo.png" alt="Mavern Logo" />
       </div>
@@ -230,7 +167,7 @@
     </div>
     <div class="trust-item">
       <span class="trust-dot"></span>
-      <span>Güvenli form & e-posta bildirimi</span>
+      <span>Güvenli form &amp; e-posta bildirimi</span>
     </div>
     <div class="trust-item">
       <span class="trust-dot"></span>
@@ -244,13 +181,53 @@
 </div>
 
 <main class="container">
+
+  <!-- AI / Kişiselleştirme Teaser Bölümü -->
+  <section id="ai-preview" class="section" data-section="ai-preview">
+    <div class="section-head">
+      <h3 class="elegant">Yakında: Kişiselleştirilmiş Bakım Deneyimi</h3>
+      <span class="muted small">Hesabım sayfasıyla birlikte açılacak yapay zekâ destekli özellikler.</span>
+    </div>
+
+    <!-- Var olan benefits-grid / benefit stillerini yeniden kullanıyoruz -->
+    <div class="benefits-grid">
+      <article class="benefit">
+        <h4>Saç &amp; Cilt Profili</h4>
+        <p>
+          Hesabınızdan saç ve cilt tipinizi, hedeflerinizi ve rutin sıklığınızı paylaşarak
+          sizin için temel bir bakım profili oluşturabileceksiniz. Bu profil, önerilerin temelini oluşturur.
+        </p>
+      </article>
+      <article class="benefit">
+        <h4>Akıllı Ürün Eşleştirme</h4>
+        <p>
+          Profil verileriniz, sipariş geçmişiniz ve geri bildirimleriniz,
+          yapay zekâ destekli bir motor tarafından analiz edilerek
+          hangi ürünlerin sizin için daha isabetli olabileceği konusunda öneriler sunacak.
+        </p>
+      </article>
+      <article class="benefit">
+        <h4>Rutin Takip &amp; Geri Bildirim</h4>
+        <p>
+          Kullandığınız ürünlerden aldığınız sonuçları kısaca paylaştıkça, profiliniz güncellenecek
+          ve hem sizin deneyiminiz hem de gelecekteki seri ve formüller bu sinyallerle şekillenecek.
+        </p>
+      </article>
+    </div>
+
+    <p class="muted small" style="margin-top:10px;max-width:640px;">
+      Bu özellikler yalnızca deneyiminizi geliştirmek için kullanılacak ve
+      <a href="kvkk.html">KVKK Aydınlatma Metni</a> çerçevesinde, açık rızanıza dayalı olarak işlenecektir.
+    </p>
+  </section>
+
   <!-- Öne çıkanlar -->
   <section id="productsPreview" class="section">
     <div class="section-head">
       <h3 class="elegant">Öne Çıkanlar</h3>
       <a href="#" onclick="openProductsPanel();return false;" class="muted">Tümü →</a>
     </div>
-    <div id="products" class="product-grid with-skeleton">
+    <div id="products" class="product-grid with-skeleton" aria-live="polite">
       <div class="card skeleton"></div>
       <div class="card skeleton"></div>
       <div class="card skeleton"></div>
@@ -261,28 +238,28 @@
   <section class="section">
     <div class="section-head">
       <h3 class="elegant">Neden Mavern?</h3>
-      <span class="muted small">Raf ürünü değil, karakterli formüller.</span>
+      <span class="muted small">Raf ürünü değil, gerçekten kullanmak isteyeceğiniz seçimler.</span>
     </div>
     <div class="benefits-grid">
       <article class="benefit">
-        <h4>Formüle önem veren marka</h4>
+        <h4>Bilimsel içerik yaklaşımı</h4>
         <p>
-          İçerik listesine gerçekten takılanlar için tasarlandı.
-          Gereksiz gösteriş değil, amaca yönelik aktifler.
+          Formüllerimizi, “listede iyi dursun” diye değil, belirli bir ihtiyacı çözmek için kurguluyoruz.
+          Gereksiz gösteriş yerine; amaca yönelik, birbiriyle uyumlu aktiflere ve sade içerik listelerine odaklanıyoruz.
         </p>
       </article>
       <article class="benefit">
-        <h4>Sınırlı seri üretim</h4>
+        <h4>Taze ve sınırlı üretim</h4>
         <p>
-          Küçük partiler halinde üreterek taze stok, daha sıkı kalite kontrol
-          ve aynı formülden tutarlı sonuçlar hedefliyoruz.
+          Ürünlerimizi küçük partiler halinde üretiyoruz. Bu sayede hem daha taze stok sunmayı,
+          hem de her seriyi daha sıkı bir kalite kontrolden geçirmeyi hedefliyoruz.
         </p>
       </article>
       <article class="benefit">
-        <h4>Net iletişim & destek</h4>
+        <h4>Şeffaf iletişim &amp; topluluk</h4>
         <p>
-          Sipariş sonrası durum takibi, sorularınız için ulaşılabilir destek
-          ve samimi bir dil; Mavern topluluğunu önemsiyoruz.
+          Sipariş sonrası bilgilendirme, sorularınıza hızlı dönüş ve samimi bir dil Mavern’in temel parçaları.
+          Geri bildirimleriniz, hem sizin deneyiminizi hem de gelecekteki ürünleri doğrudan etkiliyor.
         </p>
       </article>
     </div>
@@ -294,15 +271,15 @@
       <h3 class="elegant">Hakkımızda</h3>
       <p class="muted">
         Mavern; müşteri odaklı, yenilikçi ve topluluğuyla birlikte gelişen bir markadır.
-        Hedefimiz, banyodaki her ürünün “idare eder” değil, gerçekten kullanmak istediğiniz
+        Hedefimiz, banyodaki her ürünün “idare eder” değil, gerçekten kullanmaktan keyif aldığınız
         bir seçim olması.
       </p>
       <p class="muted" style="margin-top:6px">
-        Ürünlerimizi geliştirirken şunlara dikkat ediyoruz:
+        Ürünlerimizi tasarlarken, hem formül tarafına hem de deneyime odaklanıyoruz:
       </p>
       <ul class="muted" style="padding-left:18px;margin:4px 0 0;font-size:.9rem">
-        <li>İşlevini gerçekten yerine getiren formüller</li>
-        <li>Gösterişli değil, zamansız ve sade tasarım dili</li>
+        <li>İşlevini gerçekten yerine getiren, sade ama güçlü formüller</li>
+        <li>Gösterişli değil, zamansız ve minimal tasarım dili</li>
         <li>Küçük ama güçlü bir toplulukla birlikte şekillenen seri ve yorumlar</li>
       </ul>
     </div>
@@ -368,11 +345,11 @@
       <span class="muted small">Sipariş, işbirliği veya merak ettikleriniz için.</span>
     </div>
     <div class="contact-form">
-      <input id="contactName" placeholder="Adınız" />
-      <input id="contactEmail" placeholder="E-posta" />
-      <textarea id="contactMsg" placeholder="Mesajınız"></textarea>
+      <input id="contactName" placeholder="Adınız" aria-label="Adınız" />
+      <input id="contactEmail" placeholder="E-posta" aria-label="E-posta adresiniz" />
+      <textarea id="contactMsg" placeholder="Mesajınız" aria-label="Mesajınız"></textarea>
       <button class="btn primary" type="button" onclick="sendMessage()">Gönder</button>
-      <div id="contactStatus" class="muted small"></div>
+      <div id="contactStatus" class="muted small" aria-live="polite"></div>
     </div>
   </section>
 
@@ -389,9 +366,9 @@
 <!-- Ürünler overlay -->
 <div id="productsPanel" class="overlay" aria-hidden="true">
   <div class="overlay-card dark">
-    <button class="close-btn" type="button" onclick="closeProductsPanel()">×</button>
+    <button class="close-btn" type="button" onclick="closeProductsPanel()" aria-label="Ürün panelini kapat">×</button>
     <h3 class="elegant">Ürünlerimiz</h3>
-    <div id="productsFull" class="product-grid with-skeleton">
+    <div id="productsFull" class="product-grid with-skeleton" aria-live="polite">
       <div class="card skeleton"></div><div class="card skeleton"></div>
       <div class="card skeleton"></div><div class="card skeleton"></div>
     </div>
@@ -403,7 +380,7 @@
   <div class="overlay-card">
     <div class="head">
       <h3 class="elegant" style="margin:0">Sipariş Bilgileri</h3>
-      <button class="close-btn" type="button" onclick="closeCheckout()">Kapat</button>
+      <button class="close-btn" type="button" onclick="closeCheckout()" aria-label="Ödeme penceresini kapat">Kapat</button>
     </div>
 
     <div class="checkout-grid">
@@ -441,22 +418,92 @@
         <button class="btn ghost" type="button" onclick="closeCheckout()">Vazgeç</button>
         <button class="btn primary" type="button" onclick="submitCheckout()">Siparişi Gönder</button>
       </div>
-      <div id="chStatus" class="muted small full"></div>
+      <div id="chStatus" class="muted small full" aria-live="polite"></div>
     </div>
   </div>
 </div>
 
 <script src="script.js"></script>
 <script>
-  // header'daki Hesap / Giriş yazısını token'a göre ayarla
+  // ===================== Auth / Hesap Linki & AI Profil =====================
+  window.mavernProfile = null;
+
   (function(){
     const link = document.getElementById('accountLink');
-    if(!link) return;
-    try{
-      const tok = localStorage.getItem('mavern_jwt');
-      link.textContent = tok ? 'Hesabım' : 'Giriş / Kayıt';
-    }catch(_){}
+    let token = null;
+    try {
+      token = localStorage.getItem('mavern_jwt');
+    } catch (_) {}
+
+    if (link) {
+      link.textContent = token ? 'Hesabım' : 'Giriş / Kayıt';
+    }
+    if (!token) return;
+
+    // 1) /api/auth/me ile kullanıcıyı al
+    fetch('/api/auth/me', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (!data || !data.success || !data.user) return;
+      const u = data.user;
+
+      // Hesap linki label
+      if (link) {
+        link.textContent = u.displayName ? (u.displayName + ' • Hesabım') : 'Hesabım';
+      }
+
+      // Hero kişisel satırını doldur
+      const heroLine = document.getElementById('heroPersonalLine');
+      if (heroLine) {
+        const name = u.fullName || u.displayName || (u.email || '').split('@')[0];
+        heroLine.textContent = `Hoş geldin ${name}, alışveriş deneyimini adım adım kişiselleştirmeye hazırlanıyoruz.`;
+        heroLine.style.display = 'block';
+      }
+
+      // 2) AI profili çek
+      return fetch('/api/profile/full', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+    })
+    .then(r => r && r.ok ? r.json() : null)
+    .then(data => {
+      if (!data || !data.success) return;
+      window.mavernProfile = data.profile || null;
+      try {
+        localStorage.setItem('mavern_ai_profile', JSON.stringify(window.mavernProfile || {}));
+      } catch (_) {}
+    })
+    .catch(function(){
+      /* sessiz fail, misafir gibi devam et */
+    });
   })();
+
+  // ===================== AI Snapshot Helper (Checkout için) =====================
+  // server.js -> /api/checkout body.profileSnapshot alanına gidecek veriyi buradan toplayacağız.
+  window.mavernGetProfileSnapshot = function(){
+    const snapshot = {};
+
+    // Sunucudaki aiProfile
+    if (window.mavernProfile && typeof window.mavernProfile === 'object') {
+      snapshot.serverProfile = window.mavernProfile;
+    }
+
+    // İleride front-end tarafında tutmak isteyebileceğimiz ek bilgiler için yer
+    try {
+      const localRaw = localStorage.getItem('mavern_ai_profile_local');
+      if (localRaw) {
+        const localObj = JSON.parse(localRaw);
+        if (localObj && typeof localObj === 'object') {
+          snapshot.localSignals = localObj;
+        }
+      }
+    } catch (_) {}
+
+    // Eğer hiç veri yoksa null dön; server.js zaten bunu handle ediyor
+    return Object.keys(snapshot).length ? snapshot : null;
+  };
 </script>
 </body>
 </html>

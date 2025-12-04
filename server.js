@@ -1,4 +1,7 @@
-// server.js — Mavern (Refactored: strict legacy admin auth + AI profile foundations)
+// server.js — Mavern
+// Option C ruhu: daha derli toplu, güvenli, AI-temelli kişiselleştirme altyapılı,
+// ama tek dosyada, senin mevcut setup'ını bozmadan.
+
 require("dotenv").config();
 const express = require("express");
 const fs = require("fs");
@@ -13,10 +16,16 @@ const mime = require("mime-types");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+
 const app = express();
 
-/* ---------------------------- Güvenlik / Temel ---------------------------- */
+/* ========================================================================== */
+/*  1) GÜVENLİK / TEMEL ORTAM                                                 */
+/* ========================================================================== */
+
 app.set("trust proxy", 1);
+
+// Helmet + CSP
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -29,7 +38,7 @@ app.use(
         "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         "img-src": ["'self'", "data:", "blob:"],
         "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
-        "connect-src": ["'self'"],
+        "connect-src": ["'self'"], // gerekirse buraya harici API eklenir
         "object-src": ["'none'"],
         "frame-ancestors": ["'self'"]
       }
@@ -38,10 +47,12 @@ app.use(
     referrerPolicy: { policy: "no-referrer" }
   })
 );
+
 app.use(cors({ origin: true, credentials: false }));
 app.use(bodyParser.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
-// HTTP -> HTTPS (Render vb.)
+
+// HTTP -> HTTPS redirect (Render vb. için)
 app.use((req, res, next) => {
   const proto = req.get("x-forwarded-proto");
   if (proto && proto !== "https") {
@@ -51,24 +62,26 @@ app.use((req, res, next) => {
   next();
 });
 
-/* ------------------------------- Dosya yolları ---------------------------- */
+/* ========================================================================== */
+/*  2) DOSYA YOLLARI / KALICI DEPOLAMA                                       */
+/* ========================================================================== */
+
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
 
-/* ----- Yardımcı: dizin/ dosya oluşturma ve yazılabilirlik testi ----- */
-// Bu fonksiyonlar asla sunucuyu çökertmez, sadece uyarı basar.
+// Basit, çökertmeyen yardımcılar
 function ensureDir(p) {
   try {
     if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
   } catch (e) {
-    console.warn("⚠️  Dizin oluşturulamadı, veriler kalıcı olmayabilir:", p, "-", e.message);
+    console.warn("⚠️  Dizin oluşturulamadı:", p, "-", e.message);
   }
 }
 function ensureFile(p, init = "[]") {
   try {
     if (!fs.existsSync(p)) fs.writeFileSync(p, init, "utf8");
   } catch (e) {
-    console.warn("⚠️  Dosya oluşturulamadı, veriler kalıcı olmayabilir:", p, "-", e.message);
+    console.warn("⚠️  Dosya oluşturulamadı:", p, "-", e.message);
   }
 }
 function testWritable(dirOrFilePath) {
@@ -85,14 +98,12 @@ function testWritable(dirOrFilePath) {
     return false;
   }
 }
-/**
- * DATA_DIR seçim mantığı:
- * 1) ENV.DATA_DIR varsa onu dener.
- * 2) Yazılabilir değilse projedeki ./data klasörüne otomatik döner.
- */
+
+// DATA_DIR seçim mantığı
 const ENV_DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : null;
 let DATA_DIR = ENV_DATA_DIR || path.join(ROOT, "data");
 ensureDir(DATA_DIR);
+
 let writableData = testWritable(DATA_DIR);
 if (!writableData && ENV_DATA_DIR) {
   const fallback = path.join(ROOT, "data");
@@ -100,7 +111,7 @@ if (!writableData && ENV_DATA_DIR) {
     console.warn(
       "⚠️  DATA_DIR yazılabilir değil:",
       DATA_DIR,
-      "→ Yerel ./data klasörüne geçiliyor:",
+      "→ ./data klasörüne geçiliyor:",
       fallback
     );
     DATA_DIR = fallback;
@@ -110,20 +121,25 @@ if (!writableData && ENV_DATA_DIR) {
 }
 if (!writableData) {
   console.warn(
-    "⚠️  DATA_DIR hala yazılamıyor. Uygulama read-only çalışacak, kayıt/ürün/yorumlar kalıcı olmayabilir."
+    "⚠️  DATA_DIR hala yazılamıyor. Uygulama read-only modda, veriler kalıcı olmayabilir."
   );
 }
-// Varsayılan UPLOAD_DIR kalıcı diske alındı (DATA_DIR/uploads)
+
+// Upload klasörü (kalıcı)
 const DEFAULT_UPLOAD_DIR = path.join(DATA_DIR, "uploads");
-const UPLOAD_DIR = process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : DEFAULT_UPLOAD_DIR;
+const UPLOAD_DIR = process.env.UPLOAD_DIR
+  ? path.resolve(process.env.UPLOAD_DIR)
+  : DEFAULT_UPLOAD_DIR;
+
 // JSON dosyaları
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
 const MESSAGES_FILE = path.join(DATA_DIR, "messages.json");
 const COUPONS_FILE  = path.join(DATA_DIR, "coupons.json");
 const USERS_FILE    = path.join(DATA_DIR, "users.json");
 const REVIEWS_FILE  = path.join(DATA_DIR, "reviews.json");
-const FEEDBACK_FILE = path.join(DATA_DIR, "feedback.json"); // NEW
-// klasör/dosya init (overwrite yapmaz)
+const FEEDBACK_FILE = path.join(DATA_DIR, "feedback.json");
+
+// Klasör/dosya init
 ensureDir(DATA_DIR);
 ensureDir(PUBLIC_DIR);
 ensureDir(UPLOAD_DIR);
@@ -132,25 +148,21 @@ ensureFile(MESSAGES_FILE, "[]");
 ensureFile(COUPONS_FILE,  "[]");
 ensureFile(USERS_FILE,    "[]");
 ensureFile(REVIEWS_FILE,  "[]");
-ensureFile(FEEDBACK_FILE, "[]"); // NEW
-// Yazılabilirlik logları
+ensureFile(FEEDBACK_FILE, "[]");
+
+// Yazılabilirlik log
 const writableUploads = testWritable(UPLOAD_DIR);
 if (!writableData) {
-  console.warn(
-    "⚠️  DATA_DIR yazılabilir değil:",
-    DATA_DIR,
-    " (Prod'da kalıcılık olmayacak; örn: DATA_DIR=/data için izin yok.)"
-  );
+  console.warn("⚠️  DATA_DIR yazılabilir değil:", DATA_DIR);
 }
 if (!writableUploads) {
-  console.warn(
-    "⚠️  UPLOAD_DIR yazılabilir değil:",
-    UPLOAD_DIR,
-    " (Görsel yükleme kalıcı olmayabilir.)"
-  );
+  console.warn("⚠️  UPLOAD_DIR yazılabilir değil:", UPLOAD_DIR);
 }
 
-/* ---------------------------- Statik servisleme --------------------------- */
+/* ========================================================================== */
+/*  3) STATİK SERVİSLEME                                                     */
+/* ========================================================================== */
+
 app.use(
   "/uploads",
   express.static(UPLOAD_DIR, {
@@ -158,12 +170,17 @@ app.use(
     lastModified: true,
     maxAge: "7d",
     immutable: true,
-    setHeaders: (res) => res.setHeader("Cache-Control", "public, max-age=604800, immutable")
+    setHeaders: (res) =>
+      res.setHeader("Cache-Control", "public, max-age=604800, immutable")
   })
 );
+
 app.use(express.static(PUBLIC_DIR, { extensions: ["html"] }));
 
-/* ---------------------------- Yardımcı Fonksiyonlar ----------------------- */
+/* ========================================================================== */
+/*  4) ORTAK YARDIMCI FONKSİYONLAR                                           */
+/* ========================================================================== */
+
 const readJSON = (file, fallback = []) => {
   try {
     return JSON.parse(fs.readFileSync(file, "utf8") || "[]");
@@ -175,23 +192,31 @@ const writeJSON = (file, data) => {
   try {
     fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
   } catch (e) {
-    console.warn("⚠️  JSON yazılamadı, değişiklikler kalıcı olmayabilir:", file, "-", e.message);
+    console.warn("⚠️  JSON yazılamadı:", file, "-", e.message);
   }
 };
+
 const containsTR   = (s = "") => /[çğıöşüÇĞİÖŞÜ]/.test(s);
 const isValidEmail = (e = "") => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 const nowTS        = () => Date.now();
 const clientIP     = (req) => (req.headers["x-forwarded-for"]?.split(",")[0] || req.ip || "").trim();
-function isValidPhone(s = "") { return /^[+0-9()\-\s]{6,}$/.test(String(s).trim()); }
+
+function isValidPhone(s = "") {
+  return /^[+0-9()\-\s]{6,}$/.test(String(s).trim());
+}
+
 function uploadAbsPathFromPublic(p) {
   if (!p || !p.startsWith("/uploads/")) return null;
   const base = path.basename(p);
   return path.join(UPLOAD_DIR, base);
 }
-// Fiyat & Tarih yardımcıları
+
+// Fiyat & Tarih
 function parsePrice(text) {
   const priceText = String(text ?? "").trim();
-  const num = Number(priceText.replace(/[₺\s]/g, "").replace(",", "."));
+  const num = Number(
+    priceText.replace(/[₺\s]/g, "").replace(",", ".")
+  );
   const isNum = Number.isFinite(num);
   return { price: isNum ? num : null, priceText, purchasable: !!isNum };
 }
@@ -203,12 +228,16 @@ function toISODateOrNull(d) {
 }
 function todayISODateStart() {
   const d = new Date();
-  d.setHours(0,0,0,0);
+  d.setHours(0, 0, 0, 0);
   return d.toISOString();
 }
 
-/* -------------------- JWT yardımcı (customer only) ------------------------ */
+/* ========================================================================== */
+/*  5) JWT / KULLANICI KİMLİK DOĞRULAMA (MÜŞTERİ)                             */
+/* ========================================================================== */
+
 const JWT_SECRET = process.env.JWT_SECRET || "CHANGE_THIS_SECRET_STRONG";
+
 function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
 }
@@ -217,22 +246,39 @@ function tryGetJWTUser(req) {
   if (!auth.startsWith("Bearer ")) return null;
   const token = auth.slice(7);
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    return decoded; // { uid }
+    return jwt.verify(token, JWT_SECRET); // { uid }
   } catch {
     return null;
   }
 }
+function requireJWT(req, res, next) {
+  const auth = req.headers.authorization || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+  if (!token)
+    return res.status(401).json({ success: false, message: "Giriş gerekli" });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch {
+    return res.status(401).json({ success: false, message: "Geçersiz oturum" });
+  }
+}
 
-/* -------------------- Product normalize/tamir (deploy koruması) ---------- */
+/* ========================================================================== */
+/*  6) VERİ ERİŞİM KATMANI (JSON)                                            */
+/* ========================================================================== */
+
 function normalizeProduct(p) {
   const out = { ...p };
   out.id   = String(out.id || `p${Date.now()}`);
   out.name = String(out.name || "").trim();
   out.desc = String(out.desc || "");
   out.image = out.image || "logo.png";
+
   const hasNumericPrice = Number.isFinite(Number(out.price));
   if (!out.priceText && hasNumericPrice) out.priceText = String(out.price);
+
   if (!hasNumericPrice && out.priceText) {
     const parsed = parsePrice(out.priceText);
     if (parsed.purchasable) {
@@ -243,9 +289,12 @@ function normalizeProduct(p) {
   }
   const isNumPrice = Number.isFinite(Number(out.price));
   out.purchasable = !!isNumPrice;
+
   return out;
 }
-function readProductsRaw() { return readJSON(PRODUCTS_FILE, []); }
+function readProductsRaw() {
+  return readJSON(PRODUCTS_FILE, []);
+}
 function readProductsNormalized() {
   const raw = readProductsRaw();
   return Array.isArray(raw) ? raw.map(normalizeProduct) : [];
@@ -254,7 +303,8 @@ function writeProducts(list) {
   const fixed = Array.isArray(list) ? list.map(normalizeProduct) : [];
   writeJSON(PRODUCTS_FILE, fixed);
 }
-// Mesaj/kupon/kullanıcı/yorum/feedback
+
+// Mesajlar / kupon / kullanıcı / yorum / feedback
 const readMessages  = () => readJSON(MESSAGES_FILE, []);
 const writeMessages = (list) => writeJSON(MESSAGES_FILE, Array.isArray(list) ? list : []);
 const readCoupons   = () => readJSON(COUPONS_FILE, []);
@@ -263,12 +313,16 @@ const readUsers     = () => readJSON(USERS_FILE, []);
 const writeUsers    = (list) => writeJSON(USERS_FILE, Array.isArray(list) ? list : []);
 const readReviews   = () => readJSON(REVIEWS_FILE, []);
 const writeReviews  = (list) => writeJSON(REVIEWS_FILE, Array.isArray(list) ? list : []);
-const readFeedback  = () => readJSON(FEEDBACK_FILE, []); // NEW
-const writeFeedback = (list) => writeJSON(FEEDBACK_FILE, Array.isArray(list) ? list : []); // NEW
+const readFeedback  = () => readJSON(FEEDBACK_FILE, []);
+const writeFeedback = (list) => writeJSON(FEEDBACK_FILE, Array.isArray(list) ? list : []);
 
-/* ---------------------------- Idempotency (20s) --------------------------- */
-const INFLIGHT = new Map(); // key -> ts
+/* ========================================================================== */
+/*  7) IDEMPOTENCY (20 sn içinde tekrar aynı isteği engelle)                 */
+/* ========================================================================== */
+
+const INFLIGHT = new Map();
 const IDEMP_TTL_MS = 20000;
+
 function hashBody(obj) {
   const json = JSON.stringify(obj, Object.keys(obj).sort());
   return crypto.createHash("sha256").update(json).digest("hex");
@@ -276,14 +330,18 @@ function hashBody(obj) {
 function idempKey(req, bodyKeys) {
   const ip = clientIP(req);
   const pick = {};
-  for (const k of bodyKeys) if (req.body?.[k] !== undefined) pick[k] = req.body[k];
+  for (const k of bodyKeys) {
+    if (req.body?.[k] !== undefined) pick[k] = req.body[k];
+  }
   if (pick.items && Array.isArray(pick.items)) {
-    pick.items = pick.items.map(it => ({
-      id: it.id || null,
-      name: it.name || "",
-      qty: Number(it.qty || 1),
-      price: Number(it.price || 0)
-    })).sort((a,b)=> (a.id||a.name).localeCompare(b.id||b.name));
+    pick.items = pick.items
+      .map((it) => ({
+        id: it.id || null,
+        name: it.name || "",
+        qty: Number(it.qty || 1),
+        price: Number(it.price || 0)
+      }))
+      .sort((a, b) => (a.id || a.name).localeCompare(b.id || b.name));
   }
   return ip + ":" + hashBody(pick);
 }
@@ -294,64 +352,73 @@ function idempGuard(keys) {
       const now = nowTS();
       const last = INFLIGHT.get(key) || 0;
       if (now - last < IDEMP_TTL_MS) {
-        return res.status(429).json({ success:false, message:"İşleminiz alınıyor, lütfen tekrarlamayın." });
+        return res
+          .status(429)
+          .json({ success: false, message: "İşleminiz alınıyor, lütfen tekrarlamayın." });
       }
       INFLIGHT.set(key, now);
-      res.on("finish", () => { setTimeout(() => INFLIGHT.delete(key), IDEMP_TTL_MS); });
+      res.on("finish", () => {
+        setTimeout(() => INFLIGHT.delete(key), IDEMP_TTL_MS);
+      });
       next();
-    } catch (_e) {
+    } catch {
       next();
     }
   };
 }
 
-/* -------------------------------- Rate Limit ------------------------------ */
-const apiLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: "draft-7", legacyHeaders: false });
-app.use("/api/", apiLimiter);
-const tightLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: "draft-7", legacyHeaders: false });
+/* ========================================================================== */
+/*  8) RATE LIMIT                                                             */
+/* ========================================================================== */
 
-/* ----------------------------- Admin (legacy panel only) ------------------ */
-// Only one admin: legacy token only
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: "draft-7",
+  legacyHeaders: false
+});
+app.use("/api/", apiLimiter);
+
+const tightLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false
+});
+
+/* ========================================================================== */
+/*  9) LEGACY ADMIN AUTH (SADECE ADMIN PANEL İÇİN)                            */
+/* ========================================================================== */
+
 const ADMIN_USER = process.env.ADMIN_USER || "EDE";
 const ADMIN_PASS = process.env.ADMIN_PASS || "M@v3rn!2025@Kozm0tik";
 let CURRENT_TOKEN = null;
-/**
- * Middleware for legacy admin panel access.
- * Only accepts the opaque CURRENT_TOKEN (no JWT, no user accounts).
- */
+
 function requireLegacyAdmin(req, res, next) {
   const hdr = req.headers.authorization || "";
   const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
   if (token && token === CURRENT_TOKEN) return next();
   return res.status(401).json({ success: false, message: "Yetkisiz işlem" });
 }
-// Admin login: ONLY this endpoint uses ADMIN_USER/ADMIN_PASS
+
+// Admin login → sadece bu endpoint ENV ile çalışır
 app.post("/api/login", (req, res) => {
   const { username, password } = req.body || {};
   if (username === ADMIN_USER && password === ADMIN_PASS) {
-    // Generate opaque random token (not JWT)
-    CURRENT_TOKEN = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    CURRENT_TOKEN =
+      Math.random().toString(36).slice(2) + Date.now().toString(36);
     return res.json({ success: true, token: CURRENT_TOKEN, username });
   }
-  return res.status(401).json({ success: false, message: "Kullanıcı adı veya şifre hatalı" });
+  return res
+    .status(401)
+    .json({ success: false, message: "Kullanıcı adı veya şifre hatalı" });
 });
 
-/* ----------------------------- Auth (JWT tabanlı, customer only) ---------- */
-function requireJWT(req, res, next) {
-  const auth = req.headers.authorization || "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
-  if (!token) return res.status(401).json({ success: false, message: "Giriş gerekli" });
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET); // { uid }
-    req.user = decoded;
-    next();
-  } catch {
-    return res.status(401).json({ success: false, message: "Geçersiz oturum" });
-  }
-}
+/* ========================================================================== */
+/* 10) AUTH (MÜŞTERİ) + AI PROFİL                                            */
+/* ========================================================================== */
 
-// Register — ek alanlar: fullName, phone, city, address, zip, notes
-// IMPORTANT: isAdmin is always false for new users
+// Register
 app.post("/api/auth/register", tightLimiter, async (req, res) => {
   const {
     email,
@@ -364,26 +431,39 @@ app.post("/api/auth/register", tightLimiter, async (req, res) => {
     zip,
     notes
   } = req.body || {};
+
   const e = String(email || "").trim().toLowerCase();
   if (!e || containsTR(e) || !isValidEmail(e)) {
-    return res.status(400).json({ success:false, message:"Geçerli e-posta gerekli" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Geçerli e-posta gerekli" });
   }
   if (!password || String(password).length < 6) {
-    return res.status(400).json({ success:false, message:"Şifre en az 6 karakter" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Şifre en az 6 karakter" });
   }
+
   const users = readUsers();
-  if (users.find(u => u.email === e)) {
-    return res.status(400).json({ success:false, message:"Bu e-posta zaten kayıtlı" });
+  if (users.find((u) => u.email === e)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Bu e-posta zaten kayıtlı" });
   }
+
   const safeFullName = String(fullName || "").trim();
   const safePhone    = String(phone || "").trim();
   const safeCity     = String(city || "").trim();
   const safeAddress  = String(address || "").trim();
   const safeZip      = String(zip || "").trim().slice(0, 16);
   const safeNotes    = String(notes || "").trim().slice(0, 500);
+
   if (safePhone && !isValidPhone(safePhone)) {
-    return res.status(400).json({ success:false, message:"Telefon formatı geçersiz" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Telefon formatı geçersiz" });
   }
+
   const hash = await bcrypt.hash(String(password), 10);
   const user = {
     id: "u" + Date.now(),
@@ -396,51 +476,67 @@ app.post("/api/auth/register", tightLimiter, async (req, res) => {
     address: safeAddress || null,
     zip: safeZip || null,
     notes: safeNotes || null,
-    isApproved: false,  // admin onayı gerekir
-    isAdmin: false,     // ALWAYS false — no admin creation via register
-    aiProfile: null,    // NEW: AI profile placeholder
+    isApproved: false,
+    isAdmin: false,          // Register'dan admin çıkmaz.
+    aiProfile: null,         // AI profil placeholder
     createdAt: new Date().toISOString(),
     lastLoginAt: null,
     lastLoginIp: null
   };
+
   users.push(user);
   writeUsers(users);
-  return res.json({ success:true, pendingApproval:true });
+  return res.json({ success: true, pendingApproval: true });
 });
 
-// Login — lastLoginAt / lastLoginIp set
+// Login
 app.post("/api/auth/login", tightLimiter, async (req, res) => {
   const { email, password } = req.body || {};
   const e = String(email || "").trim().toLowerCase();
   const users = readUsers();
-  const idx = users.findIndex(x => x.email === e);
-  if (idx === -1) return res.status(400).json({ success:false, message:"Kullanıcı bulunamadı" });
+
+  const idx = users.findIndex((x) => x.email === e);
+  if (idx === -1) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Kullanıcı bulunamadı" });
+  }
   const u = users[idx];
   const ok = await bcrypt.compare(String(password || ""), u.passHash || "");
-  if (!ok) return res.status(400).json({ success:false, message:"Şifre hatalı" });
-  if (!u.isApproved) return res.status(403).json({ success:false, message:"Hesabınız onay bekliyor" });
+  if (!ok) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Şifre hatalı" });
+  }
+  if (!u.isApproved) {
+    return res
+      .status(403)
+      .json({ success: false, message: "Hesabınız onay bekliyor" });
+  }
+
   users[idx].lastLoginAt = new Date().toISOString();
   users[idx].lastLoginIp = clientIP(req) || null;
   writeUsers(users);
-  // Artık JWT içinde isAdmin yok, sadece uid
+
   const token = signToken({ uid: u.id });
+
   return res.json({
-    success:true,
+    success: true,
     token,
-    user:{
-      id:u.id,
-      email:u.email,
-      displayName:u.displayName,
-      fullName:u.fullName || null,
-      phone:u.phone || null,
-      city:u.city || null,
-      address:u.address || null,
-      zip:u.zip || null,
-      isAdmin:!!u.isAdmin, // exists but meaningless for auth
-      isApproved:!!u.isApproved,
-      createdAt:u.createdAt,
-      lastLoginAt:u.lastLoginAt,
-      lastLoginIp:u.lastLoginIp
+    user: {
+      id: u.id,
+      email: u.email,
+      displayName: u.displayName,
+      fullName: u.fullName || null,
+      phone: u.phone || null,
+      city: u.city || null,
+      address: u.address || null,
+      zip: u.zip || null,
+      isAdmin: !!u.isAdmin,
+      isApproved: !!u.isApproved,
+      createdAt: u.createdAt,
+      lastLoginAt: u.lastLoginAt,
+      lastLoginIp: u.lastLoginIp
     }
   });
 });
@@ -448,29 +544,31 @@ app.post("/api/auth/login", tightLimiter, async (req, res) => {
 // Me
 app.get("/api/auth/me", requireJWT, (req, res) => {
   const users = readUsers();
-  const u = users.find(x => x.id === req.user.uid);
-  if (!u) return res.status(404).json({ success:false, message:"Kullanıcı yok" });
+  const u = users.find((x) => x.id === req.user.uid);
+  if (!u)
+    return res.status(404).json({ success: false, message: "Kullanıcı yok" });
+
   return res.json({
-    success:true,
-    user:{
-      id:u.id,
-      email:u.email,
-      displayName:u.displayName,
-      fullName:u.fullName || null,
-      phone:u.phone || null,
-      city:u.city || null,
-      address:u.address || null,
-      zip:u.zip || null,
-      isAdmin:!!u.isAdmin,
-      isApproved:!!u.isApproved,
-      createdAt:u.createdAt,
-      lastLoginAt:u.lastLoginAt,
-      lastLoginIp:u.lastLoginIp
+    success: true,
+    user: {
+      id: u.id,
+      email: u.email,
+      displayName: u.displayName,
+      fullName: u.fullName || null,
+      phone: u.phone || null,
+      city: u.city || null,
+      address: u.address || null,
+      zip: u.zip || null,
+      isAdmin: !!u.isAdmin,
+      isApproved: !!u.isApproved,
+      createdAt: u.createdAt,
+      lastLoginAt: u.lastLoginAt,
+      lastLoginIp: u.lastLoginIp
     }
   });
 });
 
-// Profil güncelle (customer only)
+// Profil güncelle
 app.patch("/api/auth/profile", requireJWT, async (req, res) => {
   const {
     displayName,
@@ -483,10 +581,14 @@ app.patch("/api/auth/profile", requireJWT, async (req, res) => {
     currentPassword,
     newPassword
   } = req.body || {};
+
   const users = readUsers();
-  const idx = users.findIndex(u => u.id === req.user.uid);
-  if (idx === -1) return res.status(404).json({ success:false, message:"Kullanıcı bulunamadı" });
+  const idx = users.findIndex((u) => u.id === req.user.uid);
+  if (idx === -1) {
+    return res.status(404).json({ success: false, message: "Kullanıcı bulunamadı" });
+  }
   const user = users[idx];
+
   if (displayName !== undefined) {
     const dn = String(displayName || "").trim();
     if (dn) user.displayName = dn;
@@ -497,7 +599,9 @@ app.patch("/api/auth/profile", requireJWT, async (req, res) => {
   if (phone !== undefined) {
     const p = String(phone || "").trim();
     if (p && !isValidPhone(p)) {
-      return res.status(400).json({ success:false, message:"Telefon formatı geçersiz" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Telefon formatı geçersiz" });
     }
     user.phone = p || null;
   }
@@ -513,68 +617,64 @@ app.patch("/api/auth/profile", requireJWT, async (req, res) => {
   if (notes !== undefined) {
     user.notes = String(notes || "").trim().slice(0, 500) || null;
   }
+
   if (newPassword) {
     const curr = String(currentPassword || "");
     const ok = await bcrypt.compare(curr, user.passHash || "");
-    if (!ok) return res.status(400).json({ success:false, message:"Mevcut şifre hatalı" });
-    if (String(newPassword).length < 6) return res.status(400).json({ success:false, message:"Yeni şifre en az 6 karakter" });
+    if (!ok) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Mevcut şifre hatalı" });
+    }
+    if (String(newPassword).length < 6) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Yeni şifre en az 6 karakter" });
+    }
     const hash = await bcrypt.hash(String(newPassword), 10);
     user.passHash = hash;
   }
+
   users[idx] = user;
   writeUsers(users);
+
   res.json({
-    success:true,
-    user:{
-      id:user.id,
-      email:user.email,
-      displayName:user.displayName,
-      fullName:user.fullName || null,
-      phone:user.phone || null,
-      city:user.city || null,
-      address:user.address || null,
-      zip:user.zip || null,
-      isAdmin:!!user.isAdmin,
-      isApproved:!!user.isApproved,
-      createdAt:user.createdAt,
-      lastLoginAt:user.lastLoginAt,
-      lastLoginIp:user.lastLoginIp
+    success: true,
+    user: {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+      fullName: user.fullName || null,
+      phone: user.phone || null,
+      city: user.city || null,
+      address: user.address || null,
+      zip: user.zip || null,
+      isAdmin: !!user.isAdmin,
+      isApproved: !!user.isApproved,
+      createdAt: user.createdAt,
+      lastLoginAt: user.lastLoginAt,
+      lastLoginIp: user.lastLoginIp
     }
   });
 });
 
-// NEW: Full AI Profile Endpoints
-app.get("/api/profile/full", requireJWT, (req, res) => {
-  const users = readUsers();
-  const u = users.find(x => x.id === req.user.uid);
-  if (!u) return res.status(404).json({ success:false, message:"Kullanıcı yok" });
-  return res.json({
-    success: true,
-    profile: u.aiProfile || null
-  });
-});
-app.put("/api/profile/full", requireJWT, (req, res) => {
-  const { aiProfile } = req.body || {};
-  if (!aiProfile || typeof aiProfile !== "object") {
-    return res.status(400).json({ success: false, message: "Geçersiz profil yapısı" });
-  }
-  const users = readUsers();
-  const idx = users.findIndex(u => u.id === req.user.uid);
-  if (idx === -1) return res.status(404).json({ success:false, message:"Kullanıcı bulunamadı" });
-  // Sanitize and limit depth (simple object with strings/numbers/arrays)
+/* ---------- AI PROFiL SANITIZE HELPER (hem profil hem checkout için) ----- */
+
+function sanitizeAIProfile(inputProfile) {
+  if (!inputProfile || typeof inputProfile !== "object") return null;
   const cleanProfile = {};
-  for (const [key, value] of Object.entries(aiProfile)) {
+
+  for (const [key, value] of Object.entries(inputProfile)) {
     if (typeof value === "string") {
       cleanProfile[key] = value.trim().slice(0, 500);
     } else if (typeof value === "number") {
       cleanProfile[key] = value;
     } else if (Array.isArray(value)) {
       cleanProfile[key] = value
-        .filter(v => typeof v === "string" || typeof v === "number")
+        .filter((v) => typeof v === "string" || typeof v === "number")
         .slice(0, 20)
-        .map(v => typeof v === "string" ? v.trim().slice(0, 100) : v);
-    } else if (typeof value === "object" && value !== null) {
-      // One level deeper for simple objects
+        .map((v) => (typeof v === "string" ? v.trim().slice(0, 100) : v));
+    } else if (value && typeof value === "object") {
       const sub = {};
       for (const [k, v] of Object.entries(value)) {
         if (typeof v === "string") sub[k] = v.trim().slice(0, 200);
@@ -583,79 +683,123 @@ app.put("/api/profile/full", requireJWT, (req, res) => {
       cleanProfile[key] = sub;
     }
   }
+  return cleanProfile;
+}
+
+// AI Profile full (müşteri tarafı)
+app.get("/api/profile/full", requireJWT, (req, res) => {
+  const users = readUsers();
+  const u = users.find((x) => x.id === req.user.uid);
+  if (!u) return res.status(404).json({ success: false, message: "Kullanıcı yok" });
+
+  return res.json({
+    success: true,
+    profile: u.aiProfile || null
+  });
+});
+
+app.put("/api/profile/full", requireJWT, (req, res) => {
+  const { aiProfile } = req.body || {};
+  const cleanProfile = sanitizeAIProfile(aiProfile);
+  if (!cleanProfile) {
+    return res.status(400).json({ success: false, message: "Geçersiz profil yapısı" });
+  }
+
+  const users = readUsers();
+  const idx = users.findIndex((u) => u.id === req.user.uid);
+  if (idx === -1) {
+    return res.status(404).json({ success: false, message: "Kullanıcı bulunamadı" });
+  }
+
   users[idx].aiProfile = cleanProfile;
   writeUsers(users);
+
   return res.json({ success: true, profile: cleanProfile });
 });
 
-/* ----------------------------- Admin: Users -------------------------------- */
-// Tüm kullanıcılar — sadece legacy admin
+/* -------------------------- Admin: Users (Legacy Admin) ------------------- */
+
 app.get("/api/admin/users", requireLegacyAdmin, (_req, res) => {
-  const users = readUsers().map(u => ({
-    id:u.id,
-    email:u.email,
-    displayName:u.displayName,
-    fullName:u.fullName || null,
-    phone:u.phone || null,
-    city:u.city || null,
-    address:u.address || null,
-    zip:u.zip || null,
-    notes:u.notes || null,
-    isApproved:!!u.isApproved,
-    isAdmin:!!u.isAdmin, // exists but not used for auth
-    aiProfile: u.aiProfile || null, // NEW: include for admin visibility
-    createdAt:u.createdAt,
-    lastLoginAt:u.lastLoginAt || null,
-    lastLoginIp:u.lastLoginIp || null
+  const users = readUsers().map((u) => ({
+    id: u.id,
+    email: u.email,
+    displayName: u.displayName,
+    fullName: u.fullName || null,
+    phone: u.phone || null,
+    city: u.city || null,
+    address: u.address || null,
+    zip: u.zip || null,
+    notes: u.notes || null,
+    isApproved: !!u.isApproved,
+    isAdmin: !!u.isAdmin,
+    aiProfile: u.aiProfile || null,
+    createdAt: u.createdAt,
+    lastLoginAt: u.lastLoginAt || null,
+    lastLoginIp: u.lastLoginIp || null
   }));
-  res.json({ success:true, items: users });
+  res.json({ success: true, items: users });
 });
-// Sadece onay durumu değişir (admin yapma yok)
+
 app.patch("/api/admin/users/:id/approve", requireLegacyAdmin, (req, res) => {
   const id = String(req.params.id || "");
   const { approved } = req.body || {};
   const users = readUsers();
-  const idx = users.findIndex(u => u.id === id);
-  if (idx === -1) return res.status(404).json({ success:false, message:"Kullanıcı bulunamadı" });
+  const idx = users.findIndex((u) => u.id === id);
+  if (idx === -1)
+    return res
+      .status(404)
+      .json({ success: false, message: "Kullanıcı bulunamadı" });
+
   if (typeof approved === "boolean") {
     users[idx].isApproved = approved;
   }
-  // isAdmin burada değiştirilmez ve hiç kullanılmaz
   writeUsers(users);
+
   const u = users[idx];
   res.json({
-    success:true,
-    user:{
-      id:u.id,
-      email:u.email,
-      isApproved:!!u.isApproved,
-      isAdmin:!!u.isAdmin // for data consistency only
+    success: true,
+    user: {
+      id: u.id,
+      email: u.email,
+      isApproved: !!u.isApproved,
+      isAdmin: !!u.isAdmin
     }
   });
 });
-// Kullanıcı silme
+
 app.delete("/api/admin/users/:id", requireLegacyAdmin, (req, res) => {
   const id = String(req.params.id || "");
   let users = readUsers();
   const before = users.length;
-  users = users.filter(u => u.id !== id);
-  if (users.length === before) return res.status(404).json({ success:false, message:"Kullanıcı bulunamadı" });
+  users = users.filter((u) => u.id !== id);
+  if (users.length === before) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Kullanıcı bulunamadı" });
+  }
   writeUsers(users);
-  // kullanıcının yorumlarını da sil
+
+  // Kullanıcının yorumları
   let revs = readReviews();
-  const newRevs = revs.filter(r => r.userId !== id);
+  const newRevs = revs.filter((r) => r.userId !== id);
   if (newRevs.length !== revs.length) writeReviews(newRevs);
-  // kullanıcının feedbacklerini de silelim
+
+  // Kullanıcının feedbackleri
   let fbs = readFeedback();
-  const newFbs = fbs.filter(f => f.userId !== id);
+  const newFbs = fbs.filter((f) => f.userId !== id);
   if (newFbs.length !== fbs.length) writeFeedback(newFbs);
-  res.json({ success:true });
+
+  res.json({ success: true });
 });
 
-/* --------------------------------- SMTP (Brevo) --------------------------- */
+/* ========================================================================== */
+/* 11) SMTP / E-POSTA                                                         */
+/* ========================================================================== */
+
 const secureFlag =
   String(process.env.BREVO_SECURE || "").toLowerCase() === "true" ||
   Number(process.env.BREVO_PORT) === 465;
+
 const transporter = nodemailer.createTransport({
   host: process.env.BREVO_HOST || "smtp-relay.brevo.com",
   port: Number(process.env.BREVO_PORT || 587),
@@ -669,7 +813,11 @@ const transporter = nodemailer.createTransport({
   socketTimeout: 20000,
   tls: { rejectUnauthorized: false }
 });
-app.get("/api/mail/health", (_req, res) => res.json({ ok: true, app: "alive" }));
+
+app.get("/api/mail/health", (_req, res) =>
+  res.json({ ok: true, app: "alive" })
+);
+
 app.post("/api/admin/test-send", requireLegacyAdmin, async (_req, res) => {
   try {
     await transporter.sendMail({
@@ -683,6 +831,7 @@ app.post("/api/admin/test-send", requireLegacyAdmin, async (_req, res) => {
     res.status(500).json({ success: false, error: e.message });
   }
 });
+
 app.get("/api/mail/verify", async (_req, res) => {
   try {
     await transporter.verify();
@@ -692,23 +841,32 @@ app.get("/api/mail/verify", async (_req, res) => {
   }
 });
 
-/* ---------------------------- ÜRÜNLER (müşteri) --------------------------- */
+/* ========================================================================== */
+/* 12) ÜRÜNLER (MÜŞTERİ TARAFI)                                              */
+/* ========================================================================== */
+
 app.get("/api/products", (_req, res) => {
   res.set("Cache-Control", "no-store");
   res.json(readProductsNormalized());
 });
 
-/* ------------------------------- Upload (multer) -------------------------- */
+/* ========================================================================== */
+/* 13) UPLOAD (MULTER)                                                        */
+/* ========================================================================== */
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
   filename: (_req, file, cb) => {
     const ext = mime.extension(file.mimetype) || "bin";
     const safeBase = (file.originalname || "file")
-      .replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_\-\.]/g, "")
-      .replace(/\.[^\.]+$/, "").slice(0, 40);
+      .replace(/\s+/g, "_")
+      .replace(/[^a-zA-Z0-9_\-\.]/g, "")
+      .replace(/\.[^\.]+$/, "")
+      .slice(0, 40);
     cb(null, `${Date.now()}_${safeBase}.${ext}`);
   }
 });
+
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -717,21 +875,42 @@ const upload = multer({
     cb(ok ? null : new Error("Sadece JPG/PNG/WEBP yükleyin"), ok);
   }
 });
-// Admin upload (legacy admin)
-app.post("/api/admin/upload", requireLegacyAdmin, upload.single("file"), (req, res) => {
-  if (!req.file) return res.status(400).json({ success: false, message: "Dosya yok" });
-  res.json({ success: true, path: "/uploads/" + req.file.filename });
-});
-// Üye upload (yorum fotoğrafları)
-app.post("/api/reviews/upload", requireJWT, upload.single("file"), (req, res) => {
-  if (!req.file) return res.status(400).json({ success: false, message: "Dosya yok" });
-  res.json({ success: true, path: "/uploads/" + req.file.filename });
-});
 
-/* ------------------------------- Ürünler (admin) -------------------------- */
+// Admin upload
+app.post(
+  "/api/admin/upload",
+  requireLegacyAdmin,
+  upload.single("file"),
+  (req, res) => {
+    if (!req.file)
+      return res.status(400).json({ success: false, message: "Dosya yok" });
+    res.json({ success: true, path: "/uploads/" + req.file.filename });
+  }
+);
+
+// Üye upload (yorum fotoğrafları)
+app.post(
+  "/api/reviews/upload",
+  requireJWT,
+  upload.single("file"),
+  (req, res) => {
+    if (!req.file)
+      return res.status(400).json({ success: false, message: "Dosya yok" });
+    res.json({ success: true, path: "/uploads/" + req.file.filename });
+  }
+);
+
+/* ========================================================================== */
+/* 14) ÜRÜNLER (ADMIN)                                                        */
+/* ========================================================================== */
+
 app.post("/api/admin/products", requireLegacyAdmin, (req, res) => {
   const { name, price, image, desc } = req.body || {};
-  if (!name) return res.status(400).json({ success: false, message: "İsim gerekli" });
+  if (!name)
+    return res
+      .status(400)
+      .json({ success: false, message: "İsim gerekli" });
+
   const list = readProductsNormalized();
   const parsed = parsePrice(price);
   const item = normalizeProduct({
@@ -743,18 +922,24 @@ app.post("/api/admin/products", requireLegacyAdmin, (req, res) => {
     image: image || "logo.png",
     desc: String(desc || "")
   });
+
   list.push(item);
   writeProducts(list);
   res.json({ success: true, item });
 });
+
 app.put("/api/admin/products/:id", requireLegacyAdmin, (req, res) => {
   const id = req.params.id;
   const { name, price, image, desc } = req.body || {};
   const list = readProductsNormalized();
-  const idx = list.findIndex(p => p.id === id);
-  if (idx === -1) return res.status(404).json({ success: false, message: "Ürün bulunamadı" });
+  const idx = list.findIndex((p) => p.id === id);
+  if (idx === -1)
+    return res
+      .status(404)
+      .json({ success: false, message: "Ürün bulunamadı" });
+
   const oldImage = list[idx].image;
-  if (name  !== undefined) list[idx].name  = String(name).trim();
+  if (name !== undefined) list[idx].name = String(name).trim();
   if (price !== undefined) {
     const parsed = parsePrice(price);
     list[idx].price = parsed.price;
@@ -762,45 +947,231 @@ app.put("/api/admin/products/:id", requireLegacyAdmin, (req, res) => {
     list[idx].purchasable = parsed.purchasable;
   }
   if (image !== undefined) list[idx].image = String(image || "logo.png");
-  if (desc  !== undefined) list[idx].desc  = String(desc);
+  if (desc !== undefined) list[idx].desc = String(desc);
+
   list[idx] = normalizeProduct(list[idx]);
   writeProducts(list);
-  if (image !== undefined && oldImage && oldImage.startsWith("/uploads/") && oldImage !== list[idx].image) {
-    const stillUsed = readProductsNormalized().some(p => p.image === oldImage);
+
+  // Eski görsel üzerine yazıldıysa ve artık kullanılmıyorsa, silelim
+  if (
+    image !== undefined &&
+    oldImage &&
+    oldImage.startsWith("/uploads/") &&
+    oldImage !== list[idx].image
+  ) {
+    const stillUsed = readProductsNormalized().some((p) => p.image === oldImage);
     const abs = uploadAbsPathFromPublic(oldImage);
     if (!stillUsed && abs && fs.existsSync(abs)) {
-      try { fs.unlinkSync(abs); } catch {}
+      try {
+        fs.unlinkSync(abs);
+      } catch {}
     }
   }
   res.json({ success: true, item: list[idx] });
 });
+
 app.delete("/api/admin/products/:id", requireLegacyAdmin, (req, res) => {
   const id = req.params.id;
   let list = readProductsNormalized();
-  const idx = list.findIndex(p => p.id === id);
-  if (idx === -1) return res.status(404).json({ success: false, message: "Ürün bulunamadı" });
+  const idx = list.findIndex((p) => p.id === id);
+  if (idx === -1)
+    return res
+      .status(404)
+      .json({ success: false, message: "Ürün bulunamadı" });
+
   const img = list[idx].image;
   list.splice(idx, 1);
   writeProducts(list);
+
   if (img && img.startsWith("/uploads/")) {
-    const used = readProductsNormalized().some(p => p.image === img);
+    const used = readProductsNormalized().some((p) => p.image === img);
     const abs = uploadAbsPathFromPublic(img);
     if (!used && abs && fs.existsSync(abs)) {
-      try { fs.unlinkSync(abs); } catch {}
+      try {
+        fs.unlinkSync(abs);
+      } catch {}
     }
   }
   res.json({ success: true });
 });
 
-/* --------------------------------- Kuponlar -------------------------------- */
+/* ========================================================================== */
+/* 15) YORUMLAR (REVIEWS) — FRONTEND product.html İLE UYUMLU                 */
+/* ========================================================================== */
+
+/**
+ * Review yapısı:
+ * {
+ *   id: "r123",
+ *   productId: "pid",
+ *   userId: "uid",
+ *   userEmail: "...",
+ *   displayName: "...",
+ *   rating: 1–5,
+ *   comment: "...",
+ *   photos: ["/uploads/..."],
+ *   anonymous: true/false,
+ *   isApproved: false/true,
+ *   createdAt,
+ *   updatedAt
+ * }
+ */
+
+// PUBLIC: Ürün yorumları (sadece onaylılar)
+app.get("/api/products/:id/reviews", (req, res) => {
+  const productId = String(req.params.id || "");
+  if (!productId) {
+    return res.json({ success: true, items: [] });
+  }
+
+  const list = readReviews()
+    .filter((r) => r.productId === productId && r.isApproved !== false)
+    .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+
+  res.json({ success: true, items: list });
+});
+
+// MÜŞTERİ: Yorum ekle (onay bekler)
+app.post("/api/products/:id/reviews", requireJWT, async (req, res) => {
+  const productId = String(req.params.id || "");
+  const { rating, comment, photos, anonymous } = req.body || {};
+
+  if (!productId) {
+    return res.status(400).json({ success: false, message: "Geçersiz ürün" });
+  }
+
+  const r = Number(rating);
+  if (!Number.isFinite(r) || r < 1 || r > 5) {
+    return res.status(400).json({ success: false, message: "Puan 1–5 arası olmalı" });
+  }
+
+  const rawComment = String(comment || "").trim();
+  if (rawComment.length < 3) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Yorum çok kısa (min. 3 karakter)" });
+  }
+
+  // Ürün gerçekten var mı, satılabilir mi diye hafif kontrol
+  const products = readProductsNormalized();
+  const exists = products.find((p) => p.id === productId);
+  if (!exists) {
+    return res.status(400).json({ success: false, message: "Ürün bulunamadı" });
+  }
+
+  const users = readUsers();
+  const user = users.find((u) => u.id === req.user.uid);
+
+  const list = readReviews();
+  const cleanPhotos =
+    Array.isArray(photos) && photos.length
+      ? photos
+          .filter((p) => typeof p === "string" && p.startsWith("/uploads/"))
+          .slice(0, 5)
+      : [];
+
+  const review = {
+    id: "r" + Date.now(),
+    productId,
+    userId: req.user.uid,
+    userEmail: user?.email || null,
+    displayName:
+      anonymous || !user
+        ? "Kullanıcı"
+        : user.displayName || user.fullName || user.email || "Kullanıcı",
+    rating: r,
+    comment: rawComment.slice(0, 2000),
+    photos: cleanPhotos,
+    anonymous: !!anonymous,
+    isApproved: false, // Admin onayı sonrası görünür
+    createdAt: new Date().toISOString(),
+    updatedAt: null
+  };
+
+  list.push(review);
+  writeReviews(list);
+
+  res.json({
+    success: true,
+    message: "Yorum alındı, admin onayı sonrası yayınlanacaktır."
+  });
+});
+
+// ADMIN: Yorum listesi
+app.get("/api/admin/reviews", requireLegacyAdmin, (_req, res) => {
+  const list = readReviews()
+    .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+  res.json({ success: true, items: list });
+});
+
+// ADMIN: Yorum onay / reddet
+app.patch("/api/admin/reviews/:id/approve", requireLegacyAdmin, (req, res) => {
+  const id = String(req.params.id || "");
+  const { approved } = req.body || {};
+  const list = readReviews();
+  const idx = list.findIndex((r) => r.id === id);
+  if (idx === -1) {
+    return res.status(404).json({ success: false, message: "Yorum bulunamadı" });
+  }
+
+  if (typeof approved === "boolean") {
+    list[idx].isApproved = approved;
+    list[idx].updatedAt = new Date().toISOString();
+  }
+  writeReviews(list);
+
+  res.json({ success: true, item: list[idx] });
+});
+
+// ADMIN: Yorum sil
+app.delete("/api/admin/reviews/:id", requireLegacyAdmin, (req, res) => {
+  const id = String(req.params.id || "");
+  let list = readReviews();
+  const idx = list.findIndex((r) => r.id === id);
+  if (idx === -1) {
+    return res.status(404).json({ success: false, message: "Yorum bulunamadı" });
+  }
+
+  const rev = list[idx];
+  // İstersek fotoğrafları da silebiliriz (şimdilik sadece dosya varsa ve başka review'de kullanılmıyorsa)
+  if (Array.isArray(rev.photos)) {
+    const all = list;
+    for (const img of rev.photos) {
+      if (img && img.startsWith("/uploads/")) {
+        const stillUsed = all.some(
+          (r) => r.id !== rev.id && Array.isArray(r.photos) && r.photos.includes(img)
+        );
+        const abs = uploadAbsPathFromPublic(img);
+        if (!stillUsed && abs && fs.existsSync(abs)) {
+          try {
+            fs.unlinkSync(abs);
+          } catch {}
+        }
+      }
+    }
+  }
+
+  list.splice(idx, 1);
+  writeReviews(list);
+
+  res.json({ success: true });
+});
+
+/* ========================================================================== */
+/* 16) KUPONLAR                                                               */
+/* ========================================================================== */
+
 app.post("/api/coupon/check", (req, res) => {
   const { code } = req.body || {};
   const normalized = String(code || "").trim().toUpperCase();
   if (!normalized) return res.json({ success: false, message: "Kod gerekli" });
+
   const coupons = readCoupons();
-  const found = coupons.find(c => c.code === normalized);
+  const found = coupons.find((c) => c.code === normalized);
   if (!found) return res.json({ success: false, message: "Geçersiz kod" });
-  if (found.active === false) return res.json({ success: false, message: "Kod pasif" });
+  if (found.active === false)
+    return res.json({ success: false, message: "Kod pasif" });
+
   const now = nowTS();
   if (found.startsAt) {
     const st = Date.parse(found.startsAt);
@@ -818,6 +1189,7 @@ app.post("/api/coupon/check", (req, res) => {
   if (!(percent > 0 && percent <= 90)) {
     return res.json({ success: false, message: "Kod yapılandırması geçersiz" });
   }
+
   return res.json({
     success: true,
     percent,
@@ -825,19 +1197,36 @@ app.post("/api/coupon/check", (req, res) => {
     expiresAt: found.expiresAt || null
   });
 });
+
 app.get("/api/admin/coupons", requireLegacyAdmin, (_req, res) => {
   res.json({ success: true, items: readCoupons() });
 });
+
 app.post("/api/admin/coupons", requireLegacyAdmin, (req, res) => {
   let { code, percent, active, startsAt, expiresAt } = req.body || {};
   code = String(code || "").trim().toUpperCase();
   const p = Number(percent);
-  if (!code) return res.status(400).json({ success: false, message: "Kod gerekli" });
-  if (!(p > 0 && p <= 90)) return res.status(400).json({ success: false, message: "Yüzde 1–90 arasında olmalı" });
+
+  if (!code)
+    return res
+      .status(400)
+      .json({ success: false, message: "Kod gerekli" });
+  if (!(p > 0 && p <= 90)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Yüzde 1–90 arasında olmalı" });
+  }
+
   const list = readCoupons();
-  if (list.find(c => c.code === code)) return res.status(400).json({ success: false, message: "Bu kod zaten var" });
+  if (list.find((c) => c.code === code)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Bu kod zaten var" });
+  }
+
   const startsISO = toISODateOrNull(startsAt) || todayISODateStart();
   const expISO = toISODateOrNull(expiresAt);
+
   const item = {
     id: "c" + Date.now(),
     code,
@@ -847,56 +1236,93 @@ app.post("/api/admin/coupons", requireLegacyAdmin, (req, res) => {
     expiresAt: expISO,
     createdAt: new Date().toISOString()
   };
+
   list.push(item);
   writeCoupons(list);
+
   res.json({ success: true, item });
 });
+
 app.delete("/api/admin/coupons/:code", requireLegacyAdmin, (req, res) => {
   const code = String(req.params.code || "").trim().toUpperCase();
   let list = readCoupons();
   const before = list.length;
-  list = list.filter(c => c.code !== code);
-  if (list.length === before) return res.status(404).json({ success: false, message: "Kod bulunamadı" });
+  list = list.filter((c) => c.code !== code);
+  if (list.length === before) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Kod bulunamadı" });
+  }
   writeCoupons(list);
   res.json({ success: true });
 });
 
-/* ------------------------------ Mesaj Kutusu / Siparişler ----------------- */
+/* ========================================================================== */
+/* 17) MESAJ KUTUSU / SİPARİŞLER (ADMIN)                                     */
+/* ========================================================================== */
+
 app.get("/api/admin/messages", requireLegacyAdmin, (req, res) => {
   const type = String(req.query.type || "").trim();
-  let list = readMessages().sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
-  if (type === "contact" || type === "order") list = list.filter(m => m.type === type);
+  let list = readMessages().sort((a, b) =>
+    a.createdAt > b.createdAt ? -1 : 1
+  );
+  if (type === "contact" || type === "order") {
+    list = list.filter((m) => m.type === type);
+  }
   res.json({ success: true, items: list });
 });
+
 app.patch("/api/admin/messages/:id/read", requireLegacyAdmin, (req, res) => {
   const id = String(req.params.id || "");
   const list = readMessages();
-  const idx = list.findIndex(m => m.id === id);
-  if (idx === -1) return res.status(404).json({ success: false, message: "Mesaj bulunamadı" });
+  const idx = list.findIndex((m) => m.id === id);
+  if (idx === -1)
+    return res
+      .status(404)
+      .json({ success: false, message: "Mesaj bulunamadı" });
+
   list[idx].read = true;
   writeMessages(list);
   res.json({ success: true, item: list[idx] });
 });
+
 app.delete("/api/admin/messages/:id", requireLegacyAdmin, (req, res) => {
   const id = String(req.params.id || "");
   let list = readMessages();
   const before = list.length;
-  list = list.filter(m => m.id !== id);
-  if (list.length === before) return res.status(404).json({ success: false, message: "Mesaj bulunamadı" });
+  list = list.filter((m) => m.id !== id);
+  if (list.length === before) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Mesaj bulunamadı" });
+  }
   writeMessages(list);
   res.json({ success: true });
 });
+
 // Admin: sipariş durum & takip kodu
 app.patch("/api/admin/orders/:id", requireLegacyAdmin, (req, res) => {
   const id = String(req.params.id || "");
   const { status, trackingCode, read } = req.body || {};
   const list = readMessages();
-  const idx = list.findIndex(m => m.id === id && m.type === "order");
-  if (idx === -1) return res.status(404).json({ success:false, message:"Sipariş bulunamadı" });
+  const idx = list.findIndex((m) => m.id === id && m.type === "order");
+  if (idx === -1)
+    return res
+      .status(404)
+      .json({ success: false, message: "Sipariş bulunamadı" });
+
   if (status !== undefined) {
-    const allowed = ["pending","preparing","shipped","completed","cancelled"];
+    const allowed = [
+      "pending",
+      "preparing",
+      "shipped",
+      "completed",
+      "cancelled"
+    ];
     if (!allowed.includes(status)) {
-      return res.status(400).json({ success:false, message:"Geçersiz durum" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Geçersiz durum" });
     }
     list[idx].status = status;
   }
@@ -907,34 +1333,46 @@ app.patch("/api/admin/orders/:id", requireLegacyAdmin, (req, res) => {
   if (typeof read === "boolean") {
     list[idx].read = read;
   }
+
   writeMessages(list);
-  res.json({ success:true, item:list[idx] });
+  res.json({ success: true, item: list[idx] });
 });
+
+// Admin: sipariş mailini yeniden gönder
 app.post("/api/admin/messages/:id/resend", requireLegacyAdmin, async (req, res) => {
   const id = String(req.params.id || "");
   const list = readMessages();
-  const idx = list.findIndex(m => m.id === id);
-  if (idx === -1) return res.status(404).json({ success: false, message: "Mesaj bulunamadı" });
+  const idx = list.findIndex((m) => m.id === id);
+  if (idx === -1)
+    return res
+      .status(404)
+      .json({ success: false, message: "Mesaj bulunamadı" });
+
   const msg = list[idx];
+
   try {
     if (msg.type === "contact") {
       await transporter.sendMail({
         from: `"${process.env.FROM_NAME || "Mavern Site"}" <${process.env.FROM_EMAIL || process.env.BREVO_USER}>`,
         replyTo: msg.email || undefined,
         to: process.env.MAIL_TO || process.env.BREVO_USER,
-        subject: `Mavern İletişim - ${msg.name || "-"} `,
+        subject: `Mavern İletişim - ${msg.name || "-"}`,
         text: `Gönderen: ${msg.name || "-"} - ${msg.email || "-"}
 Mesaj:
 ${msg.message || ""}`
       });
     } else if (msg.type === "order") {
-      const lines = (msg.items || []).map(it => `• ${it.name} x${it.qty || 1} — ${it.price}₺`).join("\n");
+      const lines = (msg.items || [])
+        .map(
+          (it) => `• ${it.name} x${it.qty || 1} — ${it.price}₺`
+        )
+        .join("\n");
+
       await transporter.sendMail({
         from: `"Mavern Sipariş" <${process.env.FROM_EMAIL || process.env.BREVO_USER}>`,
         to: process.env.MAIL_TO || process.env.BREVO_USER,
         subject: "Yeni Sipariş (Yeniden Gönderim)",
-        text:
-`Müşteri: ${msg.name || "-"} (${msg.email || "-"})
+        text: `Müşteri: ${msg.name || "-"} (${msg.email || "-"})
 Telefon : ${msg.phone || "-"}
 Adres   : ${msg.address || "-"}
 Ürünler:
@@ -944,8 +1382,11 @@ Kupon: ${msg.coupon || "-"}
 Ödenecek: ${msg.payable || 0}₺`
       });
     } else {
-      return res.status(400).json({ success: false, message: "Bu mesaj tipi için destek yok" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Bu mesaj tipi için destek yok" });
     }
+
     list[idx].mailSent = true;
     list[idx].mailError = null;
     writeMessages(list);
@@ -954,159 +1395,254 @@ Kupon: ${msg.coupon || "-"}
     list[idx].mailSent = false;
     list[idx].mailError = e.message || String(e);
     writeMessages(list);
-    res.status(500).json({ success: false, message: "Yeniden gönderilemedi: " + e.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Yeniden gönderilemedi: " + e.message });
   }
 });
 
-/* --------------------------- İletişim & Checkout --------------------------- */
-app.post("/api/contact", tightLimiter, idempGuard(["name","email","message"]), async (req, res) => {
-  const { name, email, message } = req.body || {};
-  if (!name || !email || !message) {
-    return res.status(400).json({ success: false, message: "Lütfen tüm alanları doldurun." });
-  }
-  if (containsTR(email)) return res.status(400).json({ success: false, message: "E-posta adresinde Türkçe karakter kullanmayın." });
-  if (!isValidEmail(email)) return res.status(400).json({ success: false, message: "Geçerli bir e-posta girin." });
-  const list = readMessages();
-  const id = "m" + Date.now();
-  const rec = { id, type:"contact", name, email, message, createdAt: new Date().toISOString(), read:false, mailSent:false, mailError:null };
-  list.push(rec);
-  writeMessages(list);
-  try {
-    await transporter.sendMail({
-      from: `"${process.env.FROM_NAME || "Mavern Site"}" <${process.env.FROM_EMAIL || process.env.BREVO_USER}>`,
-      replyTo: email,
-      to: process.env.MAIL_TO || process.env.BREVO_USER,
-      subject: `Mavern İletişim - ${name}`,
-      text: `Gönderen: ${name} - ${email}
+/* ========================================================================== */
+/* 18) İLETİŞİM & CHECKOUT (MÜŞTERİ)                                         */
+/* ========================================================================== */
+
+// İletişim
+app.post(
+  "/api/contact",
+  tightLimiter,
+  idempGuard(["name", "email", "message"]),
+  async (req, res) => {
+    const { name, email, message } = req.body || {};
+    if (!name || !email || !message) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Lütfen tüm alanları doldurun." });
+    }
+    if (containsTR(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "E-posta adresinde Türkçe karakter kullanmayın."
+      });
+    }
+    if (!isValidEmail(email)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Geçerli bir e-posta girin." });
+    }
+
+    const list = readMessages();
+    const id = "m" + Date.now();
+    const rec = {
+      id,
+      type: "contact",
+      name,
+      email,
+      message,
+      createdAt: new Date().toISOString(),
+      read: false,
+      mailSent: false,
+      mailError: null
+    };
+    list.push(rec);
+    writeMessages(list);
+
+    try {
+      await transporter.sendMail({
+        from: `"${process.env.FROM_NAME || "Mavern Site"}" <${process.env.FROM_EMAIL || process.env.BREVO_USER}>`,
+        replyTo: email,
+        to: process.env.MAIL_TO || process.env.BREVO_USER,
+        subject: `Mavern İletişim - ${name}`,
+        text: `Gönderen: ${name} - ${email}
 Mesaj:
 ${message}`
-    });
-    const L = readMessages();
-    const i = L.findIndex(m => m.id === id);
-    if (i > -1) { L[i].mailSent = true; L[i].mailError = null; writeMessages(L); }
-    res.json({ success: true, message: "Mesaj gönderildi." });
-  } catch (e) {
-    console.error("Mail hata (contact):", e.message);
-    res.json({ success: true, message: "Mesaj kaydedildi, e-posta şu an gönderilemedi." });
+      });
+      const L = readMessages();
+      const i = L.findIndex((m) => m.id === id);
+      if (i > -1) {
+        L[i].mailSent = true;
+        L[i].mailError = null;
+        writeMessages(L);
+      }
+      res.json({ success: true, message: "Mesaj gönderildi." });
+    } catch (e) {
+      console.error("Mail hata (contact):", e.message);
+      res.json({
+        success: true,
+        message: "Mesaj kaydedildi, e-posta şu an gönderilemedi."
+      });
+    }
   }
-});
+);
 
-// CHECKOUT — with profile snapshot support
-app.post("/api/checkout", tightLimiter, idempGuard(["items","email","name","phone","address","coupon","profileSnapshot"]), async (req, res) => {
-  const { items, email, name, phone, address, coupon, profileSnapshot } = req.body || {};
-  if (!Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ success: false, message: "Sepet boş." });
-  }
-  if (!name || !email || !phone || !address) {
-    return res.status(400).json({ success: false, message: "Lütfen ad, e-posta, telefon ve adres bilgilerini girin." });
-  }
-  if (containsTR(email)) return res.status(400).json({ success: false, message: "E-posta adresinde Türkçe karakter kullanmayın." });
-  if (!isValidEmail(email)) return res.status(400).json({ success: false, message: "Geçerli bir e-posta girin." });
-  if (!isValidPhone(phone)) return res.status(400).json({ success: false, message: "Geçerli bir telefon numarası girin." });
-  const addr = String(address).trim();
-  if (addr.length < 10) return res.status(400).json({ success: false, message: "Adres çok kısa (min 10 karakter)." });
-  if (addr.length > 600) return res.status(400).json({ success: false, message: "Adres çok uzun (max 600 karakter)." });
-  const all = readProductsNormalized();
-  const notBuyable = [];
-  const normalizedItems = [];
-  for (const it of items) {
-    const found = it.id ? all.find(p => p.id === it.id) : all.find(p => p.name === it.name);
-    if (!found) { notBuyable.push({ name: it.name || "(?)", reason: "ürün bulunamadı" }); continue; }
-    if (!found.purchasable || !Number.isFinite(found.price)) {
-      notBuyable.push({ name: found.name, reason: "satılamıyor (fiyat sayısal değil)" }); continue;
+// CHECKOUT + AI profil snapshot
+app.post(
+  "/api/checkout",
+  tightLimiter,
+  idempGuard(["items", "email", "name", "phone", "address", "coupon", "profileSnapshot"]),
+  async (req, res) => {
+    const { items, email, name, phone, address, coupon, profileSnapshot } =
+      req.body || {};
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Sepet boş." });
     }
-    const qty = Math.max(1, Number(it.qty || 1));
-    normalizedItems.push({ id: found.id, name: found.name, price: Number(found.price), qty });
-  }
-  if (notBuyable.length > 0) {
-    return res.status(400).json({ success:false, message: "Sepette satılamayan ürün(ler) var.", notBuyable });
-  }
-  const total = normalizedItems.reduce((s, it) => s + it.price * it.qty, 0);
-  // Kupon
-  let discount = 0;
-  let appliedCoupon = null;
-  if (coupon) {
-    const normalized = String(coupon).trim().toUpperCase();
-    const coupons = readCoupons();
-    const now = nowTS();
-    const found = coupons.find(c => c.code === normalized && c.active !== false);
-    if (found) {
-      let usable = true;
-      if (found.startsAt) {
-        const st = Date.parse(found.startsAt);
-        if (!Number.isNaN(st) && now < st) usable = false;
-      }
-      if (usable && found.expiresAt) {
-        const exp = Date.parse(found.expiresAt);
-        if (!Number.isNaN(exp) && now > exp) usable = false;
-      }
-      if (usable && Number(found.percent) > 0 && Number(found.percent) <= 90) {
-        appliedCoupon = found.code;
-        discount = Math.round(total * (Number(found.percent) / 100));
-      }
+    if (!name || !email || !phone || !address) {
+      return res.status(400).json({
+        success: false,
+        message: "Lütfen ad, e-posta, telefon ve adres bilgilerini girin."
+      });
     }
-  }
-  const payable = total - discount;
-  const lines = normalizedItems.map(it => `• ${it.name} x${it.qty} — ${it.price}₺`).join("\n");
-  // Oturumdan kullanıcıyı bağla (login'li ise)
-  const decoded = tryGetJWTUser(req);
-  const userId = decoded?.uid || null;
-  const list = readMessages();
-  const id = "o" + Date.now();
-  // NEW: include profile snapshot if provided
-  let cleanSnapshot = null;
-  if (profileSnapshot && typeof profileSnapshot === "object") {
-    cleanSnapshot = {};
-    for (const [key, value] of Object.entries(profileSnapshot)) {
-      if (typeof value === "string") {
-        cleanSnapshot[key] = value.trim().slice(0, 500);
-      } else if (typeof value === "number") {
-        cleanSnapshot[key] = value;
-      } else if (Array.isArray(value)) {
-        cleanSnapshot[key] = value
-          .filter(v => typeof v === "string" || typeof v === "number")
-          .slice(0, 20)
-          .map(v => typeof v === "string" ? v.trim().slice(0, 100) : v);
-      } else if (typeof value === "object" && value !== null) {
-        const sub = {};
-        for (const [k, v] of Object.entries(value)) {
-          if (typeof v === "string") sub[k] = v.trim().slice(0, 200);
-          else if (typeof v === "number") sub[k] = v;
+    if (containsTR(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "E-posta adresinde Türkçe karakter kullanmayın."
+      });
+    }
+    if (!isValidEmail(email)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Geçerli bir e-posta girin." });
+    }
+    if (!isValidPhone(phone)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Geçerli bir telefon numarası girin." });
+    }
+
+    const addr = String(address).trim();
+    if (addr.length < 10) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Adres çok kısa (min 10 karakter)." });
+    }
+    if (addr.length > 600) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Adres çok uzun (max 600 karakter)." });
+    }
+
+    const all = readProductsNormalized();
+    const notBuyable = [];
+    const normalizedItems = [];
+
+    for (const it of items) {
+      const found = it.id
+        ? all.find((p) => p.id === it.id)
+        : all.find((p) => p.name === it.name);
+      if (!found) {
+        notBuyable.push({
+          name: it.name || "(?)",
+          reason: "ürün bulunamadı"
+        });
+        continue;
+      }
+      if (!found.purchasable || !Number.isFinite(found.price)) {
+        notBuyable.push({
+          name: found.name,
+          reason: "satılamıyor (fiyat sayısal değil)"
+        });
+        continue;
+      }
+      const qty = Math.max(1, Number(it.qty || 1));
+      normalizedItems.push({
+        id: found.id,
+        name: found.name,
+        price: Number(found.price),
+        qty
+      });
+    }
+
+    if (notBuyable.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Sepette satılamayan ürün(ler) var.",
+        notBuyable
+      });
+    }
+
+    const total = normalizedItems.reduce(
+      (s, it) => s + it.price * it.qty,
+      0
+    );
+
+    // Kupon
+    let discount = 0;
+    let appliedCoupon = null;
+    if (coupon) {
+      const normalized = String(coupon).trim().toUpperCase();
+      const coupons = readCoupons();
+      const now = nowTS();
+      const found = coupons.find(
+        (c) => c.code === normalized && c.active !== false
+      );
+      if (found) {
+        let usable = true;
+        if (found.startsAt) {
+          const st = Date.parse(found.startsAt);
+          if (!Number.isNaN(st) && now < st) usable = false;
         }
-        cleanSnapshot[key] = sub;
+        if (usable && found.expiresAt) {
+          const exp = Date.parse(found.expiresAt);
+          if (!Number.isNaN(exp) && now > exp) usable = false;
+        }
+        if (
+          usable &&
+          Number(found.percent) > 0 &&
+          Number(found.percent) <= 90
+        ) {
+          appliedCoupon = found.code;
+          discount = Math.round(total * (Number(found.percent) / 100));
+        }
       }
     }
-  }
-  const orderRec = {
-    id,
-    type: "order",
-    name: name || "-",
-    email: email || "-",
-    phone: phone || "-",
-    address: addr,
-    items: normalizedItems,
-    coupon: appliedCoupon,
-    total,
-    discount,
-    payable,
-    userId: userId,
-    status: "pending",
-    trackingCode: null,
-    profileSnapshot: cleanSnapshot, // NEW
-    createdAt: new Date().toISOString(),
-    read: false,
-    mailSent: false,
-    mailError: null
-  };
-  list.push(orderRec);
-  writeMessages(list);
-  try {
-    await transporter.sendMail({
-      from: `"Mavern Sipariş" <${process.env.FROM_EMAIL || process.env.BREVO_USER}>`,
-      to: process.env.MAIL_TO || process.env.BREVO_USER,
-      subject: "Yeni Sipariş",
-      text:
-`Müşteri: ${name} (${email})
+
+    const payable = total - discount;
+    const lines = normalizedItems
+      .map((it) => `• ${it.name} x${it.qty} — ${it.price}₺`)
+      .join("\n");
+
+    // Oturumdan kullanıcıyı bağla (varsa)
+    const decoded = tryGetJWTUser(req);
+    const userId = decoded?.uid || null;
+
+    // AI profil snapshot temizle
+    const cleanSnapshot = sanitizeAIProfile(profileSnapshot);
+
+    const list = readMessages();
+    const id = "o" + Date.now();
+
+    const orderRec = {
+      id,
+      type: "order",
+      name: name || "-",
+      email: email || "-",
+      phone: phone || "-",
+      address: addr,
+      items: normalizedItems,
+      coupon: appliedCoupon,
+      total,
+      discount,
+      payable,
+      userId,
+      status: "pending",
+      trackingCode: null,
+      profileSnapshot: cleanSnapshot || null,
+      createdAt: new Date().toISOString(),
+      read: false,
+      mailSent: false,
+      mailError: null
+    };
+
+    list.push(orderRec);
+    writeMessages(list);
+
+    try {
+      await transporter.sendMail({
+        from: `"Mavern Sipariş" <${process.env.FROM_EMAIL || process.env.BREVO_USER}>`,
+        to: process.env.MAIL_TO || process.env.BREVO_USER,
+        subject: "Yeni Sipariş",
+        text: `Müşteri: ${name} (${email})
 Telefon : ${phone}
 Adres   : ${addr}
 Ürünler:
@@ -1114,49 +1650,69 @@ ${lines}
 Kupon: ${appliedCoupon || "-"}
 İndirim: ${discount}₺
 Ödenecek: ${payable}₺`
-    });
-    const L = readMessages();
-    const i = L.findIndex(m => m.id === id);
-    if (i > -1) { L[i].mailSent = true; L[i].mailError = null; writeMessages(L); }
-    res.json({ success: true, message: "Sipariş iletildi.", total, discount, payable, orderId: id });
-  } catch (e) {
-    console.error("Checkout mail hata:", e.message);
-    res.json({
-      success: true,
-      message: "Sipariş kaydedildi, e-posta şu an gönderilemedi.",
-      total,
-      discount,
-      payable,
-      orderId: id
-    });
+      });
+      const L = readMessages();
+      const i = L.findIndex((m) => m.id === id);
+      if (i > -1) {
+        L[i].mailSent = true;
+        L[i].mailError = null;
+        writeMessages(L);
+      }
+      res.json({
+        success: true,
+        message: "Sipariş iletildi.",
+        total,
+        discount,
+        payable,
+        orderId: id
+      });
+    } catch (e) {
+      console.error("Checkout mail hata:", e.message);
+      res.json({
+        success: true,
+        message: "Sipariş kaydedildi, e-posta şu an gönderilemedi.",
+        total,
+        discount,
+        payable,
+        orderId: id
+      });
+    }
   }
-});
+);
 
-/* -------------------------- Kullanıcı tarafı siparişler ------------------- */
-// Login'li kullanıcının tüm siparişleri
+/* ========================================================================== */
+/* 19) KULLANICI TARAFI SİPARİŞLER                                           */
+/* ========================================================================== */
+
 app.get("/api/orders/my", requireJWT, (req, res) => {
   const uid = req.user.uid;
   let list = readMessages()
-    .filter(m => m.type === "order" && m.userId === uid)
-    .sort((a,b) => (a.createdAt > b.createdAt ? -1 : 1));
-  list = list.map(o => ({
+    .filter((m) => m.type === "order" && m.userId === uid)
+    .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+  list = list.map((o) => ({
     ...o,
     status: o.status || "pending",
     trackingCode: o.trackingCode || null
   }));
-  res.json({ success:true, items:list });
+  res.json({ success: true, items: list });
 });
-// Login'li kullanıcının tek siparişi
+
 app.get("/api/orders/:id", requireJWT, (req, res) => {
   const uid = req.user.uid;
   const id = String(req.params.id || "");
-  const msg = readMessages().find(m => m.id === id && m.type === "order");
+  const msg = readMessages().find(
+    (m) => m.id === id && m.type === "order"
+  );
 
   if (!msg) {
-    return res.status(404).json({ success: false, message: "Sipariş bulunamadı" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Sipariş bulunamadı" });
   }
   if (msg.userId && msg.userId !== uid) {
-    return res.status(403).json({ success: false, message: "Bu siparişi görüntüleme yetkiniz yok" });
+    return res
+      .status(403)
+      .json({ success: false, message: "Bu siparişi görüntüleme yetkiniz yok" });
   }
 
   const item = {
@@ -1168,17 +1724,23 @@ app.get("/api/orders/:id", requireJWT, (req, res) => {
   return res.json({ success: true, item });
 });
 
-/* ---------------------------- Feedback endpointleri ----------------------- */
-// Kullanıcı feedback gönderir
+/* ========================================================================== */
+/* 20) FEEDBACK (AI ÖĞRENME TEMELİ)                                          */
+/* ========================================================================== */
+
 app.post("/api/feedback", requireJWT, tightLimiter, (req, res) => {
   const { rating, comment, page, context } = req.body || {};
   const r = Number(rating);
   if (!Number.isFinite(r) || r < 1 || r > 5) {
-    return res.status(400).json({ success: false, message: "Puan 1-5 arasında olmalı" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Puan 1-5 arasında olmalı" });
   }
+
   const users = readUsers();
-  const u = users.find(x => x.id === req.user.uid);
+  const u = users.find((x) => x.id === req.user.uid);
   const list = readFeedback();
+
   const fb = {
     id: "fb" + Date.now(),
     userId: req.user.uid,
@@ -1189,34 +1751,44 @@ app.post("/api/feedback", requireJWT, tightLimiter, (req, res) => {
     context: context && typeof context === "object" ? context : null,
     createdAt: new Date().toISOString()
   };
+
   list.push(fb);
   writeFeedback(list);
   res.json({ success: true });
 });
-// Kullanıcı kendi feedback'lerini görür
+
 app.get("/api/feedback/my", requireJWT, (req, res) => {
   const uid = req.user.uid;
   const list = readFeedback()
-    .filter(f => f.userId === uid)
-    .sort((a,b) => (a.createdAt > b.createdAt ? -1 : 1));
-  res.json({ success: true, items: list });
-});
-// Admin tüm feedback'leri görür
-app.get("/api/admin/feedback", requireLegacyAdmin, (_req, res) => {
-  const list = readFeedback().sort((a,b) => (a.createdAt > b.createdAt ? -1 : 1));
+    .filter((f) => f.userId === uid)
+    .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
   res.json({ success: true, items: list });
 });
 
-/* ---------------------------- AI Consult Stub ----------------------------- */
-// Basit AI danışma stub'ı (gerçek LLM çağrısı yok, sadece dummy cevap)
+app.get("/api/admin/feedback", requireLegacyAdmin, (_req, res) => {
+  const list = readFeedback().sort((a, b) =>
+    a.createdAt > b.createdAt ? -1 : 1
+  );
+  res.json({ success: true, items: list });
+});
+
+/* ========================================================================== */
+/* 21) AI CONSULT STUB                                                       */
+/* ========================================================================== */
+
 app.post("/api/ai/consult", tightLimiter, (req, res) => {
   const { question, profileSnapshot } = req.body || {};
   const q = String(question || "").trim();
   if (!q) {
-    return res.status(400).json({ success: false, message: "Soru metni gerekli" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Soru metni gerekli" });
   }
-  // Burada gerçek bir LLM entegrasyonu YOK, sadece sabit bir cevap dönüyoruz.
-  const suggestion = "Bu özellik şu an test aşamasında. Sorunuzu ve profilinizi aldık, yakında daha akıllı öneriler üreteceğiz. Şimdilik cilt tipinize ve rutinine uygun, nazik temizleyici ve nemlendirici kullanmayı ihmal etmeyin.";
+
+  // Manifesto'ya uygun: gerçek LLM yok, sadece placeholder cevap
+  const suggestion =
+    "Bu özellik şu an test aşamasında. Sorunuzu ve profilinizi aldık, yakında daha akıllı öneriler üreteceğiz. Şimdilik cilt tipinize ve rutinine uygun, nazik temizleyici ve nemlendirici kullanmayı ihmal etmeyin.";
+
   res.json({
     success: true,
     answer: suggestion,
@@ -1227,12 +1799,15 @@ app.post("/api/ai/consult", tightLimiter, (req, res) => {
   });
 });
 
-/* ------------------------------ Version & SPA Fallback -------------------- */
+/* ========================================================================== */
+/* 22) VERSION & SPA FALLBACK                                                */
+/* ========================================================================== */
+
 app.get("/api/version", (_req, res) => {
-  res.json({ name: "mavern", version: "1.1.0" });
+  res.json({ name: "mavern", version: "1.2.0" });
 });
 
-// SPA fallback: /api ile başlamayan tüm GET isteklerinde index.html döndür
+// SPA fallback: /api olmayan tüm GET isteklerinde index.html
 app.get("*", (req, res, next) => {
   if (req.path.startsWith("/api/")) return next();
   const indexPath = path.join(PUBLIC_DIR, "index.html");
@@ -1242,13 +1817,26 @@ app.get("*", (req, res, next) => {
   return res.status(404).send("Not found");
 });
 
-/* --------------------------------- Sunucu Başlat -------------------------- */
+/* ========================================================================== */
+/* 23) SUNUCU BAŞLAT                                                         */
+/* ========================================================================== */
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Mavern sunucusu çalışıyor: http://localhost:${PORT}`);
-  console.log(`📦 DATA_DIR:   ${DATA_DIR}  ${writableData ? "(yazılabilir)" : "(YAZILAMAZ!)"}`);
-  console.log(`🖼  UPLOAD_DIR: ${UPLOAD_DIR}  ${writableUploads ? "(yazılabilir)" : "(YAZILAMAZ!)"}`);
+  console.log(
+    `📦 DATA_DIR:   ${DATA_DIR}  ${
+      writableData ? "(yazılabilir)" : "(YAZILAMAZ!)"
+    }`
+  );
+  console.log(
+    `🖼  UPLOAD_DIR: ${UPLOAD_DIR}  ${
+      writableUploads ? "(yazılabilir)" : "(YAZILAMAZ!)"
+    }`
+  );
   if (!ENV_DATA_DIR) {
-    console.log("ℹ️  DATA_DIR ENV tanımlı değil. Varsayılan yerel ./data kullanılıyor.");
+    console.log(
+      "ℹ️  DATA_DIR ENV tanımlı değil. Varsayılan yerel ./data kullanılıyor."
+    );
   }
 });

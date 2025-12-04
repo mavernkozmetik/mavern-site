@@ -2,6 +2,8 @@
 /* Varsayılan: Koyu tema */
 :root{
   color-scheme: dark;
+  scroll-behavior:smooth;
+
   --bg:#050505;
   --panel:#101010;
   --card:#141414;
@@ -10,25 +12,60 @@
   --ink:#e9eaec;
   --muted:#9ea3a8;
 
+  /* Monokrom vurgu tonları */
   --accent:#f5f5f5;      /* butonlar / vurgu */
   --accent-soft:#d4d4d4; /* ikincil vurgu */
+
+  --danger:#f97373;
 }
 
 /* Açık tema override (html[data-theme="light"] bekliyoruz) */
 :root[data-theme="light"]{
   color-scheme: light;
+
   --bg:#f7f7f7;
   --panel:#ffffff;
   --card:#f5f5f5;
-  --edge:#dddddd;
+  --edge:#d4d4d4;
 
   --ink:#111111;
-  --muted:#6b7280;
+  --muted:#6e6e6e;
 
   --accent:#111111;
   --accent-soft:#e5e5e5;
 }
 
+/* Light temada bazı özel bloklar */
+:root[data-theme="light"] .hero{
+  background:
+    radial-gradient(85% 130% at 70% 0%,rgba(0,0,0,.06) 0,rgba(0,0,0,0) 55%),
+    #f7f7f7;
+}
+:root[data-theme="light"] .product-card img,
+:root[data-theme="light"] .product-card img.prod{
+  background:#f7f7f7;
+  border-color:#d7d7d7;
+}
+:root[data-theme="light"] .benefit{
+  background:#ffffff;
+}
+:root[data-theme="light"] .faq-list{
+  background:#ffffff;
+}
+:root[data-theme="light"] .trust-strip-wrap{
+  background:
+    radial-gradient(120% 200% at 0 0,rgba(0,0,0,.04),transparent),
+    rgba(255,255,255,.96);
+}
+:root[data-theme="light"] .trust-item{
+  background:#f5f5f5;
+}
+:root[data-theme="light"] .logo-mark{
+  background:radial-gradient(circle at 20% 0%,rgba(0,0,0,0.1) 0,#ffffff 55%,#f3f3f3 100%);
+  border-color:#d4d4d4;
+}
+
+/* ===================== GENEL ===================== */
 *{box-sizing:border-box}
 html,body{
   margin:0;
@@ -36,15 +73,32 @@ html,body{
   color:var(--ink);
 }
 body{
-  font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif
+  font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  line-height:1.5;
 }
+
+/* Overlay / panel açıkken kaydırmayı kilitle */
+body.no-scroll{
+  overflow:hidden;
+}
+
 a{
   color:var(--ink);
-  text-decoration:none
+  text-decoration:none;
 }
 a:hover{
   color:var(--accent);
 }
+
+/* Focus durumları (klavye erişilebilirliği) */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible{
+  outline:2px solid var(--accent-soft);
+  outline-offset:2px;
+}
+
 .italic{font-style:italic}
 .muted{color:var(--muted)}
 .small{font-size:12px}
@@ -83,12 +137,12 @@ img,video{max-width:100%;height:auto;display:block}
   border:1px solid var(--edge);
 }
 
-/* Logo kutusundaki görüntü: yukarıdaki büyük M kısmını al */
+/* Logo kutusundaki görüntü: üstteki büyük M bölgesine zoom */
 .brand-logo{
-  height:100%;
-  width:auto;
+  width:100%;
+  height:140%;
   object-fit:cover;
-  object-position:top center;
+  object-position:50% 18%;
   filter:drop-shadow(0 3px 12px rgba(0,0,0,.7));
 }
 
@@ -98,6 +152,7 @@ img,video{max-width:100%;height:auto;display:block}
   font-family:'Playfair Display',serif;
   font-style:italic;
   letter-spacing:1.5px;
+  font-size:22px;
 }
 
 /* Üst menü linkleri */
@@ -120,16 +175,23 @@ img,video{max-width:100%;height:auto;display:block}
   font-size:.85rem;
 }
 
-/* Tema toggle butonu */
+/* Tema toggle: menüyle aynı hizada, daha minimal */
 .theme-toggle{
-  margin-left:12px;
-  padding:.3rem .7rem;
+  margin-left:18px;
+  padding:8px 10px;
   border-radius:999px;
   border:1px solid var(--edge);
   font-size:.8rem;
   background:transparent;
   color:var(--muted);
   cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.theme-toggle:hover{
+  color:var(--accent);
+  border-color:var(--accent-soft);
 }
 
 /* Sepet badge’i */
@@ -138,7 +200,8 @@ img,video{max-width:100%;height:auto;display:block}
   min-width:18px;
   padding:2px 6px;
   border-radius:12px;
-  background:#b04545;
+  background:#333333;
+  color:#f5f5f5;
   font-size:12px;
   transform:translateY(-2px);
 }
@@ -164,14 +227,14 @@ img,video{max-width:100%;height:auto;display:block}
 .cart-icon svg{
   width:15px;
   height:15px;
-  stroke:#020617;
+  stroke:#020202;
   stroke-width:1.7;
   fill:none;
   stroke-linecap:round;
   stroke-linejoin:round;
 }
 
-/* ===================== Paneller ===================== */
+/* ===================== Paneller (sidebar / cart) ===================== */
 .panel{
   position:fixed;top:0;height:100%;width:0;overflow:hidden;
   background:var(--panel);
@@ -224,7 +287,7 @@ img,video{max-width:100%;height:auto;display:block}
 .hero .vignette{
   position:absolute;inset:0;
   box-shadow:inset 0 0 180px rgba(0,0,0,.75),inset 0 -60px 120px rgba(0,0,0,.6);
-  pointer-events:none
+  pointer-events:none;
 }
 .hero-inner{
   position:relative;z-index:1;
@@ -507,7 +570,7 @@ img,video{max-width:100%;height:auto;display:block}
   border-radius:10px !important;
   cursor:pointer !important;
 }
-#testStatus{color:#9cf !important}
+#testStatus{color:#e5e5e5 !important}
 
 /* ===================== Sepet ===================== */
 .cart-list{
@@ -594,7 +657,7 @@ img,video{max-width:100%;height:auto;display:block}
 
 .btn.actions{width:100%}
 
-/* ===================== Overlay ===================== */
+/* ===================== Overlay (genel) ===================== */
 .overlay{
   position:fixed;
   left:0;top:0;
@@ -740,7 +803,8 @@ img,video{max-width:100%;height:auto;display:block}
     flex-wrap:wrap;
     margin-top:6px;
   }
-  .topnav a{
+  .topnav a,
+  .theme-toggle{
     margin:6px 10px;
     font-size:15px;
   }
@@ -830,7 +894,7 @@ img,video{max-width:100%;height:auto;display:block}
   padding:0 4%;
 }
 .product-shell{
-  background:radial-gradient(160% 220% at 80% 0%,#222 0,#050505 52%,#050505 100%);
+  background:radial-gradient(160% 220% at 80% 0%,#222222 0,#050505 52%,#050505 100%);
   border-radius:22px;
   border:1px solid #1c1c1c;
   box-shadow:0 24px 80px rgba(0,0,0,.85);
@@ -1094,17 +1158,37 @@ img,video{max-width:100%;height:auto;display:block}
   margin-bottom:4px;
 }
 .order-card-total{font-weight:600}
+
+/* Durum pill'leri: monokrom */
 .order-status{
   padding:3px 8px;
   border-radius:999px;
   font-size:11px;
-  border:1px solid #2a2a2a;
+  border:1px solid #3a3a3a;
+  background:#050505;
+  color:#e5e5e5;
 }
-.order-status.pending{border-color:#f97316;color:#fed7aa;background:#451a03;}
-.order-status.preparing{border-color:#22c55e;color:#bbf7d0;background:#022c22;}
-.order-status.shipped{border-color:#38bdf8;color:#bae6fd;background:#082f49;}
-.order-status.completed{border-color:#a3e635;color:#d9f99d;background:#1a2e05;}
-.order-status.cancelled{border-color:#f87171;color:#fecaca;background:#450a0a;}
+.order-status.pending{
+  border-color:#7a7a7a;
+  background:#0b0b0b;
+}
+.order-status.preparing{
+  border-color:#a0a0a0;
+  background:#0d0d0d;
+}
+.order-status.shipped{
+  border-color:#8c8c8c;
+  background:#040404;
+}
+.order-status.completed{
+  border-color:#f0f0f0;
+  background:#101010;
+}
+.order-status.cancelled{
+  border-color:#555555;
+  background:#050505;
+  color:#b5b5b5;
+}
 
 /* ===================== RESPONSIVE ÜRÜN DETAY & AUTH ===================== */
 @media (max-width:900px){
@@ -1135,7 +1219,7 @@ img,video{max-width:100%;height:auto;display:block}
 .trust-strip-wrap{
   border-bottom:1px solid var(--edge);
   border-top:1px solid var(--edge);
-  background:radial-gradient(120% 200% at 0 0,rgba(148,163,184,.10),transparent),
+  background:radial-gradient(120% 200% at 0 0,rgba(160,160,160,.10),transparent),
              rgba(10,10,10,.95);
 }
 .trust-strip{
@@ -1155,15 +1239,15 @@ img,video{max-width:100%;height:auto;display:block}
   gap:6px;
   padding:4px 10px;
   border-radius:999px;
-  border:1px solid rgba(148,163,184,.25);
+  border:1px solid rgba(160,160,160,.25);
   background:#111;
 }
 .trust-dot{
   width:8px;
   height:8px;
   border-radius:999px;
-  background:radial-gradient(circle at 30% 30%,#e5e7eb,#4ade80);
-  box-shadow:0 0 8px rgba(74,222,128,.8);
+  background:radial-gradient(circle at 30% 30%,#f5f5f5,#a3a3a3);
+  box-shadow:0 0 8px rgba(255,255,255,.55);
 }
 
 /* ===== Neden Mavern bölümü ===== */
@@ -1237,4 +1321,121 @@ img,video{max-width:100%;height:auto;display:block}
   .trust-strip{
     justify-content:flex-start;
   }
+}
+
+/* ===================== CHECKOUT (ÖDEME OVERLAY) ===================== */
+
+/* Üst başlık satırı (Sipariş Bilgileri + Kapat butonu) */
+.overlay-card .head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+  padding-bottom:8px;
+  border-bottom:1px solid var(--edge);
+  position:sticky;
+  top:0;
+  background:var(--panel);
+  z-index:2;
+}
+
+/* Form grid yapısı */
+.checkout-grid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:10px 14px;
+  margin-top:12px;
+  font-size:14px;
+}
+
+/* Tam genişlik alanlar (adres, KVKK, buton satırı vs) */
+.checkout-grid .full{
+  grid-column:1 / -1;
+}
+
+/* KVKK kutusu (iframe) */
+.kvkk-box{
+  border:1px solid var(--edge);
+  border-radius:10px;
+  overflow:hidden;
+  background:var(--bg);
+  max-height:260px;
+}
+.kvkk-box iframe{
+  width:100%;
+  height:240px;
+  border:0;
+}
+
+/* Satır esnek düzen (label + ödenecek vs) */
+.row{
+  display:flex;
+  align-items:center;
+}
+.row.end{
+  justify-content:flex-end;
+  gap:8px;
+}
+
+/* Ödenecek tutar pill’i */
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:5px 10px;
+  border-radius:999px;
+  border:1px solid var(--edge);
+  background:var(--card);
+  font-size:13px;
+}
+.pill.ok{
+  color:var(--accent);
+}
+
+/* Checkout input ve textarea’lar overlay içinde de şık dursun */
+.checkout-grid input,
+.checkout-grid textarea{
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #2b2b2b;
+  background:transparent;
+  color:var(--ink);
+}
+.checkout-grid textarea{
+  resize:vertical;
+  min-height:80px;
+}
+
+/* ===================== HUKUKİ / KVKK SAYFALARI İÇİN ALTYAPI ===================== */
+/* kvkk.html gibi sayfalarda kullanabilmen için hazır */
+.legal-shell{
+  max-width:900px;
+  margin:40px auto 60px;
+  padding:0 4%;
+}
+.legal-card{
+  background:var(--panel);
+  border-radius:16px;
+  border:1px solid var(--edge);
+  padding:20px 18px;
+  box-shadow:0 20px 70px rgba(0,0,0,.6);
+}
+.legal-card h1,
+.legal-card h2,
+.legal-card h3{
+  font-family:'Playfair Display',serif;
+  font-style:italic;
+}
+.legal-card h1{
+  margin-top:0;
+  font-size:26px;
+}
+.legal-card p,
+.legal-card li{
+  color:var(--muted);
+  font-size:14px;
+}
+.legal-card ul{
+  padding-left:18px;
 }
