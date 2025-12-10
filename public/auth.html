@@ -1,3 +1,4 @@
+<!-- auth.html -->
 <!doctype html>
 <html lang="tr">
 <head>
@@ -155,7 +156,7 @@
     </a>
     <h2 class="auth-title">Giriş / Kayıt</h2>
     <p class="auth-sub">
-      Mavern hesabınla siparişlerini daha hızlı tamamla, adresini kaydet ve kişisel bakım tercihlerin için daha isabetli öneriler al.
+      Mavern hesabınızla siparişlerinizi daha hızlı tamamlayabilir, adres bilgilerinizi saklayabilir ve kişisel bakım tercihlerinize göre daha isabetli öneriler alabilirsiniz.
     </p>
 
     <div class="account-tabs" style="margin-top:8px;">
@@ -174,7 +175,7 @@
       <button class="auth-submit" type="button" onclick="handleLogin()">Giriş Yap</button>
       <div id="loginStatus" class="small"></div>
       <p class="auth-sub" style="margin-top:6px;font-size:12px;">
-        Şifreni unuttuysan, kayıtlı e-posta adresinle <a href="index.html#contact">iletişime geçebilirsin</a>.
+        Şifrenizi unuttuysanız, kayıtlı e-posta adresinizle <a href="index.html#contact">bizimle iletişime geçebilirsiniz</a>.
       </p>
     </div>
 
@@ -210,7 +211,7 @@
       <button class="auth-submit" type="button" onclick="handleRegister()">Kayıt Ol</button>
       <div id="registerStatus" class="small"></div>
       <p class="auth-sub" style="margin-top:6px;font-size:12px;">
-        Kayıt sonrası hesabınızın admin tarafından onaylanması gerekir. Onaylandığında giriş yapabilirsiniz.
+        Kayıt işleminiz başarıyla alındıktan sonra, hesabınızı aktifleştirmek için e-posta adresinize gönderilen doğrulama bağlantısını kullanmanız gerekir.
       </p>
     </div>
   </section>
@@ -229,7 +230,7 @@
     <p id="accWelcome" class="auth-sub"></p>
     <!-- AI / kişiselleştirme bilgi satırı -->
     <p id="accAiLine" class="auth-sub" style="font-size:12px;">
-      Hesap bilgilerin, KVKK kapsamında yalnızca siparişlerini yönetmek ve zamanla daha isabetli ürün önerileri sunmak için kullanılır.
+      Hesap bilgileriniz, KVKK kapsamında yalnızca siparişlerinizi yönetmek ve zamanla daha isabetli ürün önerileri sunmak için kullanılmaktadır.
     </p>
 
     <div class="account-tabs" style="margin-top:8px;">
@@ -270,9 +271,6 @@
 
     <!-- SİPARİŞLER SEKMESİ -->
     <div id="accOrders" class="hidden" style="margin-top:10px;">
-      <p class="auth-sub" style="margin-bottom:6px;font-size:12px;">
-        En son verdiğin siparişleri buradan takip edebilirsin.
-      </p>
       <!-- script.js içindeki loadMyOrders burayı dolduracak -->
       <div data-orders-root class="orders-list"></div>
     </div>
@@ -378,15 +376,19 @@
         body:JSON.stringify(body)
       });
       if(res.success){
-        setStatus('registerStatus','Kayıt alındı. Admin onayından sonra giriş yapabilirsiniz.',true);
+        setStatus(
+          'registerStatus',
+          'Kayıt işleminiz başarıyla alındı. Lütfen e-posta kutunuzu kontrol ederek hesabınızı doğrulayın.',
+          true
+        );
         const p = document.getElementById('regPassword'); if(p) p.value = '';
 
         // AI sinyali: kayıt isteği
         if (typeof trackAiSignal === 'function') {
           trackAiSignal('register_submitted', {
             hasAddress: !!address,
-            hasPhone: !!phone,
-            hasCity:  !!city
+            hasPhone:   !!phone,
+            hasCity:    !!city
           });
         }
       }else{
@@ -446,7 +448,14 @@
         }
       }
     }catch(e){
-      setStatus('loginStatus', e.message || 'Sunucu hatası.', false);
+      let msg = e.message || 'Sunucu hatası.';
+
+      // E-posta doğrulanmadıysa premium bir uyarı göster
+      if (msg.toLowerCase().includes('doğrula')) {
+        msg = 'Lütfen önce e-posta adresinizi doğrulayın. Doğrulama bağlantısını size gönderdiğimiz e-postada bulabilirsiniz.';
+      }
+
+      setStatus('loginStatus', msg, false);
     }
   }
 
@@ -467,7 +476,13 @@
       document.getElementById('profDisplayName').textContent = u.displayName || '(tanımlı değil)';
       document.getElementById('profFullName').textContent    = u.fullName || '(tanımlı değil)';
       document.getElementById('profPhone').textContent       = u.phone || '(tanımlı değil)';
-      document.getElementById('profStatus').textContent      = u.isApproved ? 'Onaylı' : 'Onay bekliyor';
+
+      const isVerified = !!u.isVerified;
+      const statusText = isVerified
+        ? 'E-posta doğrulandı'
+        : 'E-posta doğrulaması bekleniyor';
+      document.getElementById('profStatus').textContent = statusText;
+
       document.getElementById('profRole').textContent        = u.isAdmin ? 'Admin' : 'Üye';
 
       const parts = [];

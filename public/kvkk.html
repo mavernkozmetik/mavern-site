@@ -1,106 +1,412 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-store" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mavern KVKK Aydınlatma Metni</title>
+  <title>Mavern • KVKK Aydınlatma Metni</title>
+
   <!-- Aynı fontlar -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;1,500&family=Poppins:ital,wght@0,300;0,500;1,300;1,500&display=swap" rel="stylesheet">
+
   <!-- Sitenin mevcut stil dosyası -->
   <link rel="stylesheet" href="style.css" />
+
   <style>
-    /* Sayfa içi ufak düzen: metin okunabilirliği */
-    .legal-page { max-width: 980px; margin: 40px auto; padding: 0 16px; }
-    .legal-page h1 { font-family:'Playfair Display',serif; font-style:italic; margin: 6px 0 12px; }
-    .legal-page .muted { line-height: 1.7; }
-    .legal-card { background:#0e0e0e; border:1px solid #1b1b1b; border-radius:14px; padding:18px; }
-    .legal-page h2 { margin:18px 0 8px; font-size:20px; font-family:'Playfair Display',serif; font-style:italic; }
-    .divider { margin: 20px 0; height:1px; background:#1b1b1b; border:0; }
-    .updated { color:#9ea3a8; font-size:12px; margin-top:12px; }
-    .backlink { display:inline-block; margin-bottom:14px; opacity:.9 }
-    .backlink:hover { opacity:1; color:var(--accent) }
+    .legal-page {
+      max-width: 980px;
+      margin: 40px auto;
+      padding: 0 16px 48px;
+    }
+    .legal-card {
+      background: #050505;
+      border-radius: 16px;
+      border: 1px solid #1b1b1b;
+      padding: 20px 18px 22px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+    }
+    .legal-page h1 {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 28px;
+      letter-spacing: 0.04em;
+      margin: 4px 0 10px;
+    }
+    .legal-page h2 {
+      margin: 20px 0 8px;
+      font-size: 20px;
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+    }
+    .legal-page p {
+      line-height: 1.7;
+      font-size: 14px;
+    }
+    .legal-page ul {
+      margin: 6px 0 10px 18px;
+      padding: 0;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .legal-page li {
+      margin-bottom: 4px;
+    }
+    .divider {
+      margin: 16px 0 18px;
+      height: 1px;
+      background: #1b1b1b;
+      border: 0;
+    }
+    .updated {
+      color: #9ea3a8;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    .backlink {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 14px;
+      font-size: 13px;
+      opacity: .9;
+    }
+    .backlink:hover {
+      opacity: 1;
+      color: var(--accent);
+    }
+    .backlink svg {
+      width: 16px;
+      height: 16px;
+    }
+    .footer {
+      border-top: 1px solid #1b1b1b;
+      padding: 16px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-width: 980px;
+      margin: 0 auto 20px;
+      color: var(--muted);
+    }
+    .footer a {
+      color: inherit;
+      text-decoration: none;
+      opacity: .9;
+    }
+    .footer a:hover {
+      opacity: 1;
+      color: var(--accent);
+    }
   </style>
 </head>
 <body>
 
-  <!-- Üstte basit bir bar (mevcut topbar'ın sade versiyonu) -->
-  <header class="topbar">
-    <div class="logo-area">
-      <h1 class="brand" style="margin:0">Mavern</h1>
-    </div>
-    <nav class="topnav">
-      <a href="index.html">Ana Sayfa</a>
-    </nav>
-  </header>
+<!-- Üst bar (site ile uyumlu) -->
+<header class="topbar">
+  <div class="logo-area">
+    <a href="index.html" class="logo-mark" aria-label="Mavern ana sayfa">
+      <img src="logo.png" alt="Mavern" class="brand-logo" onerror="this.style.display='none'"/>
+    </a>
+    <h1 class="brand">Mavern</h1>
+  </div>
+  <nav class="topnav">
+    <a href="index.html">Ana sayfa</a>
+    <a href="index.html#contact">İletişim</a>
+    <button id="themeToggle" class="theme-toggle" type="button">☾ Koyu tema</button>
+  </nav>
+</header>
 
-  <main class="legal-page">
-    <a class="backlink" href="index.html">← Ana sayfaya dön</a>
-    <div class="legal-card">
-      <h1>Mavern KVKK Aydınlatma Metni</h1>
-      <p class="updated">Güncelleme tarihi: 23.10.2025</p>
-      <hr class="divider"/>
+<main class="legal-page">
+  <a class="backlink" href="index.html">
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M9.5 3 5 7.5 9.5 12"
+            fill="none" stroke="currentColor" stroke-width="1.4"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Ana sayfaya dön
+  </a>
 
-      <h2>1) Veri Sorumlusu</h2>
-      <p class="muted">
-        Bu Aydınlatma Metni, 6698 sayılı Kişisel Verilerin Korunması Kanunu (“KVKK”) kapsamında
-        veri sorumlusu sıfatıyla hareket eden <strong>Mavern</strong> tarafından hazırlanmıştır.
-        Metin; web sitemizi ziyaret eden, tarafımızla iletişim kuran veya sipariş oluşturan
-        ilgili kişilerin kişisel verilerinin işlenmesine ilişkin esasları açıklar.
-      </p>
+  <div class="legal-card">
+    <h1>Mavern KVKK Aydınlatma Metni</h1>
+    <p class="updated">Güncelleme Tarihi: 10.12.2025</p>
+    <hr class="divider" />
 
-      <h2>2) İşlenen Kişisel Veriler</h2>
-      <p class="muted">
-        İletişim Bilgileri (e-posta), Sipariş Bilgileri (ürün adı, tutar, iade talebi),
-        İşlem Bilgisi (talep/şikâyet geçmişi), Site Trafik Verileri (IP, oturum, çerezler).
-      </p>
+    <h2>1) Veri Sorumlusunun Kimliği</h2>
+    <p>
+      Bu Aydınlatma Metni, 6698 sayılı Kişisel Verilerin Korunması Kanunu (“KVKK”) uyarınca
+      veri sorumlusu sıfatıyla hareket eden <strong>Mavern</strong> tarafından hazırlanmıştır.
+    </p>
+    <p>
+      Mavern, kişisel verilerin korunmasına ilişkin tüm süreçlerde KVKK’ya uygun hareket eder
+      ve verilerin işlenmesi sırasında gerekli teknik ve idari tedbirleri alır.
+    </p>
+    <p>
+      KVKK kapsamındaki talepleriniz için:<br>
+      <strong>E-posta:</strong>
+      <a href="mailto:mavernkozmatikas@gmail.com">mavernkozmatikas@gmail.com</a>
+    </p>
 
-      <h2>3) İşleme Amaçları</h2>
-      <p class="muted">
-        Sipariş ve iade süreçlerinin yürütülmesi, iletişimin sağlanması, ürün/hizmetlerin
-        geliştirilmesi, kayıtların tutulması, hukuki yükümlülüklerin yerine getirilmesi.
-      </p>
+    <h2>2) İşlenen Kişisel Veri Kategorileri</h2>
+    <p>
+      Kozmetik ürün satışı, kullanıcı hesabı yönetimi, sipariş süreçleri ve kişiselleştirilmiş
+      bakım önerisi hizmeti kapsamında aşağıdaki kişisel veriler işlenmektedir:
+    </p>
 
-      <h2>4) Toplama Yöntemi ve Hukuki Sebepler</h2>
-      <p class="muted">
-        Veriler; web formları, e-posta yazışmaları ve çerez teknolojileri aracılığıyla toplanır.
-        KVKK md.5’teki <em>sözleşmenin kurulması/ifası</em>, <em>hukuki yükümlülük</em>,
-        <em>meşru menfaat</em> ve gerekli hallerde <em>açık rıza</em> hukuki sebeplerine dayanır.
-      </p>
+    <p><strong>a) Kimlik ve İletişim Bilgileri</strong></p>
+    <ul>
+      <li>Ad, soyad</li>
+      <li>Telefon numarası</li>
+      <li>E-posta adresi</li>
+      <li>Teslimat ve fatura adresi</li>
+    </ul>
 
-      <h2>5) Aktarım</h2>
-      <p class="muted">
-        Veriler, hizmet aldığımız üçüncü taraf tedarikçilerle (barındırma, e-posta sağlayıcıları vb.)
-        ve kanunen yetkili kurumlarla sınırlı olmak üzere paylaşılabilir. Pazarlama amaçlı üçüncü
-        kişi satışı yapılmaz.
-      </p>
+    <p><strong>b) Müşteri İşlem ve Sipariş Verileri</strong></p>
+    <ul>
+      <li>Satın alınan ürünler</li>
+      <li>Sipariş detayları ve sipariş geçmişi</li>
+      <li>İade ve değişim talepleri</li>
+      <li>Sepet bilgileri<br><span class="muted small">(Kart bilgileriniz Mavern tarafından kaydedilmez.)</span></li>
+    </ul>
 
-      <h2>6) Saklama Süresi</h2>
-      <p class="muted">
-        Mevzuattaki asgari süreler ve işleme amaçları doğrultusunda saklanır; süre sonunda silinir
-        veya anonimleştirilir.
-      </p>
+    <p><strong>c) Talep, Şikâyet ve İletişim Kayıtları</strong></p>
+    <ul>
+      <li>İletişim formu mesajları</li>
+      <li>E-posta yazışmaları</li>
+      <li>Destek süreçlerine ilişkin kayıtlar</li>
+    </ul>
 
-      <h2>7) İlgili Kişinin Hakları (KVKK md.11)</h2>
-      <p class="muted">
-        Tarafımıza başvurarak verilerinizin işlenip işlenmediğini öğrenme, düzeltilmesini veya
-        silinmesini talep etme, işlenmeye itiraz etme ve bilgi alma haklarına sahipsiniz.
-      </p>
+    <p><strong>d) Site Kullanım ve Teknik Log Verileri</strong></p>
+    <ul>
+      <li>IP adresi</li>
+      <li>IP-tarih-zaman kayıtları</li>
+      <li>Cihaz ve tarayıcı bilgileri</li>
+      <li>Çerez kayıtları</li>
+      <li>Oturum ve güvenlik logları</li>
+    </ul>
+    <p>
+      Bu veriler, sistem güvenliği, performans analizi ve hizmet kalitesinin geliştirilmesi
+      amacıyla işlenir.
+    </p>
 
-      <h2>8) Başvuru ve İletişim</h2>
-      <p class="muted">
-        KVKK kapsamındaki talepleriniz için bize e-posta yoluyla ulaşabilirsiniz:<br/>
-        <strong>E-posta:</strong> <a href="mailto:mavernkozmatikas@gmail.com">mavernkozmatikas@gmail.com</a>
-      </p>
-    </div>
-  </main>
+    <p><strong>e) Kozmetik Kullanım ve Kişiselleştirilmiş Bakım Verileri (Kullanıcının Paylaştığı Ölçüde)</strong></p>
+    <p>
+      Kullanıcıların kendi tercihleri doğrultusunda paylaştığı ve yalnızca bakım tavsiyesi
+      sunmak için kullanılan bilgiler:
+    </p>
+    <ul>
+      <li>Saç tipi, saç derisi durumu</li>
+      <li>Saç bakım hedefleri</li>
+      <li>Kullanım alışkanlıkları (yıkama sıklığı, ürün tipi tercihleri)</li>
+      <li>Hassasiyetler, alerji bilgileri</li>
+      <li>Ürün geri bildirimleri</li>
+      <li>Kullandığı ürünlerden elde ettiği sonuçlarla ilgili yorumları</li>
+    </ul>
+    <p>
+      Bu bilgiler doğrultusunda kullanıcıya özel bir bakım profili / öneri modeli
+      oluşturulabilir. Bu model, “tıbbi teşhis, tedavi veya sağlık hizmeti” niteliği taşımaz;
+      sadece ürün tavsiyesinde bulunur.
+    </p>
 
-  <footer class="footer">
-    <div>© 2025 Mavern. Tüm hakları saklıdır.</div>
-    <div>
-      <a href="kvkk.html">KVKK Aydınlatma Metni</a>
-    </div>
-  </footer>
+    <h2>3) Kişisel Verilerin İşlenme Amaçları</h2>
 
+    <p><strong>a) Ürün Satışı ve Sipariş Süreçleri</strong></p>
+    <ul>
+      <li>Siparişlerin alınması, hazırlanması ve teslim edilmesi</li>
+      <li>Üyelik hesabının oluşturulması ve yönetimi</li>
+      <li>İade ve değişim süreçlerinin yürütülmesi</li>
+      <li>Fatura ve ödeme işlemlerinin yürütülmesine ilişkin süreçlerin tamamlanması</li>
+    </ul>
+
+    <p><strong>b) İletişim ve Destek Süreçleri</strong></p>
+    <ul>
+      <li>Kullanıcı talep ve şikâyetlerinin alınması</li>
+      <li>Ürün ve sipariş süreçleri hakkında bilgilendirme yapılması</li>
+    </ul>
+
+    <p><strong>c) Kişiselleştirilmiş Bakım Önerisi Sistemi</strong></p>
+    <ul>
+      <li>Kullanıcıya özel bir bakım profili oluşturulması</li>
+      <li>Paylaşılan bilgiler doğrultusunda ürün önerileri hazırlanması</li>
+      <li>Geçmiş siparişler ve geri bildirimlerden yararlanarak önerilerin güncellenmesi</li>
+    </ul>
+    <p>
+      Burada sunulan tavsiyeler otomatik karar verme niteliğinde değildir; kullanıcı üzerinde
+      bağlayıcı bir etkisi yoktur ve sağlık alanında değerlendirme niteliği taşımaz.
+    </p>
+
+    <p><strong>d) Site Yönetimi ve Güvenlik</strong></p>
+    <ul>
+      <li>Sistem güvenliği denetimlerinin yapılması</li>
+      <li>Şüpheli işlemlerin tespiti</li>
+      <li>Log kayıtlarının tutulması</li>
+    </ul>
+
+    <p><strong>e) Ürün ve Hizmetleri Geliştirme</strong></p>
+    <ul>
+      <li>Kullanım istatistiklerinin değerlendirilmesi</li>
+      <li>Ürün geliştirme analizleri</li>
+      <li>Hizmet kalitesinin artırılması</li>
+    </ul>
+    <p>
+      Bu işlemler büyük ölçüde anonim veya psödonomize veri üzerinden yapılır.
+    </p>
+
+    <p><strong>f) Ticari Elektronik İleti Gönderimi (Açık Rıza Varsa)</strong></p>
+    <ul>
+      <li>Kampanya duyuruları</li>
+      <li>Yeni ürün bilgilendirmeleri</li>
+      <li>Kullanıcı izin verdiği ölçüde pazarlama içerikleri</li>
+    </ul>
+
+    <p><strong>g) Yasal Yükümlülüklerin Yerine Getirilmesi</strong></p>
+    <ul>
+      <li>Muhasebe, fatura ve resmi kayıt süreçleri</li>
+      <li>Yetkili kurum taleplerinin karşılanması</li>
+      <li>Mevzuatta öngörülen saklama yükümlülüklerinin yerine getirilmesi</li>
+    </ul>
+
+    <h2>4) Toplama Yöntemleri ve Hukuki Sebepler</h2>
+    <p>
+      Kişisel verileriniz;
+    </p>
+    <ul>
+      <li>Üyelik ve sipariş formları</li>
+      <li>AI profil formu</li>
+      <li>İletişim formu ve e-posta yazışmaları</li>
+      <li>Çerezler ve site kullanım verileri</li>
+      <li>Log kayıtları</li>
+    </ul>
+    <p>
+      aracılığıyla toplanmaktadır.
+    </p>
+    <p>
+      İşlemeye ilişkin hukuki sebepler KVKK’nın 5 ve 6’ncı maddelerinde belirtilmiştir:
+    </p>
+    <ul>
+      <li><strong>Sözleşmenin kurulması ve ifası için zorunluluk:</strong> Sipariş ve üyelik işlemleri</li>
+      <li><strong>Hukuki yükümlülüklerin yerine getirilmesi:</strong> Fatura, saklama, resmi talepler</li>
+      <li><strong>Meşru menfaat:</strong> Güvenlik, hizmet geliştirme, site yönetimi</li>
+      <li>
+        <strong>Açık rıza:</strong><br>
+        – Kişiselleştirilmiş bakım profili oluşturulması<br>
+        – Pazarlama ileti izinleri
+      </li>
+    </ul>
+    <p>
+      Kullanıcı, açık rızasını her zaman geri çekme hakkına sahiptir.
+    </p>
+
+    <h2>5) Yapay Zekâ Temelli Profil Oluşturma Süreci</h2>
+    <p>
+      Mavern, kullanıcıların paylaştığı bilgilerden yararlanarak kişiye özel bir bakım profili
+      oluşturabilir.
+    </p>
+    <p>
+      Bu süreç:
+    </p>
+    <ul>
+      <li>Kişisel bakım amaçlıdır,</li>
+      <li>Kendi verilerini paylaşan kullanıcıların tercihine dayanır,</li>
+      <li>Sağlık, tıbbi teşhis veya tedavi niteliğinde değildir.</li>
+    </ul>
+    <p>
+      Profil işletimi şu şekilde yürütülür:
+    </p>
+    <ul>
+      <li>Profil verileri düzenli olarak güncellenir.</li>
+      <li>Sadece öneri sunmak için kullanılır.</li>
+      <li>Kullanıcı her zaman profil kullanımına karşı çıkabilir.</li>
+    </ul>
+    <p>
+      Kullanıcının bu kapsamda özel hakları vardır:
+    </p>
+    <ul>
+      <li>Profilin silinmesini isteme</li>
+      <li>Profilin güncellenmesini durdurma</li>
+      <li>Profil temelli öneri sisteminden çıkma (opt-out)</li>
+      <li>Profil işlemeye itiraz etme</li>
+    </ul>
+    <p>
+      Bu haklar KVKK md.11 çerçevesinde değerlendirilir.
+    </p>
+
+    <h2>6) Kişisel Verilerin Aktarılması</h2>
+    <p>
+      Kişisel veriler, hizmet sunumu için zorunlu olduğu ölçüde ve amaçla sınırlı olarak şu
+      taraflara aktarılabilir:
+    </p>
+    <ul>
+      <li>Barındırma (hosting) ve sunucu hizmet sağlayıcıları</li>
+      <li>E-posta ve bildirim altyapısı sağlayıcıları</li>
+      <li>Kargo ve teslimat şirketleri</li>
+      <li>Teknik destek, güvenlik ve yazılım altyapısı sağlayıcıları</li>
+      <li>Yasal olarak yetkili kamu kurumları</li>
+    </ul>
+    <p>
+      Veriler yalnızca zorunlu hizmet gereklilikleri kapsamında aktarılır. Kişisel veriler
+      üçüncü kişilere satılmaz ve ticari amaçla devredilmez.
+    </p>
+    <p>
+      Yurt dışı aktarımın gerektiği durumlarda, aktarım KVKK’nın öngördüğü hukuki
+      mekanizmalar sağlanarak yapılır.
+    </p>
+
+    <h2>7) Saklama Süreleri</h2>
+    <p>
+      Kişisel verileriniz aşağıdaki sürelerde saklanır:
+    </p>
+    <ul>
+      <li><strong>Sipariş ve fatura kayıtları:</strong> Mevzuatta belirtilen zorunlu süreler</li>
+      <li><strong>Üyelik ve bakım profili verileri:</strong> Hesap aktif olduğu sürece; talep üzerine silinir veya anonimleştirilir</li>
+      <li><strong>Log ve teknik güvenlik kayıtları:</strong> Sistem güvenliği için gerekli süre</li>
+      <li><strong>Talep ve şikâyet kayıtları:</strong> Hukuki zamanaşımı süreleri doğrultusunda</li>
+    </ul>
+    <p>
+      Saklama süresi sona eren veriler, güvenli şekilde silinir, yok edilir veya anonimleştirilir.
+    </p>
+
+    <h2>8) İlgili Kişinin Hakları (KVKK md.11)</h2>
+    <p>
+      Kullanıcılar, Mavern’e başvurarak aşağıdaki haklara sahiptir:
+    </p>
+    <ul>
+      <li>Kişisel verilerinin işlenip işlenmediğini öğrenme</li>
+      <li>İşleme faaliyetlerine ilişkin bilgi talep etme</li>
+      <li>Verilerinin düzeltilmesini isteme</li>
+      <li>Silinmesini veya anonim hale getirilmesini talep etme</li>
+      <li>İşlemeye itiraz etme</li>
+      <li>Eksik veya yanlış işlenen verilerin düzeltilmesini talep etme</li>
+      <li>Profil oluşturma süreçlerinden çıkma</li>
+      <li>Profil verilerinin silinmesini isteme</li>
+    </ul>
+    <p>
+      Talepleriniz KVKK’da belirlenen sürelerde sonuçlandırılır.
+    </p>
+
+    <h2>9) Başvuru ve İletişim</h2>
+    <p>
+      KVKK kapsamında tüm taleplerinizi aşağıdaki adrese iletebilirsiniz:
+    </p>
+    <p>
+      <strong>E-posta:</strong>
+      <a href="mailto:mavernkozmatikas@gmail.com">mavernkozmatikas@gmail.com</a>
+    </p>
+    <p>
+      Başvurularınız KVKK’da öngörülen süre içinde yanıtlanacaktır.
+    </p>
+  </div>
+</main>
+
+<footer class="footer">
+  <div>© 2025 Mavern. Tüm hakları saklıdır.</div>
+  <div>
+    <a href="kvkk.html">KVKK Aydınlatma Metni</a>
+  </div>
+</footer>
+
+<script src="script.js"></script>
 </body>
 </html>

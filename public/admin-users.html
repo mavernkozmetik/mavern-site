@@ -12,6 +12,7 @@
       --muted:#9aa4b2;
       --border:#26324a;
       --accent:#cfd6ff;
+      --accent-soft:#1e293b;
       --ok:#0f2a17;
       --ok-border:#1b5d32;
       --warn:#2a230f;
@@ -23,6 +24,7 @@
     *{box-sizing:border-box}
     html,body{
       margin:0;
+      min-height:100%;
       background:
         radial-gradient(1200px 600px at 20% -10%, #15192b 0%, #050815 50%, #020308 100%);
       color:var(--ink);
@@ -87,21 +89,37 @@
       font-weight:600;
       font-size:13px;
       border-width:1px;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
     }
     .btn.primary{
       background:var(--accent);
       color:#050815;
       border-color:transparent;
     }
+    .btn.primary:hover:not(:disabled){
+      background:#e2e7ff;
+    }
     .btn.ghost{
       background:transparent;
       border-color:#2b3a57;
       color:var(--accent);
     }
+    .btn.ghost:hover:not(:disabled){
+      background:#111827;
+    }
     .btn.danger{
       background:#3a1717;
       border-color:var(--danger-border);
       color:#ffb3b3;
+    }
+    .btn.danger:hover:not(:disabled){
+      background:#4b1717;
+    }
+    .btn.icon{
+      padding:4px 8px;
+      font-size:12px;
     }
 
     .row{display:flex;gap:8px;align-items:center}
@@ -138,6 +156,11 @@
       background:#111827;
       border-color:#1f2937;
       color:#cfd6ff;
+    }
+    .pill.ai{
+      background:#020617;
+      border-color:#1d4ed8;
+      color:#bfdbfe;
     }
 
     table{
@@ -215,6 +238,65 @@
       background:#4ade80;
     }
 
+    /* AI modal */
+    .ai-modal-backdrop{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(15,23,42,0.86);
+      z-index:9998;
+      backdrop-filter:blur(10px);
+    }
+    .ai-modal-backdrop.show{display:flex;}
+    .ai-sheet{
+      max-width:520px;
+      width:100%;
+      background:var(--card);
+      border-radius:16px;
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+      padding:16px 18px 14px;
+    }
+    .ai-sheet-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      margin-bottom:8px;
+    }
+    .ai-sheet h3{
+      font-size:16px;
+    }
+    .ai-user-pill{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    .ai-question{
+      width:100%;
+      margin-top:6px;
+      font-size:13px;
+    }
+    .ai-answer{
+      margin-top:10px;
+      padding:10px;
+      border-radius:10px;
+      border:1px solid #1f2937;
+      background:var(--accent-soft);
+      font-size:13px;
+      color:#e5e7eb;
+      white-space:pre-wrap;
+      max-height:220px;
+      overflow:auto;
+    }
+    .ai-hint{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+
     /* Toast */
     .toast-wrap{
       position:fixed;
@@ -269,7 +351,7 @@
       <div>
         <h2>Mavern Admin • Kullanıcılar</h2>
         <div class="brand-sub">
-          JWT üyeler · Onay / Admin yetkisi · Güvenli yönetim ekranı
+          Kozmetik müşterileri · Onay · Rol · Bakım profili görünümü
         </div>
       </div>
     </div>
@@ -290,7 +372,7 @@
     <div class="status-bar">
       <span id="loginOut" class="muted"></span>
       <span class="muted" style="font-size:12px">
-        Bu sayfa <code>/api/login</code> &amp; <code>/api/admin/users</code> endpointlerini kullanır.
+        Bu sayfa sadece admin erişimi içindir. Ana siteden link verilmez.
       </span>
     </div>
   </div>
@@ -300,13 +382,14 @@
     <div class="row between">
       <h3>Kullanıcı Listesi</h3>
       <div class="row wrap">
+        <span class="pill tag"><span class="badge-dot"></span> Canlı kozmetik topluluğu</span>
         <button id="reloadBtn" class="btn ghost">Yenile</button>
       </div>
     </div>
 
     <div class="filters">
       <div class="row grow">
-        <input id="searchEmail" class="grow" placeholder="E-posta veya görünen ad ile ara">
+        <input id="searchEmail" class="grow" placeholder="E-posta, görünen ad veya şehir ile ara">
       </div>
       <div class="row">
         <select id="filterStatus">
@@ -324,9 +407,7 @@
 
     <div class="status-bar">
       <span id="listInfo" class="muted"></span>
-      <div class="metric-row" id="metricsRow">
-        <!-- JS ile doldurulacak -->
-      </div>
+      <div class="metric-row" id="metricsRow"></div>
     </div>
 
     <div class="table-wrap">
@@ -336,6 +417,7 @@
             <th>ID</th>
             <th>Kullanıcı</th>
             <th>Durum / Rol</th>
+            <th>Bakım Profili</th>
             <th>Oluşturma</th>
             <th>İşlem</th>
           </tr>
@@ -346,12 +428,34 @@
   </div>
 </div>
 
+<!-- AI Öneri Modali -->
+<div class="ai-modal-backdrop" id="aiModal">
+  <div class="ai-sheet">
+    <div class="ai-sheet-header">
+      <h3>Yapay Zeka Bakım Önerisi</h3>
+      <button class="btn ghost btn.icon" type="button" onclick="hideAiModal()">Kapat</button>
+    </div>
+    <div class="ai-user-pill" id="aiUserChip"></div>
+    <label class="muted" style="font-size:12px;">Soru</label>
+    <textarea id="aiQuestion" class="ai-question" rows="2"
+      placeholder="Örnek: Bu kullanıcının saç / cilt profiline göre hangi ürün kategorilerini öne çıkarmalıyım?"></textarea>
+    <div class="ai-hint">
+      İpucu: Kullanıcının AI profilinde; cilt tipi, saç tipi, hassasiyet, koku tercihleri gibi alanlar varsa otomatik kullanılır.
+    </div>
+    <div class="row between" style="margin-top:8px;">
+      <span class="pill ai" style="font-size:11px;">Deneme özelliği – gerçek zamanlı model yerine yerel özet mantığı</span>
+      <button id="aiRunBtn" class="btn primary btn.icon" type="button">AI Analiz Al</button>
+    </div>
+    <div id="aiAnswer" class="ai-answer" style="display:none;"></div>
+  </div>
+</div>
+
 <script>
   // ===== Yardımcılar =====
   const qs  = (s) => document.querySelector(s);
   const esc = (s="") =>
     String(s).replace(/[&<>"']/g, m => (
-      { "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[m]
+      { "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[m]
     ));
   const fmtDate = (iso) => iso ? new Date(iso).toLocaleString("tr-TR") : "-";
 
@@ -368,6 +472,7 @@
   const STORAGE_KEY = "MAVERN_ADMIN_TOKEN";
   let TOKEN = null;
   let USERS = [];
+  let CURRENT_AI_USER = null;
 
   function setToken(t){
     TOKEN = t || null;
@@ -382,7 +487,7 @@
     const el = qs("#adminState");
     if(!el) return;
     if(TOKEN){
-      el.textContent = "Oturum aktif.";
+      el.textContent = "Admin oturumu aktif.";
     }else{
       el.textContent = "Oturum açılmadı.";
     }
@@ -390,11 +495,15 @@
 
   async function api(path, opts={}) {
     const headers = {
-      "Content-Type":"application/json",
-      ...(TOKEN ? { Authorization:`Bearer ${TOKEN}` } : {}),
       ...(opts.headers || {})
     };
-    const res = await fetch(path, { ...opts, headers });
+    // JSON body ise Content-Type ekle
+    if(!opts.body || typeof opts.body === "string"){
+      headers["Content-Type"] = headers["Content-Type"] || "application/json";
+    }
+    if(TOKEN) headers.Authorization = `Bearer ${TOKEN}`;
+
+    const res = await fetch(path, { cache:"no-store", ...opts, headers });
     let data = null;
     try{ data = await res.json(); }catch{}
 
@@ -463,6 +572,7 @@
     showLogin(true);
     qs("#tbody").innerHTML = "";
     qs("#listInfo").textContent = "";
+    qs("#metricsRow").innerHTML = "";
     qs("#loginOut").textContent = "Oturum kapatıldı.";
     showToast("Oturum kapatıldı.", "info");
   }
@@ -484,12 +594,27 @@
       row.innerHTML = "";
       return;
     }
+    const activeShare =
+      m.total ? Math.round((m.approved / m.total) * 100) : 0;
     row.innerHTML = `
       <span class="metric-chip">Toplam: ${m.total}</span>
       <span class="metric-chip">Onaylı: ${m.approved}</span>
       <span class="metric-chip">Bekleyen: ${m.pending}</span>
       <span class="metric-chip">Admin: ${m.admins}</span>
+      <span class="metric-chip">Aktif oranı: %${activeShare}</span>
     `;
+  }
+
+  function shortAiSummary(aiProfile){
+    if(!aiProfile || typeof aiProfile !== "object") return "";
+    const hair = aiProfile.hairType || aiProfile["saçTipi"] || "";
+    const skin = aiProfile.skinType || aiProfile["ciltTipi"] || "";
+    const focus = aiProfile.focus || aiProfile["odak"] || "";
+    const tags = [];
+    if(hair) tags.push(String(hair));
+    if(skin) tags.push(String(skin));
+    if(focus) tags.push(String(focus));
+    return tags.join(" • ").slice(0,80);
   }
 
   function applyFilters(){
@@ -502,7 +627,8 @@
     if(term){
       list = list.filter(u =>
         String(u.email||"").toLowerCase().includes(term) ||
-        String(u.displayName||"").toLowerCase().includes(term)
+        String(u.displayName||"").toLowerCase().includes(term) ||
+        String(u.city||"").toLowerCase().includes(term)
       );
     }
     if(status === "pending")   list = list.filter(u => !u.isApproved);
@@ -520,7 +646,7 @@
     tb.innerHTML = "";
 
     if(!list.length){
-      tb.innerHTML = `<tr><td colspan="5" class="muted">Kayıt bulunamadı.</td></tr>`;
+      tb.innerHTML = `<tr><td colspan="6" class="muted">Kayıt bulunamadı.</td></tr>`;
       info.textContent = "";
       return;
     }
@@ -528,11 +654,12 @@
     info.textContent = `${list.length} kullanıcı gösteriliyor (toplam ${USERS.length}).`;
 
     tb.innerHTML = list.map(u=>{
-      const statusLabel = u.isApproved ? "Onaylı"   : "Onay Bekliyor";
+      const statusLabel = u.isApproved ? "Onaylı"   : "Onay bekliyor";
       const statusClass = u.isApproved ? "ok"       : "warn";
       const roleLabel   = u.isAdmin    ? "Admin"    : "Üye";
       const fullName    = u.fullName ? ` • ${esc(u.fullName)}` : "";
       const city        = u.city ? ` • ${esc(u.city)}` : "";
+      const aiMini      = shortAiSummary(u.aiProfile);
 
       return `
         <tr>
@@ -547,18 +674,25 @@
             <span class="pill ${statusClass}">${statusLabel}</span>
             <span class="pill tag" style="margin-left:4px">${roleLabel}</span>
           </td>
+          <td>
+            ${
+              aiMini
+                ? `<div class="muted" style="font-size:12px;margin-bottom:4px;">${esc(aiMini)}</div>`
+                : `<div class="muted" style="font-size:12px;">Profil henüz dolu değil</div>`
+            }
+            <button class="btn ghost btn.icon"
+              data-action="ai" data-id="${esc(u.id)}">
+              AI Öner
+            </button>
+          </td>
           <td class="muted" style="font-size:12px">${u.createdAt ? esc(fmtDate(u.createdAt)) : "-"}</td>
           <td>
             <div class="row wrap" style="gap:6px">
-              <button class="btn ghost" style="padding:4px 8px"
+              <button class="btn ghost btn.icon"
                 data-action="approve" data-id="${esc(u.id)}" data-next="${u.isApproved?'0':'1'}">
                 ${u.isApproved ? "Onayı Kaldır" : "Onayla"}
               </button>
-              <button class="btn ghost" style="padding:4px 8px"
-                data-action="admin" data-id="${esc(u.id)}" data-next="${u.isAdmin?'0':'1'}">
-                ${u.isAdmin ? "Adminden Al" : "Admin Yap"}
-              </button>
-              <button class="btn danger" style="padding:4px 8px"
+              <button class="btn danger btn.icon"
                 data-action="delete" data-id="${esc(u.id)}">
                 Sil
               </button>
@@ -594,16 +728,84 @@
     });
   }
 
-  async function setAdmin(id, ok){
-    await api(`/api/admin/users/${encodeURIComponent(id)}/approve`,{
-      method:"PATCH",
-      body:JSON.stringify({ makeAdmin: !!ok })
-    });
+  async function delUser(id){
+    if(!confirm("Kullanıcı silinsin mi? İlgili kullanıcıya ait yorumlar da silinir.")) return;
+    await api(`/api/admin/users/${encodeURIComponent(id)}`,{ method:"DELETE" });
   }
 
-  async function delUser(id){
-    if(!confirm("Kullanıcı silinsin mi? İlgili kullanıcıya ait yorumlar da silinebilir.")) return;
-    await api(`/api/admin/users/${encodeURIComponent(id)}`,{ method:"DELETE" });
+  // ===== AI CONSULT =====
+  function showAiModalForUser(id){
+    const user = USERS.find(u => u.id === id);
+    if(!user){
+      showToast("Kullanıcı bulunamadı.", "err");
+      return;
+    }
+    CURRENT_AI_USER = user;
+    const chip = qs("#aiUserChip");
+    const qEl  = qs("#aiQuestion");
+    const ans  = qs("#aiAnswer");
+    const modal= qs("#aiModal");
+
+    const name =
+      user.displayName ||
+      user.fullName ||
+      user.email ||
+      "Kullanıcı";
+
+    chip.textContent = `${name} · ${user.email || ""}`.trim();
+    qEl.value = "Bu kullanıcının saç / cilt profiline ve olası hassasiyetlerine göre, hangi kozmetik ürün kategorilerini ve bakım rutinini öne çıkarmalıyım?";
+    ans.style.display = "none";
+    ans.textContent = "";
+    modal.classList.add("show");
+  }
+
+  function hideAiModal(){
+    const modal = qs("#aiModal");
+    modal.classList.remove("show");
+    CURRENT_AI_USER = null;
+  }
+
+  async function runAiConsult(){
+    if(!CURRENT_AI_USER){
+      showToast("Önce bir kullanıcı seçin.", "err");
+      return;
+    }
+    const btn = qs("#aiRunBtn");
+    const qEl = qs("#aiQuestion");
+    const ans = qs("#aiAnswer");
+    const question = qEl.value.trim();
+
+    if(!question){
+      showToast("Lütfen bir soru yazın.", "err");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Analiz ediliyor...";
+
+    try{
+      // Bu endpoint server.js içinde: /api/ai/consult
+      const res = await fetch("/api/ai/consult",{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          question,
+          profileSnapshot: CURRENT_AI_USER.aiProfile || null
+        })
+      });
+      const data = await res.json().catch(()=> ({}));
+      if(!res.ok || !data.success){
+        throw new Error(data.message || "AI servisi şu anda yanıt veremiyor.");
+      }
+      ans.style.display = "block";
+      ans.textContent = data.answer ||
+        "Şu anda genel bir öneri verilemiyor, ancak nazik temizleyici + nemlendirici ve güneş koruyucu kombinasyonu her rutinin temelidir.";
+    }catch(e){
+      showToast(e.message || "AI isteği başarısız.", "err");
+    }finally{
+      btn.disabled = false;
+      btn.textContent = "AI Analiz Al";
+    }
   }
 
   // ===== Event binding =====
@@ -613,6 +815,7 @@
   qs("#searchEmail").addEventListener("input", ()=> applyFilters());
   qs("#filterStatus").addEventListener("change", ()=> applyFilters());
   qs("#filterRole").addEventListener("change", ()=> applyFilters());
+  qs("#aiRunBtn").addEventListener("click", runAiConsult);
 
   // Tablo action delegation
   qs("#tbody").addEventListener("click", async (e)=>{
@@ -626,17 +829,23 @@
         const next = btn.getAttribute("data-next") === "1";
         await setApprove(id, next);
         showToast(next ? "Kullanıcı onaylandı." : "Kullanıcı onayı kaldırıldı.", "ok");
-      }else if(act === "admin"){
-        const next = btn.getAttribute("data-next") === "1";
-        await setAdmin(id, next);
-        showToast(next ? "Kullanıcı admin yapıldı." : "Admin yetkisi kaldırıldı.", "ok");
       }else if(act === "delete"){
         await delUser(id);
         showToast("Kullanıcı silindi.", "ok");
+      }else if(act === "ai"){
+        showAiModalForUser(id);
+        return; // AI modal için yeniden yükleme yapma
       }
       await loadUsersList();
     }catch(err){
       showToast(err.message || "İşlem başarısız.", "err");
+    }
+  });
+
+  // Modal arka plana tıklayınca kapatma
+  qs("#aiModal").addEventListener("click", (e)=>{
+    if(e.target === e.currentTarget){
+      hideAiModal();
     }
   });
 

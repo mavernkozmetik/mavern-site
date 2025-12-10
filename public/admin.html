@@ -72,6 +72,7 @@
       box-shadow: var(--shadow);
       gap: 12px;
       margin-bottom: 24px;
+      position: relative;
     }
     .toolbar-row {
       display: flex;
@@ -110,7 +111,7 @@
       font-size: 14px;
       background: transparent;
       color: var(--accent);
-      transition: background-color 0.2s, color 0.2s;
+      transition: background-color 0.2s, color 0.2s, border-color 0.2s;
     }
     .btn[disabled] {
       opacity: 0.5;
@@ -221,7 +222,7 @@
       cursor: pointer;
       font-size: 14px;
       font-weight: 500;
-      transition: color 0.2s, border-color 0.2s;
+      transition: color 0.2s, border-color 0.2s, background-color 0.2s;
     }
     .tab:hover {
       color: var(--accent);
@@ -231,6 +232,9 @@
       color: var(--text);
       border-color: var(--accent);
       background: #1a1a1d;
+    }
+    .tab-content.hidden {
+      display: none;
     }
     /* Badges & Pills */
     .badge {
@@ -276,18 +280,25 @@
     .product-card {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       padding: 12px;
       border-radius: 12px;
       background: #151518;
       border: 1px solid var(--border);
       margin-top: 12px;
+      gap: 12px;
+    }
+    .product-card-main {
+      flex: 1;
+      min-width: 0;
     }
     .thumb, .mini {
       border-radius: 10px;
       object-fit: cover;
       border: 1px solid var(--border);
       background: #0a0a0c;
+      flex-shrink: 0;
+      display: block;
     }
     .thumb {
       width: 72px;
@@ -297,6 +308,22 @@
       width: 44px;
       height: 44px;
       border-radius: 8px;
+    }
+    .product-name {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .product-desc {
+      margin: 4px 0;
+      color: var(--muted);
+      font-size: 13px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
     .list {
       display: flex;
@@ -418,31 +445,6 @@
       color: var(--danger);
       border-color: rgba(224, 115, 115, 0.4);
     }
-    /* User menu dropdown */
-    .user-menu {
-      position: absolute;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      z-index: 1000;
-      min-width: 140px;
-      padding: 6px 0;
-    }
-    .user-menu button {
-      display: block;
-      width: 100%;
-      padding: 8px 12px;
-      text-align: left;
-      background: transparent;
-      border: none;
-      color: var(--text);
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .user-menu button:hover {
-      background: #1a1a1d;
-    }
     @media (max-width: 768px) {
       .toolbar {
         flex-direction: column;
@@ -459,11 +461,15 @@
       .col3 {
         grid-template-columns: 1fr;
       }
+      .product-card {
+        flex-direction: row;
+      }
     }
   </style>
 </head>
 <body>
   <div class="toast-wrap" id="toastWrap"></div>
+
   <div class="wrap">
     <div class="brand">
       <span class="brand-dot" aria-hidden="true"></span>
@@ -472,19 +478,21 @@
         <div class="brand-sub">Premium kozmetik ürün ve sipariş kontrol paneli</div>
       </div>
     </div>
+
     <div class="toolbar" role="navigation" aria-label="Yönetim">
-      <div class="toolbar-left">
+      <div>
         <div class="toolbar-row">
           <span class="tag">Yönetim Paneli</span>
-          <span class="muted">Güvenli API · Tam entegre yönetim</span>
+          <span class="muted">Güvenli API · Kozmetik odaklı yönetim</span>
         </div>
-        <div class="toolbar-row">
+        <div class="toolbar-row" style="margin-top:6px;">
           <span class="chip" id="adminBadge">Admin: —</span>
           <span class="muted" id="adminStatus">Oturum açılmadı.</span>
         </div>
       </div>
-      <button class="btn ghost" id="btnLogout" onclick="adminLogout()" style="display: none;">Çıkış</button>
+      <button class="btn ghost" id="btnLogout" onclick="adminLogout()" style="display:none;">Çıkış</button>
     </div>
+
     <!-- LOGIN -->
     <section id="loginCard" class="card">
       <h3 style="margin-bottom: 10px; font-size: 20px; font-weight: 600;">Yönetici Girişi</h3>
@@ -496,6 +504,7 @@
       </div>
       <p id="loginInfo" class="muted" style="margin-top: 10px;"></p>
     </section>
+
     <!-- PANEL -->
     <section id="panel" class="card hidden">
       <div class="tabs" role="tablist">
@@ -504,10 +513,10 @@
         <button class="tab" data-tab="mails" role="tab">Mesajlar</button>
         <button class="tab" data-tab="coupons" role="tab">Kuponlar</button>
         <button class="tab" data-tab="reviews" role="tab">Yorumlar</button>
-        <!-- YENİ: KİŞİSELLEŞTİRME -->
-        <button class="tab" data-tab="customize" role="tab">Kişiselleştirme</button>
         <button class="tab" data-tab="users" role="tab">Üyeler</button>
+        <button class="tab" data-tab="ai" role="tab">AI & Geri Bildirim</button>
       </div>
+
       <!-- ÜRÜNLER -->
       <div id="tab-products" class="tab-content">
         <div class="row-between">
@@ -516,18 +525,21 @@
         </div>
         <div id="productList" class="list"></div>
       </div>
+
       <!-- SİPARİŞLER -->
       <div id="tab-orders" class="tab-content hidden">
         <h3 style="font-size: 18px; font-weight: 600;">Sipariş Listesi</h3>
         <div id="orderList" class="list"></div>
       </div>
+
       <!-- MAİLLER -->
       <div id="tab-mails" class="tab-content hidden">
         <div class="row-between">
-          <h3 style="font-size: 18px; font-weight: 600;">Mesajlar</h3>
+          <h3 style="font-size: 18px; font-weight: 600;">Mesajlar (İletişim)</h3>
         </div>
         <div id="messageList" class="list"></div>
       </div>
+
       <!-- KUPONLAR -->
       <div id="tab-coupons" class="tab-content hidden">
         <div class="row-between">
@@ -536,68 +548,45 @@
         </div>
         <div id="couponList" class="list"></div>
       </div>
+
       <!-- YORUMLAR -->
       <div id="tab-reviews" class="tab-content hidden">
         <h3 style="font-size: 18px; font-weight: 600;">Yorumlar</h3>
         <div id="reviewList" class="list"></div>
       </div>
-      <!-- YENİ: KİŞİSELLEŞTİRME SEKME İÇERİĞİ -->
-      <div id="tab-customize" class="tab-content hidden">
-        <div class="row-between">
-          <h3 style="font-size: 18px; font-weight: 600;">Şampuan Kişiselleştirme</h3>
-          <span class="muted">Baz şampuan ve ekstra bileşen yönetimi</span>
-        </div>
-        <!-- Baz şampuan seçimi -->
-        <div class="card" style="margin-top:12px; padding:14px;">
-          <div class="row-between">
-            <div>
-              <div style="font-weight:600; margin-bottom:4px;">Baz Şampuan</div>
-              <div class="muted" style="font-size:13px;">
-                Kişiselleştirilmiş formüller için kullanılacak ana şampuan.
-                Maksimum: 3 yağ · 1 koku · 1 renk (%5 toplam ekleme alanı).
-              </div>
-            </div>
-          </div>
-          <div class="col2" style="margin-top:12px; align-items:end;">
-            <select id="baseProductSelect">
-              <option value="">Baz şampuan seçin…</option>
-            </select>
-            <button class="btn primary" onclick="saveBaseProduct()">Baz Şampuanı Kaydet</button>
-          </div>
-          <p id="baseProductInfo" class="muted" style="margin-top:8px; font-size:13px;"></p>
-        </div>
-        <!-- Bileşen listeleri -->
-        <div class="grid" style="margin-top:16px;">
-          <div class="card" style="padding:14px;">
-            <div class="row-between">
-              <h4 style="font-size:16px;">Yağlar</h4>
-              <button class="btn primary" onclick="showCustomOptionModal('oil')">+ Yeni Yağ</button>
-            </div>
-            <div id="oilList" class="list"></div>
-          </div>
-          <div class="card" style="padding:14px;">
-            <div class="row-between">
-              <h4 style="font-size:16px;">Kokular</h4>
-              <button class="btn primary" onclick="showCustomOptionModal('scent')">+ Yeni Koku</button>
-            </div>
-            <div id="scentList" class="list"></div>
-          </div>
-          <div class="card" style="padding:14px;">
-            <div class="row-between">
-              <h4 style="font-size:16px;">Renkler</h4>
-              <button class="btn primary" onclick="showCustomOptionModal('color')">+ Yeni Renk</button>
-            </div>
-            <div id="colorList" class="list"></div>
-          </div>
-        </div>
-      </div>
+
       <!-- ÜYELER -->
       <div id="tab-users" class="tab-content hidden">
         <h3 style="font-size: 18px; font-weight: 600;">Üye Listesi</h3>
         <div id="userList" class="list"></div>
       </div>
+
+      <!-- AI & GERİ BİLDİRİM -->
+      <div id="tab-ai" class="tab-content hidden">
+        <div class="grid">
+          <div>
+            <h3 style="font-size:18px;font-weight:600;">AI Danışman (Kozmetik)</h3>
+            <p class="muted" style="margin-top:4px;font-size:13px;">
+              Örneğin: “Yağlı cilt için basic bakım seti öner”, “Son siparişlere göre hangi ürün grubu öne çıkıyor?” gibi sorular sorabilirsin.
+            </p>
+            <textarea id="aiQuestion" placeholder="Sormak istediğiniz kozmetik soruyu yazın..." style="margin-top:12px;"></textarea>
+            <div class="row" style="margin-top:10px;justify-content:flex-end;">
+              <button class="btn primary" onclick="askAI()">Cevap Al</button>
+            </div>
+            <div id="aiAnswer" class="card" style="margin-top:12px; padding:14px; font-size:14px; white-space:pre-wrap;"></div>
+          </div>
+          <div>
+            <h3 style="font-size:18px;font-weight:600;">Kullanıcı Geri Bildirimleri</h3>
+            <p class="muted" style="margin-top:4px;font-size:13px;">
+              Kullanıcıların verdiği puanlar ve kısa notlar.
+            </p>
+            <div id="feedbackList" class="list"></div>
+          </div>
+        </div>
+      </div>
     </section>
   </div>
+
   <!-- PRODUCT MODAL -->
   <div class="modal" id="productModal">
     <div class="sheet">
@@ -605,7 +594,7 @@
       <input type="hidden" id="productId" />
       <div class="col2" style="margin-top: 16px;">
         <input id="productName" placeholder="Ürün Adı" />
-        <input id="productPrice" placeholder="Fiyat (150 | 150₺ | Yakında)" />
+        <input id="productPrice" placeholder="Fiyat (150 | 150₺)" />
       </div>
       <textarea id="productDesc" placeholder="Açıklama (opsiyonel)" style="margin-top: 12px;"></textarea>
       <div style="margin-top: 12px;">
@@ -626,11 +615,11 @@
       </div>
     </div>
   </div>
+
   <!-- COUPON MODAL -->
   <div class="modal" id="couponModal">
     <div class="sheet">
-      <h3 id="couponModalTitle">Yeni İndirim Kodu</h3>
-      <input type="hidden" id="couponId" />
+      <h3>Yeni İndirim Kodu</h3>
       <div class="col2" style="margin-top: 16px;">
         <input id="couponCode" placeholder="Kod (örn: YAZ25)" />
         <input id="couponPercent" placeholder="İndirim (%)" type="number" min="1" max="90" />
@@ -640,7 +629,7 @@
         <input id="couponEnd" type="datetime-local" />
       </div>
       <div class="row-between" style="margin-top: 20px;">
-        <button class="btn danger" onclick="deleteCoupon()" id="deleteCouponBtn" style="display: none;">Sil</button>
+        <div></div>
         <div class="row" style="gap: 10px;">
           <button class="btn ghost" onclick="hideModal('couponModal')">İptal</button>
           <button class="btn primary" onclick="saveCoupon()">Kaydet</button>
@@ -648,6 +637,7 @@
       </div>
     </div>
   </div>
+
   <!-- REVIEW MODAL -->
   <div class="modal" id="reviewModal">
     <div class="sheet">
@@ -655,11 +645,12 @@
       <div id="reviewDetail"></div>
       <div class="row" style="gap: 10px; margin-top: 20px;">
         <button class="btn ghost" onclick="hideModal('reviewModal')">Kapat</button>
-        <button class="btn primary" onclick="toggleReviewFromModal()">Durumu Değiştir</button>
+        <button class="btn primary" onclick="toggleReviewFromModal()">Onay Durumunu Değiştir</button>
         <button class="btn danger" onclick="deleteReviewFromModal()">Sil</button>
       </div>
     </div>
   </div>
+
   <!-- ORDER MODAL -->
   <div class="modal" id="orderModal">
     <div class="sheet">
@@ -671,6 +662,7 @@
       </div>
     </div>
   </div>
+
   <!-- USER MODAL -->
   <div class="modal" id="userModal">
     <div class="sheet">
@@ -681,1178 +673,1214 @@
       </div>
     </div>
   </div>
-  <!-- YENİ: KİŞİSELLEŞTİRME BİLEŞEN MODALI -->
-  <div class="modal" id="customOptionModal">
-    <div class="sheet">
-      <h3 id="customOptionTitle">Yeni Bileşen</h3>
-      <input type="hidden" id="customOptionId" />
-      <div class="col2" style="margin-top:16px;">
-        <select id="customOptionKind">
-          <option value="oil">Yağ</option>
-          <option value="scent">Koku</option>
-          <option value="color">Renk</option>
-        </select>
-        <input id="customOptionCode" placeholder="İç kod (örn: ARGAN, BALSAMIC)" />
-      </div>
-      <div style="margin-top:12px;">
-        <input id="customOptionName" placeholder="Görünen ad (örn: Argan Yağı)" />
-      </div>
-      <div style="margin-top:12px;">
-        <textarea id="customOptionDesc" placeholder="Açıklama / saç tipi notu (opsiyonel)"></textarea>
-      </div>
-      <div style="margin-top:12px; display:flex; align-items:center; gap:8px;">
-        <input type="checkbox" id="customOptionActive" style="width:auto;" checked />
-        <label for="customOptionActive" class="muted">Aktif bileşen</label>
-      </div>
-      <div class="row-between" style="margin-top:20px;">
-        <button class="btn danger" id="deleteCustomOptionBtn" style="display:none;" onclick="deleteCustomOptionFromModal()">Sil</button>
-        <div class="row" style="gap:10px;">
-          <button class="btn ghost" onclick="hideModal('customOptionModal')">İptal</button>
-          <button class="btn primary" onclick="saveCustomOption()">Kaydet</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- SCRIPTS -->
   <script>
-    // ========== UTILS ==========
+    // ========= UTILS =========
     const $ = (sel) => document.querySelector(sel);
-    const esc = (s) => (s == null ? '' : String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] || m)));
-    function showToast(message, type = 'info') {
-      const toastWrap = $('#toastWrap');
+    const esc = (s) =>
+      s == null
+        ? ""
+        : String(s).replace(/[&<>"']/g, (m) =>
+            ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m] || m)
+          );
+
+    function showToast(message, type = "info") {
+      const toastWrap = $("#toastWrap");
       if (!toastWrap) return;
-      const toast = document.createElement('div');
+      const toast = document.createElement("div");
       toast.className = `toast ${type}`;
       toast.textContent = message;
       toastWrap.appendChild(toast);
       setTimeout(() => toast.remove(), 4000);
     }
+
     function formatDate(dateStr) {
-      if (!dateStr) return '-';
+      if (!dateStr) return "-";
       const d = new Date(dateStr);
-      return d.toLocaleString('tr-TR');
+      if (isNaN(d.getTime())) return "-";
+      return d.toLocaleString("tr-TR");
     }
-    // ========== IMAGE RESOLVER ==========
+
+    // Görsel yolu: sunucu /uploads döndürüyorsa bozulmasın, yoksa logo fallback.
     function resolveImageUrl(image) {
-      if (!image) return '/placeholder.jpg';
+      if (!image) return "logo.png";
       const trimmed = String(image).trim();
-      if (trimmed.startsWith('data:')) return trimmed;
-      if (trimmed.startsWith('http')) return trimmed;
-      if (trimmed.startsWith('/')) return trimmed;
-      return '/uploads/' + trimmed;
+      if (trimmed.startsWith("data:")) return trimmed;
+      if (trimmed.startsWith("http")) return trimmed;
+      if (trimmed.startsWith("/")) return trimmed;
+      return "/uploads/" + trimmed;
     }
-    // ========== ORDER STATUS ==========
+
+    // ========= ORDER STATUS =========
     const ORDER_STATUS_LABELS = {
-      pending: 'Sipariş alındı',
-      preparing: 'Hazırlanıyor',
-      shipped: 'Kargoya verildi',
-      completed: 'Teslim edildi',
-      returned: 'İade sürecinde',
-      cancelled: 'İptal edildi'
+      pending: "Sipariş alındı",
+      preparing: "Hazırlanıyor",
+      shipped: "Kargoya verildi",
+      completed: "Teslim edildi",
+      cancelled: "İptal edildi"
     };
     function getOrderStatusInfo(status) {
-      const label = ORDER_STATUS_LABELS[status] || 'Bilinmiyor';
-      let cls = 'warn';
-      if (status === 'completed') cls = 'ok';
-      if (status === 'returned' || status === 'cancelled') cls = 'err';
+      const label = ORDER_STATUS_LABELS[status] || "Bilinmiyor";
+      let cls = "warn";
+      if (status === "completed") cls = "ok";
+      if (status === "cancelled") cls = "err";
       return { label, cls };
     }
-    // ========== PAYMENT STATUS ==========
-    const PAYMENT_STATUS_LABELS = {
-      unpaid: 'Ödenmedi',
-      paid: 'Ödendi',
-      refunded: 'İade Edildi',
-      failed: 'Başarısız'
-    };
-    function getPaymentStatusInfo(status) {
-      const label = PAYMENT_STATUS_LABELS[status] || 'Bilinmiyor';
-      let cls = 'warn';
-      if (status === 'paid') cls = 'ok';
-      if (status === 'refunded' || status === 'failed') cls = 'err';
-      return { label, cls };
-    }
-    // ========== AUTH ==========
-    let ADMIN_TOKEN = localStorage.getItem('MAVERN_ADMIN_TOKEN') || '';
-    let ADMIN_NAME = localStorage.getItem('MAVERN_ADMIN_NAME') || '';
+
+    // ========= AUTH =========
+    let ADMIN_TOKEN = localStorage.getItem("MAVERN_ADMIN_TOKEN") || "";
+    let ADMIN_NAME = localStorage.getItem("MAVERN_ADMIN_NAME") || "";
+
     function withAuth(opts = {}) {
       const headers = { ...(opts.headers || {}) };
-      if (ADMIN_TOKEN) headers['Authorization'] = `Bearer ${ADMIN_TOKEN}`;
-      return { cache: 'no-store', ...opts, headers };
+      if (ADMIN_TOKEN) headers["Authorization"] = `Bearer ${ADMIN_TOKEN}`;
+      return { cache: "no-store", ...opts, headers };
     }
+
     async function handle401(res) {
       if (res && res.status === 401) {
         adminLogout(true);
-        showToast('Oturum süresi dolmuş. Lütfen tekrar giriş yapın.', 'err');
-        throw new Error('Yetkisiz');
+        showToast("Oturum süresi dolmuş. Lütfen tekrar giriş yapın.", "err");
+        throw new Error("Yetkisiz");
       }
       return res;
     }
+
     function setLoggedInUI(isLoggedIn) {
-      const badge = $('#adminBadge');
-      const status = $('#adminStatus');
-      const logoutBtn = $('#btnLogout');
-      const loginCard = $('#loginCard');
-      const panel = $('#panel');
+      const badge = $("#adminBadge");
+      const status = $("#adminStatus");
+      const logoutBtn = $("#btnLogout");
+      const loginCard = $("#loginCard");
+      const panel = $("#panel");
       if (isLoggedIn) {
-        badge.textContent = `Admin: ${ADMIN_NAME || '—'}`;
-        status.textContent = 'Oturum açık.';
-        logoutBtn.style.display = 'block';
-        loginCard.classList.add('hidden');
-        panel.classList.remove('hidden');
-        loadTab('products');
+        badge.textContent = `Admin: ${ADMIN_NAME || "—"}`;
+        status.textContent = "Oturum açık.";
+        logoutBtn.style.display = "block";
+        loginCard.classList.add("hidden");
+        panel.classList.remove("hidden");
+        loadTab("products");
       } else {
-        badge.textContent = 'Admin: —';
-        status.textContent = 'Oturum açılmadı.';
-        logoutBtn.style.display = 'none';
-        loginCard.classList.remove('hidden');
-        panel.classList.add('hidden');
+        badge.textContent = "Admin: —";
+        status.textContent = "Oturum açılmadı.";
+        logoutBtn.style.display = "none";
+        loginCard.classList.remove("hidden");
+        panel.classList.add("hidden");
       }
     }
-    // ========== LOGIN / LOGOUT ==========
+
+    // ========= LOGIN / LOGOUT =========
     async function adminLogin() {
-      const user = $('#adminUser').value.trim();
-      const pass = $('#adminPass').value;
-      if (!user || !pass) return showToast('Lütfen kullanıcı adı ve şifre girin.', 'err');
+      const user = $("#adminUser").value.trim();
+      const pass = $("#adminPass").value;
+      if (!user || !pass) return showToast("Lütfen kullanıcı adı ve şifre girin.", "err");
       try {
-        const res = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username: user, password: pass })
         });
         const data = await res.json();
         if (res.ok && data.token) {
           ADMIN_TOKEN = data.token;
           ADMIN_NAME = data.username || user;
-          localStorage.setItem('MAVERN_ADMIN_TOKEN', ADMIN_TOKEN);
-          localStorage.setItem('MAVERN_ADMIN_NAME', ADMIN_NAME);
-          showToast('Giriş başarılı.', 'ok');
+          localStorage.setItem("MAVERN_ADMIN_TOKEN", ADMIN_TOKEN);
+          localStorage.setItem("MAVERN_ADMIN_NAME", ADMIN_NAME);
+          showToast("Giriş başarılı.", "ok");
           setLoggedInUI(true);
         } else {
-          showToast(data.message || 'Giriş başarısız.', 'err');
+          showToast(data.message || "Giriş başarısız.", "err");
         }
-      } catch (e) {
-        showToast('Sunucu hatası. Lütfen daha sonra tekrar deneyin.', 'err');
+      } catch {
+        showToast("Sunucu hatası. Lütfen daha sonra tekrar deneyin.", "err");
       }
     }
+
     function adminLogout(silent = false) {
-      ADMIN_TOKEN = '';
-      ADMIN_NAME = '';
-      localStorage.removeItem('MAVERN_ADMIN_TOKEN');
-      localStorage.removeItem('MAVERN_ADMIN_NAME');
+      ADMIN_TOKEN = "";
+      ADMIN_NAME = "";
+      localStorage.removeItem("MAVERN_ADMIN_TOKEN");
+      localStorage.removeItem("MAVERN_ADMIN_NAME");
       setLoggedInUI(false);
-      if (!silent) showToast('Oturum kapatıldı.', 'info');
+      if (!silent) showToast("Oturum kapatıldı.", "info");
     }
-    // ========== TABS ==========
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-        tab.classList.add('active');
+
+    // Enter ile login
+    $("#adminPass")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") adminLogin();
+    });
+
+    // ========= TABS =========
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach((c) => c.classList.add("hidden"));
+        tab.classList.add("active");
         const target = tab.dataset.tab;
-        $('#tab-' + target).classList.remove('hidden');
+        const el = document.getElementById("tab-" + target);
+        if (el) el.classList.remove("hidden");
         if (ADMIN_TOKEN) loadTab(target);
       });
     });
+
     function loadTab(tabName) {
       switch (tabName) {
-        case 'products': loadProducts(); break;
-        case 'orders': loadOrders(); break;
-        case 'mails': loadMessages(); break;
-        case 'coupons': loadCoupons(); break;
-        case 'reviews': loadReviews(); break;
-        case 'customize': loadCustomization(); break;
-        case 'users': loadUsers(); break;
+        case "products":
+          loadProducts();
+          break;
+        case "orders":
+          loadOrders();
+          break;
+        case "mails":
+          loadMessages();
+          break;
+        case "coupons":
+          loadCoupons();
+          break;
+        case "reviews":
+          loadReviews();
+          break;
+        case "users":
+          loadUsers();
+          break;
+        case "ai":
+          loadFeedback();
+          break;
       }
     }
-    // ========== MODALS ==========
-    function showModal(id) { $(`#${id}`).classList.add('show'); }
-    function hideModal(id) { $(`#${id}`).classList.remove('show'); }
-    // ========== LIVE PREVIEW ==========
-    $('#productImage')?.addEventListener('change', (e) => {
+
+    // ========= MODALS =========
+    function showModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.add("show");
+    }
+    function hideModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove("show");
+    }
+
+    // ========= IMAGE PREVIEW =========
+    $("#productImage")?.addEventListener("change", (e) => {
       const file = e.target.files[0];
-      const preview = $('#previewImg');
+      const preview = $("#previewImg");
       if (file) {
         const url = URL.createObjectURL(file);
         preview.src = url;
-        preview.style.display = 'block';
+        preview.style.display = "block";
       } else {
-        preview.style.display = 'none';
+        preview.style.display = "none";
       }
     });
-    // ========== COUPON UPPERCASE ==========
-    $('#couponCode')?.addEventListener('input', (e) => {
+
+    // Kupon kodu otomatik büyük harf
+    $("#couponCode")?.addEventListener("input", (e) => {
       e.target.value = e.target.value.toUpperCase();
     });
-    // ========== PRODUCTS ==========
+
+    // ========= PRODUCTS =========
     async function loadProducts() {
       try {
-        const res = await fetch('/api/products', { cache: 'no-store' });
-        if (!res.ok) throw new Error('Ürünler yüklenemedi.');
+        const res = await fetch("/api/products", { cache: "no-store" });
+        if (!res.ok) throw new Error("Ürünler yüklenemedi.");
         const products = await res.json();
-        const container = $('#productList');
+        const container = $("#productList");
         if (!Array.isArray(products) || products.length === 0) {
           container.innerHTML = '<p class="muted">Kayıtlı ürün bulunmuyor.</p>';
           return;
         }
-        container.innerHTML = products.map(p => {
-          const priceDisplay = (typeof p.price === 'number' && isFinite(p.price))
-            ? `${p.price.toLocaleString('tr-TR')} ₺`
-            : (p.priceText || '—');
-          const purchasable = p.purchasable ? '<span class="badge ok">Satılabilir</span>' : '<span class="badge err">Satılamaz</span>';
-          const imgSrc = resolveImageUrl(p.image);
-          return `
-            <div class="product-card">
-              <img src="${esc(imgSrc)}" class="thumb" onerror="this.onerror=null;this.src='/placeholder.jpg';">
-              <div style="flex:1;">
-                <div style="font-weight:600;">${esc(p.name)}</div>
-                <div class="muted" style="margin:4px 0;">${esc(p.desc || '')}</div>
-                <div class="row" style="gap:6px;margin-top:6px;">
-                  <span class="chip">${esc(priceDisplay)}</span>
-                  ${p.image ? `<span class="chip">${esc(p.image.slice(0, 20))}${p.image.length > 20 ? '…' : ''}</span>` : ''}
-                  ${purchasable}
+        container.innerHTML = products
+          .map((p) => {
+            const priceDisplay =
+              typeof p.price === "number" && isFinite(p.price)
+                ? `${p.price.toLocaleString("tr-TR")} ₺`
+                : p.priceText || "—";
+            const purchasable = p.purchasable
+              ? '<span class="badge ok">Satılabilir</span>'
+              : '<span class="badge err">Satılamaz</span>';
+            const imgSrc = resolveImageUrl(p.image);
+            const imageLabel =
+              p.image && typeof p.image === "string"
+                ? `${p.image.slice(0, 22)}${p.image.length > 22 ? "…" : ""}`
+                : "";
+            return `
+              <div class="product-card">
+                <img src="${esc(imgSrc)}"
+                     class="thumb"
+                     loading="lazy"
+                     onerror="this.onerror=null;this.src='logo.png';">
+                <div class="product-card-main">
+                  <div class="product-name">${esc(p.name)}</div>
+                  <div class="product-desc">${esc(p.desc || "")}</div>
+                  <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap;">
+                    <span class="chip">${esc(priceDisplay)}</span>
+                    ${imageLabel ? `<span class="chip">${esc(imageLabel)}</span>` : ""}
+                    ${purchasable}
+                  </div>
                 </div>
-              </div>
-              <button class="btn ghost" onclick="editProduct('${esc(p.id)}')">Düzenle</button>
-            </div>`;
-        }).join('');
-      } catch (e) {
-        $('#productList').innerHTML = '<p class="muted">Ürünler yüklenemedi.</p>';
+                <button class="btn ghost" onclick="editProduct('${esc(p.id)}')">Düzenle</button>
+              </div>`;
+          })
+          .join("");
+      } catch {
+        $("#productList").innerHTML = '<p class="muted">Ürünler yüklenemedi.</p>';
       }
     }
+
     function showProductModal(productId = null) {
-      $('#productId').value = productId || '';
-      $('#productName').value = '';
-      $('#productPrice').value = '';
-      $('#productDesc').value = '';
-      $('#previewImg').style.display = 'none';
-      $('#deleteProductBtn').style.display = productId ? 'inline-block' : 'none';
-      $('#modalTitle').textContent = productId ? 'Ürünü Düzenle' : 'Yeni Ürün';
+      $("#productId").value = productId || "";
+      $("#productName").value = "";
+      $("#productPrice").value = "";
+      $("#productDesc").value = "";
+      $("#previewImg").style.display = "none";
+      $("#deleteProductBtn").style.display = productId ? "inline-block" : "none";
+      $("#modalTitle").textContent = productId ? "Ürünü Düzenle" : "Yeni Ürün";
+
       if (productId) {
-        fetch('/api/products', { cache: 'no-store' })
-          .then(r => r.json())
-          .then(products => {
-            const p = products.find(prod => prod.id === productId);
+        fetch("/api/products", { cache: "no-store" })
+          .then((r) => r.json())
+          .then((products) => {
+            const p = products.find((prod) => String(prod.id) === String(productId));
             if (p) {
-              $('#productName').value = p.name || '';
-              $('#productPrice').value = (p.priceText !== undefined ? p.priceText : (typeof p.price === 'number' ? String(p.price) : ''));
-              $('#productDesc').value = p.desc || '';
+              $("#productName").value = p.name || "";
+              $("#productPrice").value =
+                p.priceText !== undefined
+                  ? p.priceText
+                  : typeof p.price === "number"
+                  ? String(p.price)
+                  : "";
+              $("#productDesc").value = p.desc || "";
               if (p.image) {
                 const imgSrc = resolveImageUrl(p.image);
-                $('#previewImg').src = imgSrc;
-                $('#previewImg').style.display = 'block';
+                $("#previewImg").src = imgSrc;
+                $("#previewImg").style.display = "block";
               }
             }
           })
-          .catch(() => showToast('Ürün detayı yüklenemedi.', 'err'));
+          .catch(() => showToast("Ürün detayı yüklenemedi.", "err"));
       }
-      showModal('productModal');
+      showModal("productModal");
     }
-    function editProduct(id) { showProductModal(id); }
+
+    function editProduct(id) {
+      showProductModal(id);
+    }
+
     async function saveProduct() {
-      const id = $('#productId').value;
-      const name = $('#productName').value.trim();
-      const priceText = $('#productPrice').value.trim();
-      const desc = $('#productDesc').value.trim();
-      if (!name) return showToast('Ürün adı gerekli.', 'err');
-      const price = priceText ? parseFloat(priceText.replace(/[^\d,.-]/g, '').replace(',', '.')) : null;
-      const payload = { name, price, priceText, desc };
-      if ($('#productImage').files[0]) {
+      const id = $("#productId").value;
+      const name = $("#productName").value.trim();
+      const priceText = $("#productPrice").value.trim();
+      const desc = $("#productDesc").value.trim();
+
+      if (!name) return showToast("Ürün adı gerekli.", "err");
+
+      let price = null;
+      if (priceText) {
+        const norm = priceText.replace(/[₺\s]/g, "").replace(",", ".");
+        const parsed = parseFloat(norm);
+        if (isFinite(parsed)) price = parsed;
+      }
+
+      const payload = { name, price, desc };
+
+      if ($("#productImage").files[0]) {
         const formData = new FormData();
-        formData.append('file', $('#productImage').files[0]);
+        formData.append("file", $("#productImage").files[0]);
         try {
-          const res = await fetch('/api/admin/upload', withAuth({ method: 'POST', body: formData }));
+          const res = await fetch("/api/admin/upload", withAuth({ method: "POST", body: formData }));
           await handle401(res);
           const data = await res.json();
           if (data.success && data.path) {
             payload.image = data.path;
           } else {
-            return showToast(data.message || 'Görsel yüklenemedi.', 'err');
+            return showToast(data.message || "Görsel yüklenemedi.", "err");
           }
-        } catch (e) {
-          return showToast('Görsel yükleme hatası.', 'err');
+        } catch {
+          return showToast("Görsel yükleme hatası.", "err");
         }
       }
+
       try {
-        const url = id ? `/api/admin/products/${encodeURIComponent(id)}` : '/api/admin/products';
-        const method = id ? 'PUT' : 'POST';
-        const res = await fetch(url, withAuth({
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }));
+        const url = id ? `/api/admin/products/${encodeURIComponent(id)}` : "/api/admin/products";
+        const method = id ? "PUT" : "POST";
+        const res = await fetch(
+          url,
+          withAuth({
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          })
+        );
         await handle401(res);
         const data = await res.json();
         if (data.success) {
-          showToast(id ? 'Ürün güncellendi.' : 'Ürün eklendi.', 'ok');
-          hideModal('productModal');
+          showToast(id ? "Ürün güncellendi." : "Ürün eklendi.", "ok");
+          hideModal("productModal");
+          $("#productImage").value = "";
           loadProducts();
         } else {
-          showToast(data.message || 'İşlem başarısız.', 'err');
+          showToast(data.message || "İşlem başarısız.", "err");
         }
-      } catch (e) {
-        showToast('Sunucu hatası.', 'err');
+      } catch {
+        showToast("Sunucu hatası.", "err");
       }
     }
+
     async function deleteProduct() {
-      const id = $('#productId').value;
-      if (!id || !confirm('Bu ürünü silmek istiyor musunuz?')) return;
+      const id = $("#productId").value;
+      if (!id || !confirm("Bu ürünü silmek istiyor musunuz?")) return;
       try {
-        const res = await fetch(`/api/admin/products/${encodeURIComponent(id)}`, withAuth({ method: 'DELETE' }));
+        const res = await fetch(
+          `/api/admin/products/${encodeURIComponent(id)}`,
+          withAuth({ method: "DELETE" })
+        );
         await handle401(res);
         const data = await res.json();
         if (data.success) {
-          showToast('Ürün silindi.', 'ok');
-          hideModal('productModal');
+          showToast("Ürün silindi.", "ok");
+          hideModal("productModal");
           loadProducts();
         } else {
-          showToast(data.message || 'Silme başarısız.', 'err');
+          showToast(data.message || "Silme başarısız.", "err");
         }
-      } catch (e) {
-        showToast('Sunucu hatası.', 'err');
+      } catch {
+        showToast("Sunucu hatası.", "err");
       }
     }
-    // ========== COUPONS ==========
+
+    // ========= COUPONS =========
     function couponStatus(c) {
       const now = Date.now();
-      if (c.active === false) return { label: 'Pasif', cls: 'warn' };
+      if (c.active === false) return { label: "Pasif", cls: "warn" };
       if (c.startsAt) {
         const st = Date.parse(c.startsAt);
-        if (!isNaN(st) && now < st) return { label: 'Başlamadı', cls: 'warn' };
+        if (!isNaN(st) && now < st) return { label: "Başlamadı", cls: "warn" };
       }
       if (c.expiresAt) {
         const exp = Date.parse(c.expiresAt);
-        if (!isNaN(exp) && now > exp) return { label: 'Süresi Doldu', cls: 'err' };
+        if (!isNaN(exp) && now > exp) return { label: "Süresi Doldu", cls: "err" };
       }
-      return { label: 'Aktif', cls: 'ok' };
+      return { label: "Aktif", cls: "ok" };
     }
+
     async function loadCoupons() {
       try {
-        const res = await fetch('/api/admin/coupons', withAuth());
+        const res = await fetch("/api/admin/coupons", withAuth());
         await handle401(res);
         const data = await res.json();
-        if (!data.success) throw new Error('Kuponlar yüklenemedi.');
-        const container = $('#couponList');
-        if (!data.items || data.items.length === 0) {
+        if (!data.success) throw new Error("Kuponlar yüklenemedi.");
+        const container = $("#couponList");
+        const items = data.items || [];
+        if (!items.length) {
           container.innerHTML = '<p class="muted">Kupon bulunmuyor.</p>';
           return;
         }
-        container.innerHTML = data.items.map(c => {
-          const st = couponStatus(c);
-          return `
-            <div class="card" style="padding:14px;">
-              <div class="row-between">
-                <div><strong>${esc(c.code)}</strong> — %${Number(c.percent || 0)} indirim</div>
-                <span class="badge ${st.cls}">${st.label}</span>
-              </div>
-              <div class="muted" style="font-size:13px;margin-top:6px;">
-                ${formatDate(c.startsAt)} – ${formatDate(c.expiresAt)}
-              </div>
-              <div class="row" style="margin-top:12px;">
-                <button class="btn ghost" onclick="editCoupon('${esc(c.code)}')">Düzenle</button>
-                <button class="btn danger" onclick="deleteCoupon('${esc(c.code)}')">Sil</button>
-              </div>
-            </div>`;
-        }).join('');
-      } catch (e) {
-        $('#couponList').innerHTML = '<p class="muted">Kuponlar yüklenemedi.</p>';
-      }
-    }
-    function showCouponModal(code = null) {
-      $('#couponId').value = code || '';
-      $('#couponCode').value = '';
-      $('#couponPercent').value = '';
-      $('#couponStart').value = '';
-      $('#couponEnd').value = '';
-      $('#deleteCouponBtn').style.display = code ? 'inline-block' : 'none';
-      $('#couponModalTitle').textContent = code ? 'Kuponu Düzenle' : 'Yeni Kupon';
-      if (code) {
-        fetch('/api/admin/coupons', withAuth())
-          .then(r => r.json())
-          .then(data => {
-            if (data.success) {
-              const c = data.items.find(cp => cp.code === code);
-              if (c) {
-                $('#couponCode').value = c.code;
-                $('#couponPercent').value = c.percent;
-                $('#couponStart').value = c.startsAt ? new Date(c.startsAt).toISOString().slice(0, 16) : '';
-                $('#couponEnd').value = c.expiresAt ? new Date(c.expiresAt).toISOString().slice(0, 16) : '';
-              }
-            }
+        container.innerHTML = items
+          .map((c) => {
+            const st = couponStatus(c);
+            return `
+              <div class="card" style="padding:14px;">
+                <div class="row-between">
+                  <div><strong>${esc(c.code)}</strong> — %${Number(c.percent || 0)} indirim</div>
+                  <span class="badge ${st.cls}">${st.label}</span>
+                </div>
+                <div class="muted" style="font-size:13px;margin-top:6px;">
+                  ${formatDate(c.startsAt)} – ${formatDate(c.expiresAt)}
+                </div>
+                <div class="row" style="margin-top:12px;">
+                  <button class="btn danger" onclick="deleteCoupon('${esc(c.code)}')">Sil</button>
+                </div>
+              </div>`;
           })
-          .catch(() => showToast('Kupon detayı yüklenemedi.', 'err'));
+          .join("");
+      } catch {
+        $("#couponList").innerHTML = '<p class="muted">Kuponlar yüklenemedi.</p>';
       }
-      showModal('couponModal');
     }
-    function editCoupon(code) { showCouponModal(code); }
+
+    function showCouponModal() {
+      $("#couponCode").value = "";
+      $("#couponPercent").value = "";
+      $("#couponStart").value = "";
+      $("#couponEnd").value = "";
+      showModal("couponModal");
+    }
+
     async function saveCoupon() {
-      const code = $('#couponCode').value.trim().toUpperCase();
-      const percent = parseInt($('#couponPercent').value);
-      const starts = $('#couponStart').value || null;
-      const expires = $('#couponEnd').value || null;
+      const code = $("#couponCode").value.trim().toUpperCase();
+      const percent = parseInt($("#couponPercent").value, 10);
+      const starts = $("#couponStart").value || null;
+      const expires = $("#couponEnd").value || null;
+
       if (!code || isNaN(percent) || percent < 1 || percent > 90) {
-        return showToast('Geçerli kod ve indirim oranı girin.', 'err');
+        return showToast("Geçerli kod ve indirim oranı girin.", "err");
       }
+
       try {
-        const res = await fetch('/api/admin/coupons', withAuth({
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code, percent, active: true, startsAt: starts, expiresAt: expires })
-        }));
+        const res = await fetch(
+          "/api/admin/coupons",
+          withAuth({
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              code,
+              percent,
+              active: true,
+              startsAt: starts,
+              expiresAt: expires
+            })
+          })
+        );
         await handle401(res);
         const data = await res.json();
         if (data.success) {
-          showToast('Kupon kaydedildi.', 'ok');
-          hideModal('couponModal');
+          showToast("Kupon kaydedildi.", "ok");
+          hideModal("couponModal");
           loadCoupons();
         } else {
-          showToast(data.message || 'Kayıt başarısız.', 'err');
+          showToast(data.message || "Kayıt başarısız.", "err");
         }
-      } catch (e) {
-        showToast('Sunucu hatası.', 'err');
+      } catch {
+        showToast("Sunucu hatası.", "err");
       }
     }
+
     async function deleteCoupon(code) {
-      if (!code) code = $('#couponId').value;
       if (!code || !confirm(`${code} kuponu silinsin mi?`)) return;
       try {
-        const res = await fetch(`/api/admin/coupons/${encodeURIComponent(code)}`, withAuth({ method: 'DELETE' }));
+        const res = await fetch(
+          `/api/admin/coupons/${encodeURIComponent(code)}`,
+          withAuth({ method: "DELETE" })
+        );
         await handle401(res);
         const data = await res.json();
         if (data.success) {
-          showToast('Kupon silindi.', 'ok');
-          hideModal('couponModal');
+          showToast("Kupon silindi.", "ok");
           loadCoupons();
         } else {
-          showToast(data.message || 'Silme başarısız.', 'err');
+          showToast(data.message || "Silme başarısız.", "err");
         }
-      } catch (e) {
-        showToast('Sunucu hatası.', 'err');
+      } catch {
+        showToast("Sunucu hatası.", "err");
       }
     }
-    // ========== MESSAGES ==========
+
+    // ========= MESSAGES (CONTACT) =========
     async function loadMessages() {
       try {
-        const res = await fetch('/api/admin/messages', withAuth());
+        const res = await fetch("/api/admin/messages?type=contact", withAuth());
         await handle401(res);
         const data = await res.json();
-        if (!data.success) throw new Error('Mesajlar yüklenemedi.');
-        const container = $('#messageList');
-        if (!data.items || data.items.length === 0) {
+        if (!data.success) throw new Error("Mesajlar yüklenemedi.");
+        const container = $("#messageList");
+        const items = data.items || [];
+        if (!items.length) {
           container.innerHTML = '<p class="muted">Mesaj bulunmuyor.</p>';
           return;
         }
-        container.innerHTML = data.items.map(m => {
-          const readBadge = m.read ? '<span class="badge ok">Okundu</span>' : '<span class="badge warn">Yeni</span>';
-          return `
-            <div class="card" style="padding:14px;">
-              <div class="row-between">
-                <strong>${esc(m.name)}</strong>
-                ${readBadge}
-              </div>
-              <div style="margin:8px 0;">${esc(m.email)} — ${esc(m.phone || '')}</div>
-              <div style="margin:8px 0; white-space: pre-wrap;">${esc(m.message)}</div>
-              <div class="muted" style="font-size:13px;">${formatDate(m.createdAt)}</div>
-              <div class="row" style="margin-top:12px;">
-                <button class="btn ghost" onclick="markMessageRead('${esc(m.id)}')">Okundu</button>
-                <button class="btn danger" onclick="deleteMessage('${esc(m.id)}')">Sil</button>
-              </div>
-            </div>`;
-        }).join('');
-      } catch (e) {
-        $('#messageList').innerHTML = '<p class="muted">Mesajlar yüklenemedi.</p>';
+        container.innerHTML = items
+          .map((m) => {
+            const readBadge = m.read
+              ? '<span class="badge ok">Okundu</span>'
+              : '<span class="badge warn">Yeni</span>';
+            return `
+              <div class="card" style="padding:14px;">
+                <div class="row-between">
+                  <strong>${esc(m.name || "-")}</strong>
+                  ${readBadge}
+                </div>
+                <div style="margin:8px 0;">${esc(m.email || "-")}${m.phone ? " — " + esc(m.phone) : ""}</div>
+                <div style="margin:8px 0; white-space: pre-wrap;">${esc(m.message || "")}</div>
+                <div class="muted" style="font-size:13px;">${formatDate(m.createdAt)}</div>
+                <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:8px;">
+                  <button class="btn ghost" onclick="markMessageRead('${esc(m.id)}')">Okundu</button>
+                  <button class="btn ghost" onclick="resendMessageMail('${esc(m.id)}')">Maili Yeniden Gönder</button>
+                  <button class="btn danger" onclick="deleteMessage('${esc(m.id)}')">Sil</button>
+                </div>
+              </div>`;
+          })
+          .join("");
+      } catch {
+        $("#messageList").innerHTML = '<p class="muted">Mesajlar yüklenemedi.</p>';
       }
     }
+
     async function markMessageRead(id) {
       try {
-        const res = await fetch(`/api/admin/messages/${encodeURIComponent(id)}/read`, withAuth({ method: 'PATCH' }));
+        const res = await fetch(
+          `/api/admin/messages/${encodeURIComponent(id)}/read`,
+          withAuth({ method: "PATCH" })
+        );
         await handle401(res);
         if (res.ok) {
-          showToast('Okundu olarak işaretlendi.', 'ok');
+          showToast("Okundu olarak işaretlendi.", "ok");
           loadMessages();
         }
-      } catch (e) {
-        showToast('İşlem başarısız.', 'err');
+      } catch {
+        showToast("İşlem başarısız.", "err");
       }
     }
+
     async function deleteMessage(id) {
-      if (!confirm('Bu mesajı silmek istiyor musunuz?')) return;
+      if (!confirm("Bu mesajı silmek istiyor musunuz?")) return;
       try {
-        const res = await fetch(`/api/admin/messages/${encodeURIComponent(id)}`, withAuth({ method: 'DELETE' }));
+        const res = await fetch(
+          `/api/admin/messages/${encodeURIComponent(id)}`,
+          withAuth({ method: "DELETE" })
+        );
         await handle401(res);
         const data = await res.json();
         if (data.success) {
-          showToast('Mesaj silindi.', 'ok');
+          showToast("Mesaj silindi.", "ok");
           loadMessages();
         } else {
-          showToast(data.message || 'Silme başarısız.', 'err');
+          showToast(data.message || "Silme başarısız.", "err");
         }
-      } catch (e) {
-        showToast('Sunucu hatası.', 'err');
+      } catch {
+        showToast("Sunucu hatası.", "err");
       }
     }
-    // ========== ORDERS ==========
-    let CURRENT_ORDER = null;
+
+    async function resendMessageMail(id) {
+      try {
+        const res = await fetch(
+          `/api/admin/messages/${encodeURIComponent(id)}/resend`,
+          withAuth({ method: "POST" })
+        );
+        await handle401(res);
+        const data = await res.json();
+        if (data.success) {
+          showToast("Mail yeniden gönderildi.", "ok");
+        } else {
+          showToast(data.message || "Mail gönderilemedi.", "err");
+        }
+      } catch {
+        showToast("Sunucu hatası.", "err");
+      }
+    }
+
+    // ========= ORDERS =========
+    let LAST_ORDERS = [];
 
     async function loadOrders() {
       try {
-        const res = await fetch('/api/admin/orders', withAuth());
+        const res = await fetch("/api/admin/messages?type=order", withAuth());
         await handle401(res);
         const data = await res.json();
-        if (!res.ok || !data.success) throw new Error('Siparişler yüklenemedi.');
-
-        const container = $('#orderList');
+        if (!data.success) throw new Error("Siparişler yüklenemedi.");
         const orders = data.items || [];
-
+        LAST_ORDERS = orders;
+        const container = $("#orderList");
         if (!orders.length) {
           container.innerHTML = '<p class="muted">Sipariş bulunmuyor.</p>';
           return;
         }
-
-        container.innerHTML = orders.map(o => {
-          const id = o.id || o._id;
-          const code = o.orderCode || o.orderId || id || '—';
-          const stInfo = getOrderStatusInfo(o.status);
-          const payInfo = getPaymentStatusInfo(o.paymentStatus);
-          const totalDisplay =
-            typeof o.total === 'number' && isFinite(o.total)
-              ? `${o.total.toLocaleString('tr-TR')} ₺`
-              : '—';
-
-          return `
-            <div class="card" style="padding:14px;">
-              <div class="row-between">
-                <div>
-                  <div style="font-weight:600;">Sipariş #${esc(code)}</div>
-                  <div class="muted" style="font-size:13px;margin-top:4px;">
-                    ${esc(o.name || '')} · ${formatDate(o.createdAt)}
+        container.innerHTML = orders
+          .map((o) => {
+            const id = o.id;
+            const stInfo = getOrderStatusInfo(o.status || "pending");
+            const totalDisplay =
+              typeof o.payable === "number" && isFinite(o.payable)
+                ? `${o.payable.toLocaleString("tr-TR")} ₺`
+                : typeof o.total === "number" && isFinite(o.total)
+                ? `${o.total.toLocaleString("tr-TR")} ₺`
+                : "—";
+            const readBadge = o.read
+              ? '<span class="badge ok">Görüldü</span>'
+              : '<span class="badge warn">Yeni</span>';
+            return `
+              <div class="card" style="padding:14px;">
+                <div class="row-between">
+                  <div>
+                    <div style="font-weight:600;">Sipariş #${esc(id)}</div>
+                    <div class="muted" style="font-size:13px;margin-top:4px;">
+                      ${esc(o.name || "-")} · ${formatDate(o.createdAt)}
+                    </div>
+                  </div>
+                  <div class="row" style="gap:8px;flex-wrap:wrap;">
+                    ${readBadge}
+                    <span class="badge ${stInfo.cls}">${stInfo.label}</span>
+                    <span class="chip">${esc(totalDisplay)}</span>
                   </div>
                 </div>
-                <div class="row" style="gap:8px;">
-                  <span class="badge ${stInfo.cls}">${stInfo.label}</span>
-                  <span class="pill ${
-                    payInfo.cls === 'ok' ? 'yes' : payInfo.cls === 'err' ? 'no' : ''
-                  }">
-                    ${payInfo.label}
-                  </span>
-                  <span class="chip">${esc(totalDisplay)}</span>
+                <div class="row" style="margin-top:10px;">
+                  <button class="btn ghost" onclick="showOrderModal('${esc(id)}')">Detay</button>
                 </div>
-              </div>
-              <div class="row" style="margin-top:10px;">
-                <button class="btn ghost" onclick="showOrderModal('${esc(id)}')">Detay</button>
-              </div>
-            </div>
-          `;
-        }).join('');
-      } catch (e) {
-        console.error(e);
-        $('#orderList').innerHTML = '<p class="muted">Siparişler yüklenemedi.</p>';
+              </div>`;
+          })
+          .join("");
+      } catch {
+        $("#orderList").innerHTML = '<p class="muted">Siparişler yüklenemedi.</p>';
       }
+    }
+
+    function findOrderById(id) {
+      return LAST_ORDERS.find((o) => String(o.id) === String(id));
     }
 
     async function showOrderModal(orderId) {
       if (!orderId) return;
-      try {
-        const res = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}`, withAuth());
-        await handle401(res);
-        const data = await res.json();
-        if (!res.ok || !data.success || !data.order) throw new Error('Sipariş detayı yüklenemedi.');
+      let o = findOrderById(orderId);
+      if (!o) {
+        // garanti olsun diye tekrar çek
+        try {
+          const res = await fetch("/api/admin/messages?type=order", withAuth());
+          await handle401(res);
+          const data = await res.json();
+          if (data.success) {
+            LAST_ORDERS = data.items || [];
+            o = findOrderById(orderId);
+          }
+        } catch {}
+      }
+      if (!o) {
+        showToast("Sipariş detayı bulunamadı.", "err");
+        return;
+      }
 
-        const o = data.order;
-        CURRENT_ORDER = o;
+      const stInfo = getOrderStatusInfo(o.status || "pending");
+      const items = Array.isArray(o.items) ? o.items : [];
+      const total = typeof o.total === "number" ? o.total : null;
+      const payable = typeof o.payable === "number" ? o.payable : null;
+      const discount = typeof o.discount === "number" ? o.discount : 0;
 
-        const stInfo = getOrderStatusInfo(o.status);
-        const payInfo = getPaymentStatusInfo(o.paymentStatus);
-
-        const recipe = o.recipe || {};
-        const oils = recipe.oils || [];
-        const scents = recipe.scents || [];
-        const colors = recipe.colors || [];
-        const items = o.items || [];
-
-        $('#orderDetail').innerHTML = `
-          <input type="hidden" id="orderIdField" value="${esc(o.id || o._id || '')}">
-          <div class="row-between">
-            <div>
-              <div style="font-weight:600;">Sipariş #${esc(o.orderCode || o.orderId || o.id || '')}</div>
-              <div class="muted" style="font-size:13px;margin-top:4px;">
-                ${formatDate(o.createdAt)}
-              </div>
-            </div>
-            <div class="row" style="gap:8px;">
-              <span class="badge ${stInfo.cls}">${stInfo.label}</span>
-              <span class="pill ${
-                payInfo.cls === 'ok' ? 'yes' : payInfo.cls === 'err' ? 'no' : ''
-              }">
-                ${payInfo.label}
-              </span>
-            </div>
-          </div>
-
-          <div class="divider"></div>
-
-          <h4 style="font-size:15px;margin-bottom:6px;">Müşteri</h4>
-          <div class="muted" style="font-size:13px;">
-            ${esc(o.name || '')}<br>
-            ${esc(o.email || '')}<br>
-            ${esc(o.phone || '')}
-          </div>
-
-          ${o.address ? `
-            <div style="margin-top:10px;">
-              <h4 style="font-size:15px;margin-bottom:6px;">Adres</h4>
-              <div class="muted" style="font-size:13px; white-space:pre-wrap;">${esc(o.address)}</div>
-            </div>
-          ` : ''}
-
-          <div class="divider"></div>
-
-          <h4 style="font-size:15px;margin-bottom:6px;">Ürünler</h4>
-          ${items.length ? `
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Ürün</th>
-                  <th>Adet</th>
-                  <th class="right">Tutar</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${items.map(it => {
+      const linesHTML = items.length
+        ? `
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Ürün</th>
+                <th>Adet</th>
+                <th class="right">Birim</th>
+                <th class="right">Tutar</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items
+                .map((it) => {
+                  const price =
+                    typeof it.price === "number" && isFinite(it.price)
+                      ? `${it.price.toLocaleString("tr-TR")} ₺`
+                      : "—";
                   const lineTotal =
-                    typeof it.total === 'number' && isFinite(it.total)
-                      ? `${it.total.toLocaleString('tr-TR')} ₺`
-                      : '—';
+                    typeof it.price === "number" && isFinite(it.price)
+                      ? `${(it.price * (it.qty || 1)).toLocaleString("tr-TR")} ₺`
+                      : "—";
                   return `
                     <tr>
-                      <td>${esc(it.name || it.productName || '')}</td>
-                      <td>${esc(it.quantity || 1)}</td>
+                      <td>${esc(it.name || "")}</td>
+                      <td>${esc(it.qty || 1)}</td>
+                      <td class="right">${esc(price)}</td>
                       <td class="right">${esc(lineTotal)}</td>
-                    </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
-          ` : '<p class="muted">Satır bilgisi yok.</p>'}
+                    </tr>`;
+                })
+                .join("")}
+            </tbody>
+          </table>`
+        : '<p class="muted">Ürün satırı yok.</p>';
 
-          <div style="margin-top:10px; text-align:right; font-weight:600;">
-            Toplam: ${
-              typeof o.total === 'number' && isFinite(o.total)
-                ? `${o.total.toLocaleString('tr-TR')} ₺`
-                : '—'
-            }
-          </div>
-
-          ${recipe && (recipe.baseProductName || oils.length || scents.length || colors.length) ? `
-            <div class="divider"></div>
-            <h4 style="font-size:15px;margin-bottom:6px;">Kişiselleştirilmiş Formül</h4>
-            <div class="muted" style="font-size:13px;">
-              ${recipe.baseProductName ? `<div><strong>Baz Şampuan:</strong> ${esc(recipe.baseProductName)}</div>` : ''}
-              ${oils.length ? `
-                <div style="margin-top:4px;">
-                  <strong>Yağlar:</strong>
-                  ${oils.map(x => esc(x.name || x.code || '')).join(', ')}
-                </div>
-              ` : ''}
-              ${scents.length ? `
-                <div style="margin-top:4px;">
-                  <strong>Kokular:</strong>
-                  ${scents.map(x => esc(x.name || x.code || '')).join(', ')}
-                </div>
-              ` : ''}
-              ${colors.length ? `
-                <div style="margin-top:4px;">
-                  <strong>Renkler:</strong>
-                  ${colors.map(x => esc(x.name || x.code || '')).join(', ')}
-                </div>
-              ` : ''}
-            </div>
-          ` : ''}
-
-          <div class="divider"></div>
-
-          <div class="col2">
-            <div>
-              <label class="muted" style="font-size:13px; display:block; margin-bottom:4px;">Sipariş Durumu</label>
-              <select id="orderStatusSelect">
-                <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>Sipariş alındı</option>
-                <option value="preparing" ${o.status === 'preparing' ? 'selected' : ''}>Hazırlanıyor</option>
-                <option value="shipped" ${o.status === 'shipped' ? 'selected' : ''}>Kargoya verildi</option>
-                <option value="completed" ${o.status === 'completed' ? 'selected' : ''}>Teslim edildi</option>
-                <option value="returned" ${o.status === 'returned' ? 'selected' : ''}>İade sürecinde</option>
-                <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>İptal edildi</option>
-              </select>
-            </div>
-            <div>
-              <label class="muted" style="font-size:13px; display:block; margin-bottom:4px;">Ödeme Durumu</label>
-              <select id="paymentStatusSelect">
-                <option value="unpaid" ${o.paymentStatus === 'unpaid' ? 'selected' : ''}>Ödenmedi</option>
-                <option value="paid" ${o.paymentStatus === 'paid' ? 'selected' : ''}>Ödendi</option>
-                <option value="refunded" ${o.paymentStatus === 'refunded' ? 'selected' : ''}>İade Edildi</option>
-                <option value="failed" ${o.paymentStatus === 'failed' ? 'selected' : ''}>Başarısız</option>
-              </select>
+      $("#orderDetail").innerHTML = `
+        <input type="hidden" id="orderIdField" value="${esc(o.id)}">
+        <div class="row-between">
+          <div>
+            <div style="font-weight:600;">Sipariş #${esc(o.id)}</div>
+            <div class="muted" style="font-size:13px;margin-top:4px;">
+              ${formatDate(o.createdAt)}
             </div>
           </div>
-        `;
+          <div class="row" style="gap:8px;flex-wrap:wrap;">
+            <span class="badge ${stInfo.cls}">${stInfo.label}</span>
+          </div>
+        </div>
 
-        showModal('orderModal');
-      } catch (e) {
-        console.error(e);
-        showToast('Sipariş detayı yüklenemedi.', 'err');
-      }
+        <div class="divider"></div>
+
+        <h4 style="font-size:15px;margin-bottom:6px;">Müşteri</h4>
+        <div class="muted" style="font-size:13px;">
+          ${esc(o.name || "-")}<br>
+          ${esc(o.email || "-")}<br>
+          ${esc(o.phone || "-")}
+        </div>
+
+        ${
+          o.address
+            ? `
+          <div style="margin-top:10px;">
+            <h4 style="font-size:15px;margin-bottom:6px;">Adres</h4>
+            <div class="muted" style="font-size:13px; white-space:pre-wrap;">${esc(o.address)}</div>
+          </div>`
+            : ""
+        }
+
+        <div class="divider"></div>
+
+        <h4 style="font-size:15px;margin-bottom:6px;">Ürünler</h4>
+        ${linesHTML}
+
+        <div style="margin-top:10px; text-align:right; font-size:13px;">
+          Toplam: ${
+            total != null ? `${total.toLocaleString("tr-TR")} ₺` : "—"
+          }<br>
+          İndirim: ${
+            discount ? `${discount.toLocaleString("tr-TR")} ₺` : "0 ₺"
+          }<br>
+          <strong>Ödenecek: ${
+            payable != null ? `${payable.toLocaleString("tr-TR")} ₺` : "—"
+          }</strong>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="col2">
+          <div>
+            <label class="muted" style="font-size:13px; display:block; margin-bottom:4px;">Sipariş Durumu</label>
+            <select id="orderStatusSelect">
+              <option value="pending" ${
+                (o.status || "pending") === "pending" ? "selected" : ""
+              }>Sipariş alındı</option>
+              <option value="preparing" ${
+                o.status === "preparing" ? "selected" : ""
+              }>Hazırlanıyor</option>
+              <option value="shipped" ${
+                o.status === "shipped" ? "selected" : ""
+              }>Kargoya verildi</option>
+              <option value="completed" ${
+                o.status === "completed" ? "selected" : ""
+              }>Teslim edildi</option>
+              <option value="cancelled" ${
+                o.status === "cancelled" ? "selected" : ""
+              }>İptal edildi</option>
+            </select>
+          </div>
+          <div>
+            <label class="muted" style="font-size:13px; display:block; margin-bottom:4px;">Takip Kodu (opsiyonel)</label>
+            <input id="orderTrackingInput" placeholder="Kargo takip kodu" value="${esc(
+              o.trackingCode || ""
+            )}">
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <label class="muted" style="font-size:13px;">
+            <input type="checkbox" id="orderReadCheckbox" style="width:auto;margin-right:4px;" ${
+              o.read ? "checked" : ""
+            }>
+            Bu siparişi okundu olarak işaretle
+          </label>
+        </div>
+      `;
+
+      showModal("orderModal");
     }
 
     async function saveOrderStatus() {
-      const id = $('#orderIdField')?.value;
-      if (!id) return showToast('Sipariş ID bulunamadı.', 'err');
-
-      const status = $('#orderStatusSelect')?.value;
-      const paymentStatus = $('#paymentStatusSelect')?.value;
+      const id = $("#orderIdField")?.value;
+      if (!id) return showToast("Sipariş ID bulunamadı.", "err");
+      const status = $("#orderStatusSelect")?.value;
+      const trackingCode = $("#orderTrackingInput")?.value.trim();
+      const read = !!$("#orderReadCheckbox")?.checked;
 
       try {
-        const res = await fetch(`/api/admin/orders/${encodeURIComponent(id)}`, withAuth({
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status, paymentStatus })
-        }));
+        const res = await fetch(
+          `/api/admin/orders/${encodeURIComponent(id)}`,
+          withAuth({
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status, trackingCode, read })
+          })
+        );
         await handle401(res);
         const data = await res.json();
-        if (!res.ok || !data.success) throw new Error('Sipariş güncellenemedi.');
-
-        showToast('Sipariş durumu güncellendi.', 'ok');
-        hideModal('orderModal');
+        if (!data.success) throw new Error();
+        showToast("Sipariş güncellendi.", "ok");
+        hideModal("orderModal");
         loadOrders();
-      } catch (e) {
-        console.error(e);
-        showToast('Sipariş durumu kaydedilemedi.', 'err');
+      } catch {
+        showToast("Sipariş güncellenemedi.", "err");
       }
     }
 
-    // ========== CUSTOMIZATION ==========
-    let CUSTOMIZATION_CACHE = {
-      baseProductId: null,
-      oils: [],
-      scents: [],
-      colors: []
-    };
+    // ========= USERS =========
+    let LAST_USERS = [];
 
-    function renderOptionList(kind, items, containerId) {
-      const container = $(`#${containerId}`);
-      if (!items.length) {
-        container.innerHTML = '<p class="muted">Kayıtlı bileşen yok.</p>';
-        return;
-      }
-      container.innerHTML = items.map(opt => {
-        const activeBadge = opt.active
-          ? '<span class="badge ok">Aktif</span>'
-          : '<span class="badge warn">Pasif</span>';
-        return `
-          <div class="card" style="padding:10px;">
-            <div class="row-between">
-              <div>
-                <div style="font-weight:600;">${esc(opt.name || '')}</div>
-                <div class="muted" style="font-size:12px;margin-top:2px;">Kod: ${esc(opt.code || '')}</div>
-                ${opt.desc ? `<div class="muted" style="font-size:12px;margin-top:4px;">${esc(opt.desc)}</div>` : ''}
-              </div>
-              <div class="row" style="gap:6px;">
-                ${activeBadge}
-                <button class="btn ghost" onclick="showCustomOptionModal('${kind}', '${esc(opt.id || opt._id || '')}')">Düzenle</button>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    async function loadCustomization() {
-      try {
-        // ürünleri çek -> baz select
-        const prodRes = await fetch('/api/products', { cache: 'no-store' });
-        const products = prodRes.ok ? await prodRes.json() : [];
-        const baseSelect = $('#baseProductSelect');
-        baseSelect.innerHTML = '<option value="">Baz şampuan seçin…</option>';
-        if (Array.isArray(products)) {
-          products.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id || p._id || '';
-            opt.textContent = p.name || 'İsimsiz ürün';
-            baseSelect.appendChild(opt);
-          });
-        }
-
-        const res = await fetch('/api/admin/customization', withAuth());
-        await handle401(res);
-        const data = await res.json();
-        if (!res.ok || !data.success) throw new Error('Kişiselleştirme verileri alınamadı.');
-
-        CUSTOMIZATION_CACHE = {
-          baseProductId: data.baseProductId || null,
-          oils: data.oils || [],
-          scents: data.scents || [],
-          colors: data.colors || []
-        };
-
-        if (CUSTOMIZATION_CACHE.baseProductId) {
-          baseSelect.value = CUSTOMIZATION_CACHE.baseProductId;
-          $('#baseProductInfo').textContent = 'Seçili baz ürün ID: ' + CUSTOMIZATION_CACHE.baseProductId;
-        } else {
-          $('#baseProductInfo').textContent = 'Henüz baz şampuan seçilmedi.';
-        }
-
-        renderOptionList('oil', CUSTOMIZATION_CACHE.oils, 'oilList');
-        renderOptionList('scent', CUSTOMIZATION_CACHE.scents, 'scentList');
-        renderOptionList('color', CUSTOMIZATION_CACHE.colors, 'colorList');
-      } catch (e) {
-        console.error(e);
-        showToast('Kişiselleştirme verileri yüklenemedi.', 'err');
-      }
-    }
-
-    async function saveBaseProduct() {
-      const baseProductId = $('#baseProductSelect').value;
-      if (!baseProductId) return showToast('Lütfen baz şampuan seçin.', 'err');
-
-      try {
-        const res = await fetch('/api/admin/customization/base', withAuth({
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ baseProductId })
-        }));
-        await handle401(res);
-        const data = await res.json();
-        if (!res.ok || !data.success) throw new Error('Baz şampuan kaydedilemedi.');
-
-        CUSTOMIZATION_CACHE.baseProductId = baseProductId;
-        $('#baseProductInfo').textContent = 'Seçili baz ürün ID: ' + baseProductId;
-        showToast('Baz şampuan güncellendi.', 'ok');
-      } catch (e) {
-        console.error(e);
-        showToast('Baz şampuan kaydedilemedi.', 'err');
-      }
-    }
-
-    function showCustomOptionModal(kind, id) {
-      $('#customOptionId').value = id || '';
-      $('#customOptionKind').value = kind || 'oil';
-      $('#customOptionCode').value = '';
-      $('#customOptionName').value = '';
-      $('#customOptionDesc').value = '';
-      $('#customOptionActive').checked = true;
-      $('#deleteCustomOptionBtn').style.display = id ? 'inline-block' : 'none';
-      $('#customOptionTitle').textContent = id ? 'Bileşeni Düzenle' : 'Yeni Bileşen';
-
-      if (id) {
-        const list =
-          kind === 'oil'
-            ? CUSTOMIZATION_CACHE.oils
-            : kind === 'scent'
-            ? CUSTOMIZATION_CACHE.scents
-            : CUSTOMIZATION_CACHE.colors;
-        const opt = list.find(o => (o.id || o._id) === id);
-        if (opt) {
-          $('#customOptionCode').value = opt.code || '';
-          $('#customOptionName').value = opt.name || '';
-          $('#customOptionDesc').value = opt.desc || '';
-          $('#customOptionActive').checked = !!opt.active;
-        }
-      }
-
-      showModal('customOptionModal');
-    }
-
-    async function saveCustomOption() {
-      const id = $('#customOptionId').value;
-      const kind = $('#customOptionKind').value;
-      const code = $('#customOptionCode').value.trim();
-      const name = $('#customOptionName').value.trim();
-      const desc = $('#customOptionDesc').value.trim();
-      const active = $('#customOptionActive').checked;
-
-      if (!code || !name) {
-        return showToast('Kod ve ad alanları zorunludur.', 'err');
-      }
-
-      const payload = { kind, code, name, desc, active };
-
-      try {
-        const url = id
-          ? `/api/admin/customization/options/${encodeURIComponent(id)}`
-          : '/api/admin/customization/options';
-        const method = id ? 'PUT' : 'POST';
-
-        const res = await fetch(url, withAuth({
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }));
-        await handle401(res);
-        const data = await res.json();
-        if (!res.ok || !data.success) throw new Error('Bileşen kaydedilemedi.');
-
-        showToast('Bileşen kaydedildi.', 'ok');
-        hideModal('customOptionModal');
-        loadCustomization();
-      } catch (e) {
-        console.error(e);
-        showToast('Bileşen kaydedilemedi.', 'err');
-      }
-    }
-
-    async function deleteCustomOptionFromModal() {
-      const id = $('#customOptionId').value;
-      if (!id) return;
-      if (!confirm('Bu bileşeni silmek istiyor musunuz?')) return;
-
-      try {
-        const res = await fetch(`/api/admin/customization/options/${encodeURIComponent(id)}`, withAuth({
-          method: 'DELETE'
-        }));
-        await handle401(res);
-        const data = await res.json();
-        if (!res.ok || !data.success) throw new Error('Bileşen silinemedi.');
-
-        showToast('Bileşen silindi.', 'ok');
-        hideModal('customOptionModal');
-        loadCustomization();
-      } catch (e) {
-        console.error(e);
-        showToast('Bileşen silinemedi.', 'err');
-      }
-    }
-
-    // ========== USERS ==========
     async function loadUsers() {
       try {
-        const res = await fetch('/api/admin/users', withAuth());
+        const res = await fetch("/api/admin/users", withAuth());
         await handle401(res);
         const data = await res.json();
-        if (!res.ok || !data.success) throw new Error('Üyeler yüklenemedi.');
-
+        if (!data.success) throw new Error("Üyeler yüklenemedi.");
         const users = data.items || [];
-        const container = $('#userList');
+        LAST_USERS = users;
+        const container = $("#userList");
         if (!users.length) {
           container.innerHTML = '<p class="muted">Üye bulunmuyor.</p>';
           return;
         }
-
-        container.innerHTML = users.map(u => {
-          const id = u.id || u._id;
-          const sub = u.subscription || {};
-          const hasSub = !!sub.active;
-
-          const displayName =
-            u.name ||
-            u.fullName ||
-            ((u.firstName || '') + ' ' + (u.lastName || '')).trim() ||
-            u.email ||
-            'İsimsiz Kullanıcı';
-
-          return `
-            <div class="card" style="padding:12px;">
-              <div class="row-between">
-                <div>
-                  <div style="font-weight:600;">${esc(displayName)}</div>
-                  <div class="muted" style="font-size:13px;margin-top:4px;">
-                    ${esc(u.email || '')}
+        container.innerHTML = users
+          .map((u) => {
+            const displayName =
+              u.displayName || u.fullName || u.email || "Kullanıcı";
+            const approvedBadge = u.isApproved
+              ? '<span class="badge ok">Onaylı</span>'
+              : '<span class="badge warn">Onay Bekliyor</span>';
+            const adminBadge = u.isAdmin ? '<span class="badge ok">Admin</span>' : "";
+            return `
+              <div class="card" style="padding:12px;">
+                <div class="row-between">
+                  <div>
+                    <div style="font-weight:600;">${esc(displayName)}</div>
+                    <div class="muted" style="font-size:13px;margin-top:4px;">
+                      ${esc(u.email || "")}
+                    </div>
+                    <div class="muted" style="font-size:12px;margin-top:4px;">
+                      Kayıt: ${formatDate(u.createdAt)}
+                    </div>
                   </div>
-                  <div class="muted" style="font-size:12px;margin-top:4px;">
-                    Kayıt: ${formatDate(u.createdAt)}
+                  <div class="row" style="gap:8px;flex-wrap:wrap;">
+                    ${approvedBadge}
+                    ${adminBadge}
+                    <button class="btn ghost" onclick="showUserModal('${esc(u.id)}')">Detay</button>
                   </div>
                 </div>
-                <div class="row" style="gap:8px;">
-                  ${hasSub ? `<span class="badge ok">${esc(sub.planName || 'Abone')}</span>` : ''}
-                  <button class="btn ghost" onclick="showUserModal('${esc(id)}')">Detay</button>
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('');
-      } catch (e) {
-        console.error(e);
-        $('#userList').innerHTML = '<p class="muted">Üyeler yüklenemedi.</p>';
+              </div>`;
+          })
+          .join("");
+      } catch {
+        $("#userList").innerHTML = '<p class="muted">Üyeler yüklenemedi.</p>';
       }
     }
 
-    async function showUserModal(userId) {
-      if (!userId) return;
+    function showUserModal(userId) {
+      const u = LAST_USERS.find((x) => String(x.id) === String(userId));
+      if (!u) {
+        showToast("Kullanıcı detayı bulunamadı.", "err");
+        return;
+      }
+      const displayName =
+        u.displayName || u.fullName || u.email || "Kullanıcı";
+      const aiProfile =
+        u.aiProfile && typeof u.aiProfile === "object"
+          ? JSON.stringify(u.aiProfile, null, 2)
+          : null;
+
+      $("#userDetail").innerHTML = `
+        <div style="font-weight:600; font-size:16px;">${esc(displayName)}</div>
+        <div class="muted" style="font-size:13px;margin-top:4px;">
+          ${esc(u.email || "")}
+        </div>
+        ${
+          u.phone
+            ? `<div class="muted" style="font-size:13px;margin-top:4px;">${esc(
+                u.phone
+              )}</div>`
+            : ""
+        }
+        ${
+          u.city || u.address
+            ? `
+          <div class="muted" style="font-size:13px;margin-top:6px;">
+            ${u.city ? "Şehir: " + esc(u.city) + "<br>" : ""}
+            ${u.address ? "Adres: " + esc(u.address) : ""}
+          </div>`
+            : ""
+        }
+        <div class="divider"></div>
+        <div class="muted" style="font-size:13px;">
+          Kayıt Tarihi: ${formatDate(u.createdAt)}<br>
+          Son Giriş: ${formatDate(u.lastLoginAt)}<br>
+          Son IP: ${esc(u.lastLoginIp || "-")}
+        </div>
+        <div style="margin-top:10px;">
+          <label class="muted" style="font-size:13px;">
+            Onay Durumu: ${u.isApproved ? "Onaylı" : "Onay Bekliyor"}
+          </label>
+          <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap;">
+            <button class="btn primary" onclick="toggleUserApproval('${esc(
+              u.id
+            )}', ${u.isApproved ? "false" : "true"})">
+              ${u.isApproved ? "Onayı Kaldır" : "Onayla"}
+            </button>
+            <button class="btn danger" onclick="deleteUser('${esc(
+              u.id
+            )}')">Kullanıcıyı Sil</button>
+          </div>
+        </div>
+        ${
+          aiProfile
+            ? `
+          <div class="divider"></div>
+          <h4 style="font-size:15px;margin-bottom:4px;">AI Profil</h4>
+          <pre style="font-size:12px;white-space:pre-wrap;">${esc(aiProfile)}</pre>`
+            : ""
+        }
+      `;
+      showModal("userModal");
+    }
+
+    async function toggleUserApproval(id, approved) {
       try {
-        const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, withAuth());
+        const res = await fetch(
+          `/api/admin/users/${encodeURIComponent(id)}/approve`,
+          withAuth({
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ approved })
+          })
+        );
         await handle401(res);
         const data = await res.json();
-        if (!res.ok || !data.success || !data.user) throw new Error('Kullanıcı detayı yüklenemedi.');
-
-        const u = data.user;
-        const sub = u.subscription || {};
-
-        const displayName =
-          u.name ||
-          u.fullName ||
-          ((u.firstName || '') + ' ' + (u.lastName || '')).trim() ||
-          u.email ||
-          'İsimsiz Kullanıcı';
-
-        $('#userDetail').innerHTML = `
-          <div style="font-weight:600; font-size:16px;">${esc(displayName)}</div>
-          <div class="muted" style="font-size:13px;margin-top:4px;">
-            ${esc(u.email || '')}
-          </div>
-          ${u.phone ? `<div class="muted" style="font-size:13px;margin-top:4px;">${esc(u.phone)}</div>` : ''}
-          <div class="divider"></div>
-          <div class="muted" style="font-size:13px;">
-            Kayıt Tarihi: ${formatDate(u.createdAt)}<br>
-            Son Giriş: ${formatDate(u.lastLoginAt)}
-          </div>
-          ${sub && sub.active ? `
-            <div style="margin-top:10px;">
-              <h4 style="font-size:15px;margin-bottom:4px;">Abonelik</h4>
-              <div class="muted" style="font-size:13px;">
-                Plan: ${esc(sub.planName || '')}<br>
-                Yenileme Tarihi: ${formatDate(sub.nextRenewalAt)}
-              </div>
-            </div>
-          ` : ''}
-        `;
-
-        showModal('userModal');
-      } catch (e) {
-        console.error(e);
-        showToast('Kullanıcı detayı yüklenemedi.', 'err');
+        if (!data.success) throw new Error();
+        showToast("Kullanıcı onay durumu güncellendi.", "ok");
+        hideModal("userModal");
+        loadUsers();
+      } catch {
+        showToast("Onay durumu güncellenemedi.", "err");
       }
     }
 
-    // ========== REVIEWS ==========
-    let CURRENT_REVIEW = null;
+    async function deleteUser(id) {
+      if (!confirm("Bu kullanıcıyı silmek istiyor musunuz?")) return;
+      try {
+        const res = await fetch(
+          `/api/admin/users/${encodeURIComponent(id)}`,
+          withAuth({ method: "DELETE" })
+        );
+        await handle401(res);
+        const data = await res.json();
+        if (!data.success) throw new Error();
+        showToast("Kullanıcı silindi.", "ok");
+        hideModal("userModal");
+        loadUsers();
+      } catch {
+        showToast("Kullanıcı silinemedi.", "err");
+      }
+    }
+
+    // ========= REVIEWS =========
+    let LAST_REVIEWS = [];
+    let PRODUCT_NAME_MAP = {};
 
     async function loadReviews() {
       try {
-        const res = await fetch('/api/admin/reviews', withAuth());
+        // Ürün isimleri için map
+        const prodRes = await fetch("/api/products", { cache: "no-store" });
+        let products = [];
+        if (prodRes.ok) {
+          products = await prodRes.json();
+        }
+        PRODUCT_NAME_MAP = {};
+        if (Array.isArray(products)) {
+          products.forEach((p) => {
+            PRODUCT_NAME_MAP[String(p.id)] = p.name || "Ürün";
+          });
+        }
+
+        const res = await fetch("/api/admin/reviews", withAuth());
         await handle401(res);
         const data = await res.json();
-        if (!res.ok || !data.success) throw new Error('Yorumlar yüklenemedi.');
-
+        if (!data.success) throw new Error("Yorumlar yüklenemedi.");
         const reviews = data.items || [];
-        const container = $('#reviewList');
+        LAST_REVIEWS = reviews;
+        const container = $("#reviewList");
         if (!reviews.length) {
           container.innerHTML = '<p class="muted">Yorum bulunmuyor.</p>';
           return;
         }
-
-        container.innerHTML = reviews.map(r => {
-          const id = r.id || r._id;
-          const approved = !!r.approved;
-          const stars = '★★★★★'.slice(0, r.rating || 0);
-          const badge = approved
-            ? '<span class="badge ok">Onaylı</span>'
-            : '<span class="badge warn">Beklemede</span>';
-
-          return `
-            <div class="card" style="padding:12px;">
-              <div class="row-between">
-                <div>
-                  <div style="font-weight:600;">${esc(r.productName || 'Ürün')}</div>
-                  <div class="muted" style="font-size:13px;margin-top:4px;">
-                    ${esc(r.userName || 'Anonim')} · <span class="stars">${esc(stars)}</span>
+        container.innerHTML = reviews
+          .map((r) => {
+            const productName =
+              PRODUCT_NAME_MAP[String(r.productId)] || "Ürün";
+            const stars = "★★★★★".slice(0, r.rating || 0);
+            const badge = r.isApproved
+              ? '<span class="badge ok">Onaylı</span>'
+              : '<span class="badge warn">Beklemede</span>';
+            return `
+              <div class="card" style="padding:12px;">
+                <div class="row-between">
+                  <div>
+                    <div style="font-weight:600;">${esc(productName)}</div>
+                    <div class="muted" style="font-size:13px;margin-top:4px;">
+                      ${esc(r.displayName || "Kullanıcı")} · <span class="stars">${esc(stars)}</span>
+                    </div>
+                    <div class="muted" style="font-size:12px;margin-top:4px;">
+                      ${formatDate(r.createdAt)}
+                    </div>
+                  </div>
+                  <div class="row" style="gap:8px;flex-wrap:wrap;">
+                    ${badge}
+                    <button class="btn ghost" onclick="showReviewModal('${esc(r.id)}')">Detay</button>
                   </div>
                 </div>
-                <div class="row" style="gap:8px;">
-                  ${badge}
-                  <button class="btn ghost" onclick="showReviewModal('${esc(id)}')">Detay</button>
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('');
-      } catch (e) {
-        console.error(e);
-        $('#reviewList').innerHTML = '<p class="muted">Yorumlar yüklenemedi.</p>';
+              </div>`;
+          })
+          .join("");
+      } catch {
+        $("#reviewList").innerHTML = '<p class="muted">Yorumlar yüklenemedi.</p>';
       }
     }
 
-    async function showReviewModal(reviewId) {
-      if (!reviewId) return;
-      try {
-        const res = await fetch(`/api/admin/reviews/${encodeURIComponent(reviewId)}`, withAuth());
-        await handle401(res);
-        const data = await res.json();
-        if (!res.ok || !data.success || !data.review) throw new Error('Yorum detayı yüklenemedi.');
+    function findReviewById(id) {
+      return LAST_REVIEWS.find((r) => String(r.id) === String(id));
+    }
 
-        const r = data.review;
-        CURRENT_REVIEW = r;
-        const stars = '★★★★★'.slice(0, r.rating || 0);
-        const approved = !!r.approved;
-
-        $('#reviewDetail').innerHTML = `
-          <input type="hidden" id="reviewIdField" value="${esc(r.id || r._id || '')}">
-          <div style="font-weight:600; font-size:16px;">${esc(r.productName || 'Ürün')}</div>
-          <div class="muted" style="font-size:13px;margin-top:4px;">
-            ${esc(r.userName || 'Anonim')} · <span class="stars">${esc(stars)}</span>
-          </div>
-          <div style="margin-top:10px; white-space:pre-wrap;">${esc(r.comment || '')}</div>
-          <div class="muted" style="font-size:12px;margin-top:8px;">
-            ${formatDate(r.createdAt)}
-          </div>
-          <div style="margin-top:10px;">
-            Durum: ${approved ? 'Onaylı' : 'Beklemede'}
-          </div>
-        `;
-
-        showModal('reviewModal');
-      } catch (e) {
-        console.error(e);
-        showToast('Yorum detayı yüklenemedi.', 'err');
+    function showReviewModal(reviewId) {
+      const r = findReviewById(reviewId);
+      if (!r) {
+        showToast("Yorum detayı bulunamadı.", "err");
+        return;
       }
+      const productName =
+        PRODUCT_NAME_MAP[String(r.productId)] || "Ürün";
+      const stars = "★★★★★".slice(0, r.rating || 0);
+      const photos = Array.isArray(r.photos) ? r.photos : [];
+      const photosHtml = photos.length
+        ? `<div class="photos" style="margin-top:10px;">
+            ${photos
+              .slice(0, 5)
+              .map(
+                (p) =>
+                  `<img src="${esc(resolveImageUrl(p))}" onerror="this.src='logo.png';" alt="">`
+              )
+              .join("")}
+           </div>`
+        : "";
+      const statusText = r.isApproved ? "Onaylı" : "Beklemede";
+
+      $("#reviewDetail").innerHTML = `
+        <input type="hidden" id="reviewIdField" value="${esc(r.id)}">
+        <div style="font-weight:600; font-size:16px;">${esc(productName)}</div>
+        <div class="muted" style="font-size:13px;margin-top:4px;">
+          ${esc(r.displayName || "Kullanıcı")} · <span class="stars">${esc(stars)}</span>
+        </div>
+        <div style="margin-top:10px; white-space:pre-wrap;">${esc(r.comment || "")}</div>
+        ${photosHtml}
+        <div class="muted" style="font-size:12px;margin-top:8px;">
+          ${formatDate(r.createdAt)}
+        </div>
+        <div style="margin-top:10px;">
+          Durum: ${statusText}
+        </div>
+      `;
+      showModal("reviewModal");
     }
 
     async function toggleReviewFromModal() {
-      const id = $('#reviewIdField')?.value;
+      const id = $("#reviewIdField")?.value;
       if (!id) return;
+      const r = findReviewById(id);
+      const newApproved = !(r && r.isApproved);
 
       try {
-        const res = await fetch(`/api/admin/reviews/${encodeURIComponent(id)}/toggle`, withAuth({
-          method: 'PATCH'
-        }));
+        const res = await fetch(
+          `/api/admin/reviews/${encodeURIComponent(id)}/approve`,
+          withAuth({
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ approved: newApproved })
+          })
+        );
         await handle401(res);
         const data = await res.json();
-        if (!res.ok || !data.success) throw new Error('Yorum durumu değiştirilemedi.');
-
-        showToast('Yorum durumu güncellendi.', 'ok');
-        hideModal('reviewModal');
+        if (!data.success) throw new Error();
+        showToast("Yorum onay durumu güncellendi.", "ok");
+        hideModal("reviewModal");
         loadReviews();
-      } catch (e) {
-        console.error(e);
-        showToast('Yorum durumu değiştirilemedi.', 'err');
+      } catch {
+        showToast("Yorum durumu değiştirilemedi.", "err");
       }
     }
 
     async function deleteReviewFromModal() {
-      const id = $('#reviewIdField')?.value;
+      const id = $("#reviewIdField")?.value;
       if (!id) return;
-      if (!confirm('Bu yorumu silmek istiyor musunuz?')) return;
+      if (!confirm("Bu yorumu silmek istiyor musunuz?")) return;
 
       try {
-        const res = await fetch(`/api/admin/reviews/${encodeURIComponent(id)}`, withAuth({
-          method: 'DELETE'
-        }));
+        const res = await fetch(
+          `/api/admin/reviews/${encodeURIComponent(id)}`,
+          withAuth({ method: "DELETE" })
+        );
         await handle401(res);
         const data = await res.json();
-        if (!res.ok || !data.success) throw new Error('Yorum silinemedi.');
-
-        showToast('Yorum silindi.', 'ok');
-        hideModal('reviewModal');
+        if (!data.success) throw new Error();
+        showToast("Yorum silindi.", "ok");
+        hideModal("reviewModal");
         loadReviews();
-      } catch (e) {
-        console.error(e);
-        showToast('Yorum silinemedi.', 'err');
+      } catch {
+        showToast("Yorum silinemedi.", "err");
       }
     }
 
-    // ========== INIT ==========
-    (function initAdmin() {
-      if (ADMIN_TOKEN) {
-        setLoggedInUI(true);
-      } else {
-        setLoggedInUI(false);
+    // ========= FEEDBACK & AI =========
+    async function loadFeedback() {
+      try {
+        const res = await fetch("/api/admin/feedback", withAuth());
+        await handle401(res);
+        const data = await res.json();
+        const list = data.success && Array.isArray(data.items) ? data.items : [];
+        const container = $("#feedbackList");
+        if (!list.length) {
+          container.innerHTML = '<p class="muted">Henüz geri bildirim yok.</p>';
+          return;
+        }
+        container.innerHTML = list
+          .slice(0, 20)
+          .map((f) => {
+            const stars = "★★★★★".slice(0, f.rating || 0);
+            return `
+              <div class="card" style="padding:10px;">
+                <div class="row-between">
+                  <div>
+                    <div class="stars">${esc(stars)}</div>
+                    <div class="muted" style="font-size:12px;margin-top:2px;">
+                      ${formatDate(f.createdAt)}
+                    </div>
+                  </div>
+                  ${
+                    f.page
+                      ? `<span class="pill">${esc(f.page)}</span>`
+                      : ""
+                  }
+                </div>
+                ${
+                  f.comment
+                    ? `<div style="margin-top:6px;font-size:13px;white-space:pre-wrap;">${esc(
+                        f.comment
+                      )}</div>`
+                    : ""
+                }
+              </div>`;
+          })
+          .join("");
+      } catch {
+        $("#feedbackList").innerHTML = '<p class="muted">Geri bildirimler yüklenemedi.</p>';
       }
+    }
+
+    async function askAI() {
+      const question = $("#aiQuestion").value.trim();
+      if (!question) {
+        return showToast("Lütfen bir soru yazın.", "err");
+      }
+      $("#aiAnswer").textContent = "Yanıt üretiliyor...";
+      try {
+        const res = await fetch("/api/ai/consult", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question, profileSnapshot: null })
+        });
+        const data = await res.json();
+        if (data.success && data.answer) {
+          $("#aiAnswer").textContent = data.answer;
+        } else {
+          $("#aiAnswer").textContent = "Şu an yanıt üretilemedi.";
+        }
+      } catch {
+        $("#aiAnswer").textContent = "Şu an yanıt üretilemedi.";
+      }
+    }
+
+    // ========= INIT =========
+    (function init() {
+      setLoggedInUI(!!ADMIN_TOKEN);
     })();
   </script>
 </body>

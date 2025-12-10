@@ -6,19 +6,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Mavern</title>
 
-  <!-- Temel açıklama / SEO -->
-  <meta name="description" content="Mavern: Günlük bakımı kişisel bir ritüele dönüştüren, minimal ve seçkin kişisel bakım ürünleri. Yakında yapay zekâ destekli kişiselleştirilmiş öneriler.">
-  <meta name="robots" content="index,follow">
-
-  <!-- Open Graph / sosyal önizleme -->
+  <!-- SEO -->
+  <meta name="description" content="Mavern: Minimal, premium ve kişiselleştirilebilir bakım ürünleri. Yapay zekâ destekli öneriler yakında.">
+   <meta name="robots" content="index,follow">
   <meta property="og:title" content="Mavern">
-  <meta property="og:description" content="Günlük bakımı kişisel bir ritüele dönüştüren seçkin formüller. Yakında yapay zekâ destekli kişiselleştirme.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://mavern.example/">
+  <meta property="og:description" content="Minimal, premium ve kişiselleştirilmiş bakım deneyimi.">
   <meta property="og:image" content="logo.png">
+  <meta property="og:type" content="website">
 
-  <!-- Favicon (şimdilik logo.png) -->
-  <link rel="icon" type="image/png" href="logo.png">
+   <link rel="icon" type="image/png" href="logo.png">
 
   <!-- Fontlar -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,15 +23,17 @@
   <!-- Stil -->
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
+<!-- ============================================================
+     HEADER
+=============================================================== -->
 <header class="topbar" role="banner">
   <div class="logo-area">
-    <!-- Sadece M harfinin göründüğü crop’lu logo -->
     <a href="index.html" class="logo-mark" aria-label="Mavern ana sayfa">
-      <img src="logo.png" alt="Mavern Logosu" class="brand-logo" onerror="this.style.display='none'"/>
+      <img src="logo.png" alt="Mavern Logosu" class="brand-logo" />
     </a>
-    <!-- Yanında metin olarak MAVERN -->
     <h1 class="brand">Mavern</h1>
   </div>
 
@@ -44,112 +42,117 @@
     <a href="#" onclick="openProductsPanel();return false;">Ürünler</a>
     <a href="#" onclick="scrollToSection('contact');return false;">İletişim</a>
 
-    <!-- Yeni sepet ikonu -->
+    <!-- Sepet -->
     <a href="#" onclick="openCart();return false;" class="cart-link" aria-label="Sepeti aç">
-      <span class="cart-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+      <span class="cart-icon">
+        <svg viewBox="0 0 24 24">
           <path d="M6.5 9.5h11l-1 8.5H7.5l-1-8.5Z" />
           <path d="M9 9.5V7.2A3.2 3.2 0 0 1 12.2 4 3.2 3.2 0 0 1 15.4 7.2v2.3" />
         </svg>
       </span>
       <span>Sepet</span>
-      <span id="cartCount" class="badge" aria-live="polite"></span>
+      <span id="cartCount" class="badge"></span>
     </a>
 
-    <!-- HESAP / GİRİŞ BUTONU -->
+    <!-- Hesap -->
     <a href="auth.html" id="accountLink" class="account-link">Giriş / Kayıt</a>
 
-    <!-- TEMA BUTONU (menü içinde, script.js yönetiyor) -->
-    <button id="themeToggle" class="theme-toggle" type="button" aria-label="Tema değiştir">
-      ☾ Koyu tema
-    </button>
+    <!-- Tema -->
+    <button id="themeToggle" class="theme-toggle" type="button">☾ Koyu Tema</button>
   </nav>
 </header>
 
-<!-- Sol menü -->
-<aside id="sidebar" class="panel left" aria-hidden="true" aria-label="Yan menü">
-  <button class="close-btn" type="button" onclick="closeSidebar()" aria-label="Menüyü kapat">×</button>
-  <a href="#" onclick="scrollToSection('about'); closeSidebar(); return false;">Hakkımızda</a>
-  <a href="#" onclick="openProductsPanel(); closeSidebar(); return false;">Ürünler</a>
-  <a href="#" onclick="scrollToSection('contact'); closeSidebar(); return false;">İletişim</a>
-  <a href="https://www.instagram.com/mavern.26/?utm_source=qr&igsh=NjhrdmdwOXIzcGZs#" target="_blank" rel="noopener noreferrer">Instagram</a>
+<!-- ============================================================
+     MOBİL SIDEBAR
+     (Modern blur–overlay + daha derli toplu)
+=============================================================== -->
+<aside id="sidebar" class="panel left" aria-hidden="true">
+  <div class="sidebar-bg"></div>
+
+  <div class="sidebar-content">
+    <button class="close-btn" type="button" onclick="closeSidebar()">×</button>
+
+    <a href="#" onclick="scrollToSection('about'); closeSidebar(); return false;">Hakkımızda</a>
+    <a href="#" onclick="openProductsPanel(); closeSidebar(); return false;">Ürünler</a>
+    <a href="#" onclick="scrollToSection('contact'); closeSidebar(); return false;">İletişim</a>
+    <a href="https://www.instagram.com/mavern.26" target="_blank" rel="noopener noreferrer">Instagram</a>
+  </div>
 </aside>
 
-<!-- Sepet -->
-<aside id="cartPanel" class="panel right" aria-hidden="true" aria-label="Sepet paneli">
-  <button class="close-btn" type="button" onclick="closeCart()" aria-label="Sepeti kapat">×</button>
+<!-- ============================================================
+     SEPET PANELİ
+=============================================================== -->
+<aside id="cartPanel" class="panel right" aria-hidden="true">
+  <button class="close-btn" type="button" onclick="closeCart()">×</button>
   <h2>Sepet</h2>
+
   <div id="cartItems" class="cart-list"></div>
 
   <div class="coupon-row">
-    <input id="couponInput" placeholder="İndirim kodu" aria-label="İndirim kodu" />
+    <input id="couponInput" placeholder="İndirim kodu" />
     <button class="btn" type="button" onclick="applyCoupon()">Uygula</button>
-    <div id="couponMsg" class="muted small" aria-live="polite"></div>
+    <div id="couponMsg" class="muted small"></div>
   </div>
 
   <div class="cart-summary">
-    <div class="row">
-      <span class="muted">Ara Toplam</span>
-      <span id="subtotal">0 ₺</span>
-    </div>
-    <div class="row">
-      <span class="muted">İndirim</span>
-      <span id="discount">0 ₺</span>
-    </div>
-    <div class="row total">
-      <span>Ödenecek</span>
-      <span id="payable">0 ₺</span>
-    </div>
+    <div class="row"><span class="muted">Ara Toplam</span><span id="subtotal">0 ₺</span></div>
+    <div class="row"><span class="muted">İndirim</span><span id="discount">0 ₺</span></div>
+    <div class="row total"><span>Ödenecek</span><span id="payable">0 ₺</span></div>
 
-    <!-- Tek ödeme butonu; form overlay’de açılıyor -->
-    <div class="row actions" style="margin-top:10px;gap:8px;flex-wrap:wrap">
-      <button class="btn primary" type="button" onclick="openCheckout()">Ödeme</button>
-      <button class="btn" type="button" onclick="clearCart()">Sepeti Boşalt</button>
-    </div>
-    <div id="checkoutMsg" class="muted small"></div>
+    <div class="row actions">
+      <button class="btn primary" onclick="openCheckout()">Ödeme</button>
+      <button class="btn" onclick="clearCart()">Boşalt</button>
+     </div>
   </div>
 </aside>
 
-<!-- Mobil sticky sepet bar -->
-<div id="stickyCartBar" class="sticky-cart-bar" aria-hidden="true">
+<!-- Mobil Sticky bar -->
+<div id="stickyCartBar" class="sticky-cart-bar">
   <div class="sum">
     <strong data-sticky-total>0 ₺</strong>
     <small data-sticky-label>0 ürün</small>
   </div>
-  <button class="btn primary" type="button" onclick="openCart()">Sepeti Aç</button>
+  <button class="btn primary" onclick="openCart()">Sepeti Aç</button>
 </div>
 
-<!-- HERO -->
-<section class="hero hero-dark" aria-labelledby="hero-title">
+<!-- ============================================================
+     HERO (Dark Theme Revamp)
+=============================================================== -->
+<section class="hero hero-dark">
   <div class="grain"></div>
   <div class="vignette"></div>
+
   <div class="hero-inner">
+    <!-- Sol taraf -->
     <div class="hero-copy">
-      <h2 id="hero-title" class="elegant">MAVERN</h2>
+      <h2 class="elegant">MAVERN</h2>
+
       <p class="lead">
-        Günlük bakımı, kişisel bir ritüele dönüştüren minimal ve seçkin kişisel bakım ürünleri.
+        Günlük bakımı kişisel bir ritüele dönüştüren minimal ve seçkin ürünler.
       </p>
 
-      <!-- AI / kişiselleştirme satırı (giriş yapınca script.js / inline script dolduruyor) -->
+      <!-- Giriş yapmış kullanıcıya özel -->
       <p id="heroPersonalLine"
          class="muted small"
-         style="margin:4px 0 10px;display:none;"
-         aria-live="polite"></p>
+         style="margin:4px 0 10px;display:none;"></p>
 
       <ul class="bullets">
-        <li>Saç ve cilt tipine odaklanan formüller</li>
+        <li>Saç & cilt tipine göre optimize formüller</li>
         <li>Küçük partilerde taze üretim</li>
         <li>Yapay zekâ destekli öneriler (yakında)</li>
       </ul>
+
       <div class="hero-actions">
-        <button class="btn primary" type="button" onclick="openProductsPanel()">Koleksiyonu Gör</button>
-        <button class="btn ghost" type="button" onclick="scrollToSection('about')">Hakkımızda</button>
+        <button class="btn primary" onclick="openProductsPanel()">Koleksiyonu Gör</button>
+        <button class="btn ghost" onclick="scrollToSection('about')">Hakkımızda</button>
       </div>
+
       <p class="muted small" style="margin-top:8px;">
-        Hesabınız açıldığında, buradaki içerikler alışveriş davranışlarınıza ve tercihlerinize göre kademeli olarak kişiselleştirilecek.
+        Hesabınız açıldıkça içerikler ve öneriler kademeli olarak kişiselleşir.
       </p>
     </div>
 
+    <!-- Sağ taraf logo spotlight -->
     <div class="hero-art" aria-hidden="true">
       <div class="spotlight ring">
         <img src="logo.png" alt="Mavern Logo" />
@@ -158,75 +161,73 @@
   </div>
 </section>
 
-<!-- Güven şeridi -->
-<div class="trust-strip-wrap" aria-hidden="false">
+<!-- ============================================================
+     GÜVEN ŞERİDİ
+=============================================================== -->
+<div class="trust-strip-wrap">
   <div class="trust-strip">
-    <div class="trust-item">
-      <span class="trust-dot"></span>
-      <span>Hızlı ve özenli kargo</span>
-    </div>
-    <div class="trust-item">
-      <span class="trust-dot"></span>
-      <span>Güvenli form &amp; e-posta bildirimi</span>
-    </div>
-    <div class="trust-item">
-      <span class="trust-dot"></span>
-      <span>Küçük parti üretim, taze stok</span>
-    </div>
-    <div class="trust-item">
-      <span class="trust-dot"></span>
-      <span>KVKK uyumlu veri işleme</span>
-    </div>
+    <div class="trust-item"><span class="trust-dot"></span> Hızlı ve özenli kargo</div>
+    <div class="trust-item"><span class="trust-dot"></span> Güvenli form bildirimi</div>
+    <div class="trust-item"><span class="trust-dot"></span> Küçük parti üretim</div>
+    <div class="trust-item"><span class="trust-dot"></span> KVKK uyumlu veri işleme</div>
   </div>
 </div>
-
+<!-- ============================================================
+     ANA İÇERİK
+=============================================================== -->
 <main class="container">
 
-  <!-- AI / Kişiselleştirme Teaser Bölümü -->
+  <!-- ============================================================
+       AI / KİŞİSELLEŞTİRME TEASER
+  =============================================================== -->
   <section id="ai-preview" class="section" data-section="ai-preview">
     <div class="section-head">
       <h3 class="elegant">Yakında: Kişiselleştirilmiş Bakım Deneyimi</h3>
-      <span class="muted small">Hesabım sayfasıyla birlikte açılacak yapay zekâ destekli özellikler.</span>
-    </div>
-
-    <!-- Var olan benefits-grid / benefit stillerini yeniden kullanıyoruz -->
-    <div class="benefits-grid">
+      <span class="muted small">
+        Bu özellik hesabınız aktifken otomatik etkinleşecektir.
+      </span>
+     </div>
+     <div class="benefits-grid">
       <article class="benefit">
         <h4>Saç &amp; Cilt Profili</h4>
         <p>
-          Hesabınızdan saç ve cilt tipinizi, hedeflerinizi ve rutin sıklığınızı paylaşarak
-          sizin için temel bir bakım profili oluşturabileceksiniz. Bu profil, önerilerin temelini oluşturur.
+          Saç ve cilt tipinizi, bakım alışkanlıklarınızı ve hedeflerinizi girerek
+          temel bir bakım profili oluşturabileceksiniz. Bu profil tüm önerilerin başlangıç noktası olacak.
         </p>
       </article>
+
       <article class="benefit">
         <h4>Akıllı Ürün Eşleştirme</h4>
         <p>
-          Profil verileriniz, sipariş geçmişiniz ve geri bildirimleriniz,
-          yapay zekâ destekli bir motor tarafından analiz edilerek
-          hangi ürünlerin sizin için daha isabetli olabileceği konusunda öneriler sunacak.
+          Sipariş geçmişiniz, etkileşimleriniz ve tercihlerinizi içeren sinyaller
+          yapay zekâ destekli motor tarafından analiz edilerek size özel öneriler üretilecek.
         </p>
       </article>
+
       <article class="benefit">
         <h4>Rutin Takip &amp; Geri Bildirim</h4>
         <p>
-          Kullandığınız ürünlerden aldığınız sonuçları kısaca paylaştıkça, profiliniz güncellenecek
-          ve hem sizin deneyiminiz hem de gelecekteki seri ve formüller bu sinyallerle şekillenecek.
+          Deneyiminizi paylaştıkça profiliniz güncellenecek ve size daha uyumlu
+          bakım rutinleri önerilmeye başlanacak.
         </p>
       </article>
     </div>
 
     <p class="muted small" style="margin-top:10px;max-width:640px;">
-      Bu özellikler yalnızca deneyiminizi geliştirmek için kullanılacak ve
-      <a href="kvkk.html">KVKK Aydınlatma Metni</a> çerçevesinde, açık rızanıza dayalı olarak işlenecektir.
+      Tüm kişisel verileriniz yalnızca deneyiminizi geliştirmek amacıyla kullanılır.
+      Ayrıntılı bilgi için <a href="kvkk.html">KVKK Aydınlatma Metni</a>.
     </p>
   </section>
 
-  <!-- Öne çıkanlar -->
+  <!-- ============================================================
+       ÖNE ÇIKANLAR
+  =============================================================== -->
   <section id="productsPreview" class="section">
     <div class="section-head">
       <h3 class="elegant">Öne Çıkanlar</h3>
       <a href="#" onclick="openProductsPanel();return false;" class="muted">Tümü →</a>
     </div>
+
     <div id="products" class="product-grid with-skeleton" aria-live="polite">
       <div class="card skeleton"></div>
       <div class="card skeleton"></div>
@@ -234,63 +235,74 @@
     </div>
   </section>
 
-  <!-- Neden Mavern -->
+  <!-- ============================================================
+       NEDEN MAVERN
+  =============================================================== -->
   <section class="section">
     <div class="section-head">
       <h3 class="elegant">Neden Mavern?</h3>
-      <span class="muted small">Raf ürünü değil, gerçekten kullanmak isteyeceğiniz seçimler.</span>
+      <span class="muted small">Raf ürünü değil; seçilmiş ve anlamlı formüller.</span>
     </div>
+
     <div class="benefits-grid">
       <article class="benefit">
         <h4>Bilimsel içerik yaklaşımı</h4>
         <p>
-          Formüllerimizi, “listede iyi dursun” diye değil, belirli bir ihtiyacı çözmek için kurguluyoruz.
-          Gereksiz gösteriş yerine; amaca yönelik, birbiriyle uyumlu aktiflere ve sade içerik listelerine odaklanıyoruz.
+          Her formül belirli bir ihtiyacı çözmek için tasarlanır. Gereksiz gösteriş yerine,
+          kontrollü, uyumlu ve sade içerik listeleri tercih ederiz.
         </p>
       </article>
+
       <article class="benefit">
-        <h4>Taze ve sınırlı üretim</h4>
+        <h4>Taze & sınırlı üretim</h4>
         <p>
-          Ürünlerimizi küçük partiler halinde üretiyoruz. Bu sayede hem daha taze stok sunmayı,
-          hem de her seriyi daha sıkı bir kalite kontrolden geçirmeyi hedefliyoruz.
+          Seri üretim yerine küçük partilerde üretim yaparak tazelik ve kaliteyi garanti altına alıyoruz.
         </p>
       </article>
+
       <article class="benefit">
-        <h4>Şeffaf iletişim &amp; topluluk</h4>
+        <h4>Topluluk odaklı geliştirme</h4>
         <p>
-          Sipariş sonrası bilgilendirme, sorularınıza hızlı dönüş ve samimi bir dil Mavern’in temel parçaları.
-          Geri bildirimleriniz, hem sizin deneyiminizi hem de gelecekteki ürünleri doğrudan etkiliyor.
+          Yorumlarınız ve geri bildirimleriniz yeni ürün serilerini doğrudan şekillendirir.
         </p>
       </article>
     </div>
   </section>
 
-  <!-- Hakkımızda -->
+  <!-- ============================================================
+       HAKKIMIZDA
+  =============================================================== -->
   <section id="about" class="section about">
     <div class="about-card">
       <h3 class="elegant">Hakkımızda</h3>
+
       <p class="muted">
-        Mavern; müşteri odaklı, yenilikçi ve topluluğuyla birlikte gelişen bir markadır.
-        Hedefimiz, banyodaki her ürünün “idare eder” değil, gerçekten kullanmaktan keyif aldığınız
-        bir seçim olması.
+        Mavern, kullanıcılarının deneyimini merkeze alan modern bir bakım markasıdır.
+        Hedefimiz, banyodaki hiçbir ürünün “idare eder” olmaması; hepsinin
+        gerçekten kullanmaktan keyif aldığınız bir deneyime dönüşmesi.
       </p>
-      <p class="muted" style="margin-top:6px">
-        Ürünlerimizi tasarlarken, hem formül tarafına hem de deneyime odaklanıyoruz:
+
+      <p class="muted" style="margin-top:8px;">
+        Ürünlerimizi geliştirirken:
       </p>
+
       <ul class="muted" style="padding-left:18px;margin:4px 0 0;font-size:.9rem">
-        <li>İşlevini gerçekten yerine getiren, sade ama güçlü formüller</li>
-        <li>Gösterişli değil, zamansız ve minimal tasarım dili</li>
-        <li>Küçük ama güçlü bir toplulukla birlikte şekillenen seri ve yorumlar</li>
+        <li>İşlev odaklı, sade ancak güçlü içerikler</li>
+        <li>Zamansız ve minimal tasarım</li>
+        <li>Sürekli gelişen bir topluluk geri bildirimi</li>
       </ul>
     </div>
   </section>
 
-  <!-- SSS -->
+  <!-- ============================================================
+       SSS
+  =============================================================== -->
   <section id="faq" class="section">
     <div class="section-head">
       <h3 class="elegant">Sık Sorulan Sorular</h3>
-      <span class="muted small">Aklınıza takılanlar için kısa cevaplar.</span>
+      <span class="muted small">En çok merak edilenlere kısa cevaplar.</span>
     </div>
+
     <div class="faq-list">
       <details>
         <summary>
@@ -298,61 +310,64 @@
           <small>Form üzerinden ön talep</small>
         </summary>
         <p>
-          Şu an sitemiz üzerinden “ön talep” topluyoruz. Sepetinizi gönderdiğinizde
-          sipariş detaylarınız bize e-posta olarak iletiliyor, uygun kargo ve ödeme
-          seçenekleri size dönüş yapılarak netleştiriliyor.
+          Sepetinizi gönderdikten sonra bilgiler bize iletilir.
+          Ekibimiz size uygun ödeme ve kargo adımlarını bildirir.
         </p>
       </details>
+
       <details>
         <summary>
           <span>Ürünler ne kadar sürede kargoya verilir?</span>
           <small>Stok durumuna göre</small>
         </summary>
         <p>
-          Stokta olan ürünler için genellikle 1–3 iş günü içinde kargoya verme hedeflenir.
-          Özel seriler ve ön siparişler için süre ürün sayfasında ayrıca belirtilir.
+          Stokta olan ürünler genellikle 1–3 iş günü içinde kargoya hazırlanır.
         </p>
       </details>
+
       <details>
         <summary>
           <span>İade veya değişim yapabiliyor muyum?</span>
-          <small>Koşullara göre</small>
+          <small>Yasal çerçevede</small>
         </summary>
         <p>
-          Kişisel bakım ürünlerinde yasal çerçeveye uygun şekilde,
-          açılmamış ve kullanılmamış ürünler için iade/değişim taleplerini inceleyerek
-          çözüm odaklı yaklaşmaya çalışıyoruz. Detaylar için bizimle iletişime geçebilirsiniz.
+          Açılmamış ve kullanılmamış ürünlerde iade/değişim talepleriniz değerlendirilir.
         </p>
       </details>
+
       <details>
         <summary>
-          <span>Cildim / saç tipime uygun ürünü nasıl seçerim?</span>
+          <span>Hangi ürünü seçmeliyim?</span>
           <small>İletişim formu</small>
         </summary>
         <p>
-          Emin değilseniz, iletişim formundan cilt / saç tipinizi kısaca anlatarak
-          bize yazabilirsiniz. Kullandığınız ürünleri ve beklentinizi belirtirseniz,
-          size daha isabetli bir öneri ile dönebiliriz.
+          Kısa bir şekilde saç/cilt tipinizi anlatarak bize yazabilirsiniz.
+          Size uygun ürünleri öneririz.
         </p>
       </details>
     </div>
-  </section>
-
-  <!-- İletişim -->
+   </section>
+  <!-- ============================================================
+       İLETİŞİM
+  =============================================================== -->
   <section id="contact" class="section">
     <div class="section-head">
       <h3 class="elegant">İletişim</h3>
       <span class="muted small">Sipariş, işbirliği veya merak ettikleriniz için.</span>
     </div>
+
     <div class="contact-form">
-      <input id="contactName" placeholder="Adınız" aria-label="Adınız" />
-      <input id="contactEmail" placeholder="E-posta" aria-label="E-posta adresiniz" />
+      <input id="contactName" placeholder="Adınız" aria-label="Adınız">
+      <input id="contactEmail" placeholder="E-posta" aria-label="E-posta adresiniz">
       <textarea id="contactMsg" placeholder="Mesajınız" aria-label="Mesajınız"></textarea>
       <button class="btn primary" type="button" onclick="sendMessage()">Gönder</button>
       <div id="contactStatus" class="muted small" aria-live="polite"></div>
     </div>
   </section>
 
+  <!-- ============================================================
+       FOOTER
+  =============================================================== -->
   <footer class="footer">
     <div>© 2025 Mavern. Tüm hakları saklıdır.</div>
     <div>
@@ -361,21 +376,28 @@
       <a href="kvkk.html">KVKK Aydınlatma Metni</a>
     </div>
   </footer>
+
 </main>
 
-<!-- Ürünler overlay -->
+<!-- ============================================================
+     ÜRÜNLER OVERLAY (Tam liste)
+=============================================================== -->
 <div id="productsPanel" class="overlay" aria-hidden="true">
   <div class="overlay-card dark">
     <button class="close-btn" type="button" onclick="closeProductsPanel()" aria-label="Ürün panelini kapat">×</button>
     <h3 class="elegant">Ürünlerimiz</h3>
     <div id="productsFull" class="product-grid with-skeleton" aria-live="polite">
-      <div class="card skeleton"></div><div class="card skeleton"></div>
-      <div class="card skeleton"></div><div class="card skeleton"></div>
+      <div class="card skeleton"></div>
+      <div class="card skeleton"></div>
+      <div class="card skeleton"></div>
+      <div class="card skeleton"></div>
     </div>
   </div>
 </div>
 
-<!-- Ödeme overlay (site içi pencere) -->
+<!-- ============================================================
+     CHECKOUT OVERLAY (Sipariş ön talep formu)
+=============================================================== -->
 <div id="checkoutOverlay" class="overlay" aria-hidden="true">
   <div class="overlay-card">
     <div class="head">
@@ -396,6 +418,7 @@
         <label class="muted small" for="chPhone">Telefon</label>
         <input id="chPhone" placeholder="+90 5xx xxx xx xx" autocomplete="tel">
       </div>
+
       <div class="full">
         <label class="muted small" for="chAddress">Adres</label>
         <textarea id="chAddress" placeholder="Açık adresinizi yazın"></textarea>
@@ -418,18 +441,29 @@
         <button class="btn ghost" type="button" onclick="closeCheckout()">Vazgeç</button>
         <button class="btn primary" type="button" onclick="submitCheckout()">Siparişi Gönder</button>
       </div>
+
       <div id="chStatus" class="muted small full" aria-live="polite"></div>
     </div>
   </div>
 </div>
 
+<!-- ============================================================
+     SCRIPTLER
+=============================================================== -->
 <script src="script.js"></script>
 <script>
-  // ===================== Auth / Hesap Linki & AI Profil =====================
+  // ============================================================
+  //  Auth / Hesap linki & AI profil ön-yükleme
+  //  - Kullanıcı JWT varsa /api/auth/me çağrılır
+  //  - Hero’da kişisel karşılama satırı gösterilir
+  //  - İleride AI için kullanılacak profil localStorage’a da yazılır
+  // ============================================================
   window.mavernProfile = null;
 
-  (function(){
-    const link = document.getElementById('accountLink');
+  (function initAccountAndProfile(){
+    const linkId = 'accountLink';
+    const link = document.getElementById(linkId);
+
     let token = null;
     try {
       token = localStorage.getItem('mavern_jwt');
@@ -440,57 +474,62 @@
     }
     if (!token) return;
 
-    // 1) /api/auth/me ile kullanıcıyı al
+    // 1) Kullanıcı bilgisi
     fetch('/api/auth/me', {
       headers: { 'Authorization': 'Bearer ' + token }
     })
-    .then(r => r.ok ? r.json() : null)
-    .then(data => {
-      if (!data || !data.success || !data.user) return;
-      const u = data.user;
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data || !data.success || !data.user) return;
 
-      // Hesap linki label
-      if (link) {
-        link.textContent = u.displayName ? (u.displayName + ' • Hesabım') : 'Hesabım';
-      }
+        const u = data.user;
 
-      // Hero kişisel satırını doldur
-      const heroLine = document.getElementById('heroPersonalLine');
-      if (heroLine) {
-        const name = u.fullName || u.displayName || (u.email || '').split('@')[0];
-        heroLine.textContent = `Hoş geldin ${name}, alışveriş deneyimini adım adım kişiselleştirmeye hazırlanıyoruz.`;
-        heroLine.style.display = 'block';
-      }
+        // Hesap linki label
+        if (link) {
+          const labelBase = u.displayName || u.fullName || (u.email || '').split('@')[0];
+          link.textContent = labelBase ? (labelBase + ' • Hesabım') : 'Hesabım';
+        }
 
-      // 2) AI profili çek
-      return fetch('/api/profile/full', {
-        headers: { 'Authorization': 'Bearer ' + token }
+        // Hero’da kişisel mesaj
+        const heroLine = document.getElementById('heroPersonalLine');
+        if (heroLine) {
+          const name = u.fullName || u.displayName || (u.email || '').split('@')[0];
+          heroLine.textContent = `Hoş geldin ${name}, alışveriş deneyimini adım adım kişiselleştirmeye hazırlanıyoruz.`;
+          heroLine.style.display = 'block';
+        }
+
+        // 2) Profil / AI snapshot kaynağı
+        return fetch('/api/profile/full', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+      })
+      .then(r => r && r.ok ? r.json() : null)
+      .then(data => {
+        if (!data || !data.success) return;
+        window.mavernProfile = data.profile || null;
+        try {
+          localStorage.setItem('mavern_ai_profile', JSON.stringify(window.mavernProfile || {}));
+        } catch (_) {}
+      })
+      .catch(function(){
+        // Sessiz fail: misafir gibi devam et
       });
-    })
-    .then(r => r && r.ok ? r.json() : null)
-    .then(data => {
-      if (!data || !data.success) return;
-      window.mavernProfile = data.profile || null;
-      try {
-        localStorage.setItem('mavern_ai_profile', JSON.stringify(window.mavernProfile || {}));
-      } catch (_) {}
-    })
-    .catch(function(){
-      /* sessiz fail, misafir gibi devam et */
-    });
   })();
 
-  // ===================== AI Snapshot Helper (Checkout için) =====================
-  // server.js -> /api/checkout body.profileSnapshot alanına gidecek veriyi buradan toplayacağız.
+  // ============================================================
+  //  AI Snapshot Helper
+  //  - server.js içindeki /api/checkout body.profileSnapshot alanına
+  //    gönderilecek veriyi hazırlar.
+  // ============================================================
   window.mavernGetProfileSnapshot = function(){
     const snapshot = {};
 
-    // Sunucudaki aiProfile
+    // Sunucudan gelen profil
     if (window.mavernProfile && typeof window.mavernProfile === 'object') {
       snapshot.serverProfile = window.mavernProfile;
     }
 
-    // İleride front-end tarafında tutmak isteyebileceğimiz ek bilgiler için yer
+    // Frontend tarafında tutulabilecek ek sinyaller
     try {
       const localRaw = localStorage.getItem('mavern_ai_profile_local');
       if (localRaw) {
@@ -499,9 +538,11 @@
           snapshot.localSignals = localObj;
         }
       }
-    } catch (_) {}
+    } catch (_) {
+      // JSON parse hatası vb. durumlarda sessiz geç
+    }
 
-    // Eğer hiç veri yoksa null dön; server.js zaten bunu handle ediyor
+    // Boşsa null döndür; backend null’ı handle edebilecek
     return Object.keys(snapshot).length ? snapshot : null;
   };
 </script>

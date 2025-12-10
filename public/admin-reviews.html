@@ -269,6 +269,7 @@
     </div>
     <div class="row">
       <span id="adminState" class="muted" style="font-size:12px;"></span>
+      <button class="btn ghost" id="btnLogout" type="button" style="display:none">Çıkış</button>
     </div>
   </div>
 
@@ -375,7 +376,18 @@
       else localStorage.removeItem(STORAGE_KEY);
     }catch{}
     const st = qs("#adminState");
+    const btnLogout = qs("#btnLogout");
     if(st) st.textContent = TOKEN ? "Oturum aktif." : "Oturum açılmadı.";
+    if(btnLogout) btnLogout.style.display = TOKEN ? "inline-flex" : "none";
+  }
+
+  function showLogin(){
+    qs("#loginBox").style.display="block";
+    qs("#panelBox").style.display="none";
+  }
+  function showPanel(){
+    qs("#loginBox").style.display="none";
+    qs("#panelBox").style.display="block";
   }
 
   async function api(path, opts={}) {
@@ -402,13 +414,17 @@
     return data || {};
   }
 
-  function showLogin(){
-    qs("#loginBox").style.display="block";
-    qs("#panelBox").style.display="none";
-  }
-  function showPanel(){
-    qs("#loginBox").style.display="none";
-    qs("#panelBox").style.display="block";
+  // === Logout ===
+  function logout(){
+    setToken(null);
+    showLogin();
+    const tb = qs("#tbody");
+    const info = qs("#listInfo");
+    if(tb) tb.innerHTML = "";
+    if(info) info.textContent = "";
+    const out = qs("#loginOut");
+    if(out) out.textContent = "Oturum kapatıldı.";
+    showToast("Oturum kapatıldı.", "info");
   }
 
   // === Login ===
@@ -633,11 +649,12 @@
     }catch(err){
       showToast(err.message || "İşlem hatası.", "err");
     }
-    });
+  });
 
   // === Eventler ===
   qs("#loginBtn").addEventListener("click", doLogin);
   qs("#reloadBtn").addEventListener("click", loadReviews);
+  qs("#btnLogout").addEventListener("click", logout);
   qs("#filterPid").addEventListener("input", applyFilters);
   qs("#searchText").addEventListener("input", applyFilters);
   qs("#filterStatus").addEventListener("change", applyFilters);
@@ -655,13 +672,13 @@
 
   // === INIT ===
   (function init(){
-    setToken(null);
     try{
       const t = localStorage.getItem(STORAGE_KEY);
       if(t){
         setToken(t);
         showPanel();
-        qs("#loginOut").textContent = "Kayıtlı admin oturumu yüklendi.";
+        const out = qs("#loginOut");
+        if(out) out.textContent = "Kayıtlı admin oturumu yüklendi.";
         loadReviews();
         return;
       }

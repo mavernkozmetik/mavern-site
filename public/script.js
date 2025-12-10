@@ -1,16 +1,42 @@
 "use strict";
 
-// ===================================
-// ========== GENEL YARDIMCILAR ======
-// ===================================
+/* =========================================================
+   Mavern Frontend Script
+   - Tema sistemi
+   - Ürün listeleme
+   - Sepet & kupon
+   - Checkout
+   - İletişim formu
+   - “Siparişlerim”
+   - AI / kişiselleştirme sinyalleri
+   ========================================================= */
+
+/* ==========================
+   GENEL YARDIMCI FONKSİYONLAR
+   ========================== */
 const qs  = (sel) => document.querySelector(sel);
 const qsa = (sel) => document.querySelectorAll(sel);
 const hasTr = (s = "") => /[çğıöşüÇĞİÖŞÜ]/.test(s);
 const fmtMoney = (n) => `${Number(n || 0).toFixed(0)} ₺`;
 
-// ===================================
-// ========== LOCALSTORAGE KEY'LER ===
-// ===================================
+/* Basit, UI bağımsız hata bildirim yardımcıları (gerekirse genişletilebilir) */
+function mavernLogError(context, err) {
+  console.warn(`[Mavern:${context}]`, err);
+}
+
+function mavernNotify(message, level = "info") {
+  // Eğer ileride bir toast sistemi eklenirse buraya entegre edilebilir.
+  // Şimdilik kritik durumlarda alert, diğerlerinde console:
+  if (level === "error") {
+    alert(message);
+  } else {
+    console.log("[Mavern]", message);
+  }
+}
+
+/* ===============================
+   LOCALSTORAGE KEY SABİTLERİ
+   =============================== */
 const TOKEN_KEY             = "mavern_jwt";               // JWT (auth.html ile uyumlu)
 const CART_KEY              = "mavern_cart";              // sepet
 const THEME_KEY             = "mavern_theme";             // tema seçim
@@ -25,14 +51,14 @@ let COUPON   = null; // { code, percent, expiresAt? }
 
 window.mavernProfile = null; // server’dan gelen detaylı profil
 
-// ===================================
-// ========== SESSION HELPER =========
-// ===================================
+/* ==========================
+   SESSION HELPER
+   ========================== */
 function getOrCreateSessionId() {
   try {
     let id = localStorage.getItem(SESSION_KEY);
     if (id && typeof id === "string" && id.length > 0) return id;
-    // Basit, yeterli bir ID
+    // Basit ama yeterli bir ID
     id = `sess_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
     localStorage.setItem(SESSION_KEY, id);
     return id;
@@ -44,9 +70,9 @@ function getOrCreateSessionId() {
 
 const MAVERN_SESSION_ID = getOrCreateSessionId();
 
-// ===================================
-// ============== TEMA ===============
-// ===================================
+/* ==========================
+   TEMA SİSTEMİ
+   ========================== */
 function applyTheme(theme) {
   const html = document.documentElement;
   const btn  = document.getElementById("themeToggle");
@@ -89,9 +115,9 @@ function initTheme() {
   applyTheme(theme);
 }
 
-// ===================================
-// ===== TOKEN / OTURUM YARDIMCI =====
-// ===================================
+/* ==========================
+   TOKEN / OTURUM YARDIMCILARI
+   ========================== */
 function loadTokenFromStorage() {
   try {
     TOKEN = localStorage.getItem(TOKEN_KEY) || null;
@@ -110,14 +136,14 @@ function updateAccountLink() {
   });
 }
 
-// ===================================
-// ========= PANEL & OVERLAY =========
-// ===================================
+/* ==========================
+   PANEL & OVERLAY YÖNETİMİ
+   ========================== */
 function lockBodyScroll() {
-  document.body && document.body.classList.add("no-scroll");
+  if (document.body) document.body.classList.add("no-scroll");
 }
 function unlockBodyScroll() {
-  document.body && document.body.classList.remove("no-scroll");
+  if (document.body) document.body.classList.remove("no-scroll");
 }
 
 function setAriaHidden(id, state) {
@@ -126,7 +152,7 @@ function setAriaHidden(id, state) {
   el.setAttribute("aria-hidden", state ? "true" : "false");
 }
 
-// Sol menü
+/* Sol menü */
 function openSidebar(){
   const el = qs("#sidebar");
   if (!el) return;
@@ -142,7 +168,7 @@ function closeSidebar(){
   unlockBodyScroll();
 }
 
-// Sepet
+/* Sepet paneli */
 function openCart(){
   const el = qs("#cartPanel");
   if (!el) return;
@@ -159,15 +185,17 @@ function closeCart(){
   unlockBodyScroll();
 }
 
-// Ürün paneli
+/* Ürün paneli */
 function openProductsPanel(){
   const panel = qs("#productsPanel");
   if (!panel) return;
 
   if (!PRODUCTS.length) {
-    loadProducts().then(() => renderProductsFull()).catch((err)=>{
-      console.warn("Ürünler yüklenemedi:", err);
-    });
+    loadProducts()
+      .then(() => renderProductsFull())
+      .catch((err) => {
+        mavernLogError("openProductsPanel.loadProducts", err);
+      });
   } else {
     renderProductsFull();
   }
@@ -183,7 +211,7 @@ function closeProductsPanel(){
   unlockBodyScroll();
 }
 
-// Checkout overlay
+/* Checkout overlay */
 function openCheckout(){
   const items = Object.values(CART);
   const msg = qs("#checkoutMsg");
@@ -219,14 +247,15 @@ function closeCheckout(){
   unlockBodyScroll();
 }
 
+/* Sayfa içi kaydırma */
 function scrollToSection(id){
   const el = qs("#" + id);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-// ===================================
-// ============== API =================
-// ===================================
+/* ==========================
+   API YARDIMCISI
+   ========================== */
 async function api(path, opts = {}) {
   loadTokenFromStorage(); // her istekte güncel token
   const headers = {
@@ -235,9 +264,15 @@ async function api(path, opts = {}) {
     ...(opts.headers || {}),
   };
 
-  const res = await fetch(path, { ...opts, headers });
-  let data = null;
+  let res;
+  try {
+    res = await fetch(path, { ...opts, headers });
+  } catch (networkErr) {
+    mavernLogError(`api:${path}`, networkErr);
+    throw new Error("Ağ hatası. Lütfen bağlantınızı kontrol edin.");
+  }
 
+  let data = null;
   try {
     data = await res.json();
   } catch {
@@ -245,21 +280,27 @@ async function api(path, opts = {}) {
   }
 
   if (!res.ok) {
-    const msg = data && (data.message || data.error);
-    console.warn("API hata:", path, res.status, msg);
-    throw new Error(msg || `İstek başarısız: ${res.status}`);
+    const msg =
+      (data && (data.message || data.error)) ||
+      `İstek başarısız: ${res.status}`;
+    mavernLogError(`api:${path}`, msg);
+    throw new Error(msg);
   }
 
   return data;
 }
 
-// ===================================
-// ===== ÜRÜN NORMALİZE / LISTE ======
-// ===================================
+/* ==========================
+   ÜRÜN NORMALİZE / LİSTE
+   ========================== */
 function parsePriceTextToNumber(text){
   const t = String(text ?? "").trim();
   if (!t) return null;
-  const num = Number(t.replace(/[₺\s]/g,"").replace(",","."));
+  const num = Number(
+    t
+      .replace(/[₺\s]/g, "")
+      .replace(",", ".")
+  );
   return Number.isFinite(num) ? num : null;
 }
 
@@ -294,9 +335,12 @@ async function loadProducts() {
     const data = await api("/api/products");
     const list = Array.isArray(data) ? data : [];
     PRODUCTS = list.map(normalizeProductClient);
-    trackAiSignal("products_loaded", { count: PRODUCTS.length });
+
+    trackAiSignal("products_loaded", {
+      count: PRODUCTS.length
+    });
   } catch (err) {
-    console.warn("Ürünler alınırken hata:", err);
+    mavernLogError("loadProducts", err);
     PRODUCTS = [];
   }
   renderProductsPreview();
@@ -347,6 +391,7 @@ function productCard(p) {
       <img class="prod"
            src="${imgSrc}"
            alt="${esc(p.name)}"
+           loading="lazy"
            onerror="this.src='logo.png'">
     </a>
     <h4 style="margin:.5rem 0 0">
@@ -363,9 +408,9 @@ function productCard(p) {
   return el;
 }
 
-// ===================================
-// ============= SEPET ===============
-// ===================================
+/* ==========================
+   SEPET İŞLEMLERİ
+   ========================== */
 function loadCartFromStorage(){
   try {
     const raw = localStorage.getItem(CART_KEY);
@@ -376,22 +421,34 @@ function loadCartFromStorage(){
   }
 }
 function saveCartToStorage(){
-  try { localStorage.setItem(CART_KEY, JSON.stringify(CART)); } catch {}
+  try {
+    localStorage.setItem(CART_KEY, JSON.stringify(CART));
+  } catch (err) {
+    mavernLogError("saveCartToStorage", err);
+  }
 }
 
 function addToCart(id) {
   const p = PRODUCTS.find((x) => String(x.id) === String(id));
   if (!p) {
-    alert("Ürün bulunamadı");
+    mavernNotify("Ürün bulunamadı.", "error");
     return;
   }
   const canBuy = !!(p.purchasable && typeof p.price === "number" && isFinite(p.price));
   if (!canBuy) {
-    alert("Bu ürün şu anda satılabilir değil.");
+    mavernNotify("Bu ürün şu anda satılabilir değil.", "error");
     return;
   }
 
-  if (!CART[id]) CART[id] = { id: p.id, name: p.name, price: p.price, image: p.image, qty: 0 };
+  if (!CART[id]) {
+    CART[id] = {
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      image: p.image,
+      qty: 0
+    };
+  }
   CART[id].qty += 1;
 
   saveCartToStorage();
@@ -451,7 +508,7 @@ function getTotals(){
 }
 function getPayable(){ return getTotals().payable; }
 
-// Sticky cart bar (mobil)
+/* Sticky cart bar (mobil) */
 function updateStickyCartBar(count, payable){
   const bar  = qs("#stickyCartBar");
   if (!bar) return;
@@ -504,6 +561,7 @@ function renderCart() {
     row.innerHTML = `
       <img src="${imgSrc}" alt=""
            style="width:64px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--edge);background:#111"
+           loading="lazy"
            onerror="this.src='logo.png'">
       <div class="meta" style="min-width:0">
         <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.name)}</div>
@@ -511,9 +569,9 @@ function renderCart() {
       </div>
       <div>
         <div class="qty">
-          <button type="button" aria-label="Azalt" onclick="changeQty('${it.id}',-1)">−</button>
+          <button type="button" aria-label="Adedi azalt" onclick="changeQty('${it.id}',-1)">−</button>
           <div class="num">${it.qty}</div>
-          <button type="button" aria-label="Arttır" onclick="changeQty('${it.id}',1)">+</button>
+          <button type="button" aria-label="Adedi arttır" onclick="changeQty('${it.id}',1)">+</button>
         </div>
         <button class="btn" type="button" style="margin-top:6px" onclick="removeFromCart('${it.id}')">Kaldır</button>
       </div>
@@ -522,9 +580,9 @@ function renderCart() {
   });
 }
 
-// ===================================
-// ============= KUPON ===============
-// ===================================
+/* ==========================
+   KUPON İŞLEMLERİ
+   ========================== */
 async function applyCoupon() {
   const input = qs("#couponInput");
   const msgEl = qs("#couponMsg");
@@ -559,17 +617,18 @@ async function applyCoupon() {
     renderCart();
     const el = qs("#checkoutOverlay");
     if (el?.classList.contains("show")) {
-      const out = qs("#chPayable"); if (out) out.textContent = fmtMoney(getPayable());
+      const out = qs("#chPayable");
+      if (out) out.textContent = fmtMoney(getPayable());
     }
   } catch (err) {
-    console.warn("Kupon kontrol hatası:", err);
+    mavernLogError("applyCoupon", err);
     msgEl.textContent = "Sunucu hatası.";
   }
 }
 
-// ===================================
-// ============= CHECKOUT ============
-// ===================================
+/* ==========================
+   CHECKOUT
+   ========================== */
 function isValidEmail(e=""){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 function isValidPhone(t=""){ return /^[+0-9()\-\s]{6,}$/.test(String(t).trim()); }
 
@@ -592,16 +651,40 @@ async function submitCheckout(){
   }
 
   const { items } = getTotals();
-  if (!items.length){ st.textContent="Sepet boş."; return; }
+  if (!items.length){
+    st.textContent = "Sepet boş.";
+    return;
+  }
 
   // Zorunlu alanlar
-  if (!name || !email || !phone || !addr){ st.textContent="Lütfen tüm alanları doldurun."; return; }
-  if (hasTr(email)){ st.textContent="E-posta adresinde Türkçe karakter kullanmayın."; return; }
-  if (!isValidEmail(email)){ st.textContent="Geçerli bir e-posta girin."; return; }
-  if (!isValidPhone(phone)){ st.textContent="Geçerli bir telefon girin."; return; }
-  if (addr.length < 10){ st.textContent="Adres çok kısa (min 10 karakter)."; return; }
-  if (addr.length > 600){ st.textContent="Adres çok uzun (max 600 karakter)."; return; }
-  if (!kvkkOk){ st.textContent="KVKK onayı zorunludur."; return; }
+  if (!name || !email || !phone || !addr){
+    st.textContent = "Lütfen tüm alanları doldurun.";
+    return;
+  }
+  if (hasTr(email)){
+    st.textContent = "E-posta adresinde Türkçe karakter kullanmayın.";
+    return;
+  }
+  if (!isValidEmail(email)){
+    st.textContent = "Geçerli bir e-posta girin.";
+    return;
+  }
+  if (!isValidPhone(phone)){
+    st.textContent = "Geçerli bir telefon girin.";
+    return;
+  }
+  if (addr.length < 10){
+    st.textContent = "Adres çok kısa (min 10 karakter).";
+    return;
+  }
+  if (addr.length > 600){
+    st.textContent = "Adres çok uzun (max 600 karakter).";
+    return;
+  }
+  if (!kvkkOk){
+    st.textContent = "KVKK onayı zorunludur.";
+    return;
+  }
 
   // AI / kişiselleştirme snapshot
   let profileSnapshot = null;
@@ -614,46 +697,63 @@ async function submitCheckout(){
   }
 
   const payload = {
-    items: items.map(i => ({ id:i.id, name:i.name, price:Number(i.price), qty:i.qty })),
-    name, email, phone, address: addr,
+    items: items.map(i => ({
+      id: i.id,
+      name: i.name,
+      price: Number(i.price),
+      qty: i.qty
+    })),
+    name,
+    email,
+    phone,
+    address: addr,
     coupon: COUPON?.code || null,
     profileSnapshot: profileSnapshot || null
   };
 
   CHECKOUT_LOCK = true;
   if (CHECKOUT_LOCK_TIMER) clearTimeout(CHECKOUT_LOCK_TIMER);
-  CHECKOUT_LOCK_TIMER = setTimeout(()=>{ CHECKOUT_LOCK = false; }, 20000);
+  CHECKOUT_LOCK_TIMER = setTimeout(() => {
+    CHECKOUT_LOCK = false;
+  }, 20000);
 
   st.textContent = "Gönderiliyor...";
 
-  // AI sinyali (deneme aşaması)
+  // AI sinyali
   trackAiSignal("checkout_attempt", {
     itemCount: items.length,
     hasCoupon: !!COUPON?.code
   });
 
   try{
-    const res = await api("/api/checkout", { method:"POST", body: JSON.stringify(payload) });
+    const res = await api("/api/checkout", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
     if (res.success){
       st.textContent = "Sipariş iletildi. Teşekkürler!";
-      trackAiSignal("checkout_submitted", { itemCount: items.length, hasCoupon: !!COUPON?.code });
+      trackAiSignal("checkout_submitted", {
+        itemCount: items.length,
+        hasCoupon: !!COUPON?.code
+      });
       clearCart();
-      setTimeout(()=>{ closeCheckout(); }, 600);
-      const msg = qs("#checkoutMsg"); if (msg) msg.textContent = "Sipariş iletildi. Teşekkürler!";
+      setTimeout(() => { closeCheckout(); }, 600);
+      const msg = qs("#checkoutMsg");
+      if (msg) msg.textContent = "Sipariş iletildi. Teşekkürler!";
     } else {
       st.textContent = res.message || "Gönderilemedi.";
     }
   } catch(e){
-    console.warn("Checkout hatası:", e);
+    mavernLogError("submitCheckout", e);
     st.textContent = e.message || "Sunucu hatası.";
   } finally {
     // sunucuda idempotency var; kilit 20sn sonra otomatik kalkıyor (timer yukarıda)
   }
 }
 
-// ===================================
-// ============ İLETİŞİM =============
-// ===================================
+/* ==========================
+   İLETİŞİM FORMU
+   ========================== */
 async function sendMessage() {
   const name = (qs("#contactName")?.value || "").trim();
   const email = (qs("#contactEmail")?.value || "").trim();
@@ -661,17 +761,32 @@ async function sendMessage() {
   const status = qs("#contactStatus");
   if (!status) return;
 
-  if (!name || !email || !message) { status.textContent = "Lütfen tüm alanları doldurun."; return; }
-  if (hasTr(email)) { status.textContent = "E-posta adresinde Türkçe karakter kullanmayın."; return; }
-  if (!isValidEmail(email)) { status.textContent = "Geçerli bir e-posta girin."; return; }
+  if (!name || !email || !message) {
+    status.textContent = "Lütfen tüm alanları doldurun.";
+    return;
+  }
+  if (hasTr(email)) {
+    status.textContent = "E-posta adresinde Türkçe karakter kullanmayın.";
+    return;
+  }
+  if (!isValidEmail(email)) {
+    status.textContent = "Geçerli bir e-posta girin.";
+    return;
+  }
 
   status.textContent = "Gönderiliyor...";
 
   trackAiSignal("contact_attempt");
 
   try {
-    const res = await api("/api/contact", { method: "POST", body: JSON.stringify({ name, email, message }) });
-    status.textContent = res.success ? "Mesaj alındı. Teşekkürler!" : res.message || "Gönderilemedi.";
+    const res = await api("/api/contact", {
+      method: "POST",
+      body: JSON.stringify({ name, email, message })
+    });
+    status.textContent = res.success
+      ? "Mesaj alındı. Teşekkürler!"
+      : res.message || "Gönderilemedi.";
+
     if (res.success) {
       const n = qs("#contactName");  if (n) n.value = "";
       const e = qs("#contactEmail"); if (e) e.value = "";
@@ -679,14 +794,14 @@ async function sendMessage() {
       trackAiSignal("contact_sent");
     }
   } catch (err) {
-    console.warn("İletişim formu hatası:", err);
+    mavernLogError("sendMessage", err);
     status.textContent = err.message || "Sunucu hatası.";
   }
 }
 
-// ===================================
-// ========= SİPARİŞLERİM ============
-// ===================================
+/* ==========================
+   “SİPARİŞLERİM” SAYFASI
+   ========================== */
 async function loadMyOrders() {
   const root = qs("[data-orders-root]");
   if (!root) return;
@@ -718,9 +833,13 @@ async function loadMyOrders() {
       const box = document.createElement("article");
       box.className = "order-card";
 
-      const created = o.createdAt ? new Date(o.createdAt).toLocaleString("tr-TR") : "-";
+      const created = o.createdAt
+        ? new Date(o.createdAt).toLocaleString("tr-TR")
+        : "-";
       const items = Array.isArray(o.items) ? o.items : [];
-      const lines = items.map(it => `• ${esc(it.name)} x${it.qty || 1}`).join("<br>");
+      const lines = items
+        .map(it => `• ${esc(it.name)} x${it.qty || 1}`)
+        .join("<br>");
 
       const total    = Number(o.total    ?? 0);
       const discount = Number(o.discount ?? 0);
@@ -761,27 +880,36 @@ async function loadMyOrders() {
     });
   } catch (e) {
     const msg = e?.message || "Siparişler alınamadı.";
-    console.warn("Siparişlerim hatası:", e);
-    if (String(msg).includes("401") || msg === "Giriş gerekli" || msg === "Geçersiz oturum") {
-      root.innerHTML = `<div class="muted small">Siparişleri görmek için giriş yapın.</div>`;
+    mavernLogError("loadMyOrders", e);
+    if (
+      String(msg).includes("401") ||
+      msg === "Giriş gerekli" ||
+      msg === "Geçersiz oturum"
+    ) {
+      root.innerHTML =
+        `<div class="muted small">Siparişleri görmek için giriş yapın.</div>`;
     } else {
       root.innerHTML = `<div class="muted small">${esc(msg)}</div>`;
     }
   }
 }
 
-// Basit logout
+/* Basit logout */
 function mavernLogout() {
-  try { localStorage.removeItem(TOKEN_KEY); } catch {}
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {}
   TOKEN = null;
   location.href = "index.html";
 }
 
-// ===================================
-// ===== AI / KİŞİSELLEŞTİRME ========
-// ===================================
+/* ==========================
+   AI / KİŞİSELLEŞTİRME
+   ========================== */
 function trackAiSignal(type, payload = {}) {
   try {
+    if (!type || typeof type !== "string") return;
+
     const raw  = localStorage.getItem(AI_PROFILE_KEY);
     const base = raw ? JSON.parse(raw) : {};
     const now  = new Date().toISOString();
@@ -793,7 +921,7 @@ function trackAiSignal(type, payload = {}) {
       at: now,
       sessionId: MAVERN_SESSION_ID
     });
-    base.events = events.slice(-50);
+    base.events = events.slice(-50); // son 50 event
 
     if (!base.metrics) base.metrics = {};
     if (type === "add_to_cart") {
@@ -807,7 +935,7 @@ function trackAiSignal(type, payload = {}) {
 
     localStorage.setItem(AI_PROFILE_KEY, JSON.stringify(base));
   } catch (err) {
-    console.warn("AI sinyal yazılamadı:", err);
+    mavernLogError("trackAiSignal", err);
   }
 }
 
@@ -815,7 +943,10 @@ window.mavernTrack = trackAiSignal;
 
 function buildClientSignals() {
   const { items, subtotal, discount, payable } = getTotals();
-  const theme = (document.documentElement.getAttribute("data-theme") === "light") ? "light" : "dark";
+  const theme =
+    document.documentElement.getAttribute("data-theme") === "light"
+      ? "light"
+      : "dark";
 
   return {
     sessionId: MAVERN_SESSION_ID,
@@ -826,7 +957,8 @@ function buildClientSignals() {
       payable
     },
     ui: {
-      theme
+      theme,
+      path: window.location ? window.location.pathname : ""
     }
   };
 }
@@ -867,7 +999,7 @@ window.mavernGetProfileSnapshot = function(){
   return Object.keys(snapshot).length ? snapshot : null;
 };
 
-// Kullanıcı + AI profilini server’dan al
+/* Kullanıcı + AI profilini server’dan al */
 async function initUserAndAiProfile() {
   if (!TOKEN) return;
 
@@ -888,8 +1020,12 @@ async function initUserAndAiProfile() {
 
       const heroLine = qs("#heroPersonalLine");
       if (heroLine) {
-        const name = u.fullName || u.displayName || (u.email || "").split("@")[0];
-        heroLine.textContent = `Hoş geldin ${name}, alışveriş deneyimini adım adım kişiselleştirmeye hazırlanıyoruz.`;
+        const name =
+          u.fullName ||
+          u.displayName ||
+          (u.email || "").split("@")[0];
+        heroLine.textContent =
+          `Hoş geldin ${name}, alışveriş deneyimini adım adım kişiselleştirmeye hazırlanıyoruz.`;
         heroLine.style.display = "block";
       }
 
@@ -898,7 +1034,7 @@ async function initUserAndAiProfile() {
       });
     }
   } catch (err) {
-    console.warn("Kullanıcı bilgisi alınamadı:", err);
+    mavernLogError("initUserAndAiProfile.me", err);
   }
 
   // 2) /api/profile/full
@@ -907,40 +1043,53 @@ async function initUserAndAiProfile() {
     if (res && res.success && res.profile) {
       window.mavernProfile = res.profile;
       try {
-        localStorage.setItem(AI_PROFILE_SERVER_KEY, JSON.stringify(res.profile));
+        localStorage.setItem(
+          AI_PROFILE_SERVER_KEY,
+          JSON.stringify(res.profile)
+        );
       } catch {}
     }
   } catch (err) {
-    console.warn("AI profil alınamadı:", err);
+    mavernLogError("initUserAndAiProfile.profile", err);
   }
 }
 
-// ===================================
-// ============= UTILS ===============
-// ===================================
+/* ==========================
+   UTİLİTY ESC / SANITIZE
+   ========================== */
 function esc(s) {
   return String(s ?? "").replace(
     /[&<>"']/g,
-    (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])
+    (m) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[m])
   );
 }
 function sanitize(s) {
   return String(s ?? "").replace(/"/g, "&quot;");
 }
 
-// ===================================
-// ============== INIT ===============
-// ===================================
+/* ==========================
+   INIT
+   ========================== */
 window.addEventListener("DOMContentLoaded", async () => {
   // Tema
   initTheme();
   const themeBtn = document.getElementById("themeToggle");
   if (themeBtn) {
     themeBtn.addEventListener("click", () => {
-      const current = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+      const current =
+        document.documentElement.getAttribute("data-theme") === "light"
+          ? "light"
+          : "dark";
       const next = current === "light" ? "dark" : "light";
       try { localStorage.setItem(THEME_KEY, next); } catch {}
       applyTheme(next);
+      trackAiSignal("theme_changed", { to: next });
     });
   }
 
@@ -948,6 +1097,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   loadTokenFromStorage();
   updateAccountLink();
   loadCartFromStorage();
+
+  // Temel sayfa görünümü AI sinyali
+  trackAiSignal("page_view", {
+    path: window.location ? window.location.pathname : "",
+    referrer: document.referrer || null
+  });
 
   await loadProducts();
   renderCart();
