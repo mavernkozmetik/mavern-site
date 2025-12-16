@@ -72,10 +72,71 @@ const MAVERN_SESSION_ID = getOrCreateSessionId();
 
 /* ==========================
    TEMA SİSTEMİ
+   - Navbar'daki buton artık kullanılmıyor.
+   - Tema butonu Sidebar menüsüne taşındı.
    ========================== */
+
+/** Sidebar'da tema toggle için stabil ID */
+const SIDEBAR_THEME_BTN_ID = "sidebarThemeToggle";
+
+/** Tema durumuna göre label üretir (buton "bir sonrakini" yazar) */
+function getThemeToggleLabel(currentTheme) {
+  return currentTheme === "light" ? "☾ Koyu tema" : "☀ Açık tema";
+}
+
+/** Mevcut temayı okur (html[data-theme="light"] => light) */
+function readCurrentTheme() {
+  return document.documentElement.getAttribute("data-theme") === "light"
+    ? "light"
+    : "dark";
+}
+
+/** Sidebar'a tema toggle butonunu ekler (yoksa) */
+function ensureSidebarThemeToggle() {
+  const sidebar = qs("#sidebar");
+  if (!sidebar) return;
+
+  const content = sidebar.querySelector(".sidebar-content");
+  if (!content) return;
+
+  let btn = qs(`#${SIDEBAR_THEME_BTN_ID}`);
+  if (btn) return;
+
+  btn = document.createElement("button");
+  btn.type = "button";
+  btn.id = SIDEBAR_THEME_BTN_ID;
+  btn.className = "sidebar-theme-toggle";
+  btn.setAttribute("aria-label", "Tema değiştir");
+
+  // İçerik: Sol label + küçük durum
+  const left = document.createElement("span");
+  left.className = "label";
+  left.textContent = getThemeToggleLabel(readCurrentTheme());
+
+  const right = document.createElement("small");
+  right.className = "muted small";
+  right.textContent = readCurrentTheme() === "light" ? "Açık" : "Koyu";
+
+  btn.appendChild(left);
+  btn.appendChild(right);
+
+  // Sidebar linklerinin altına koy (Instagram sonrasında da olur; burada en alta ekliyoruz)
+  content.appendChild(btn);
+
+  btn.addEventListener("click", () => {
+    const current = readCurrentTheme();
+    const next = current === "light" ? "dark" : "light";
+    try { localStorage.setItem(THEME_KEY, next); } catch {}
+    applyTheme(next);
+    trackAiSignal("theme_changed", { to: next });
+
+    // Sidebar kapanmasın istiyorsun; o yüzden closeSidebar çağırmıyoruz.
+  });
+}
+
+/** Tema uygula + sidebar label güncelle */
 function applyTheme(theme) {
   const html = document.documentElement;
-  const btn  = document.getElementById("themeToggle");
 
   // CSS tarafında varsayılan koyu; light için :root[data-theme="light"] override kullanılıyor
   if (theme === "light") {
@@ -85,16 +146,16 @@ function applyTheme(theme) {
     theme = "dark";
   }
 
-  if (btn) {
-    // Şu anda hangi moddaysak, buton “bir sonrakini” anlatacak şekilde yazılsın
-    if (theme === "light") {
-      // şu an açık => tıklayınca koyuya geçecek
-      btn.textContent = "☾ Koyu tema";
-    } else {
-      // şu an koyu => tıklayınca açığa geçecek
-      btn.textContent = "☀ Açık tema";
-    }
+  // Sidebar toggle label güncelle
+  const sbBtn = qs(`#${SIDEBAR_THEME_BTN_ID}`);
+  if (sbBtn) {
+    const label = sbBtn.querySelector(".label");
+    const small = sbBtn.querySelector("small");
+    if (label) label.textContent = getThemeToggleLabel(theme);
+    if (small) small.textContent = theme === "light" ? "Açık" : "Koyu";
   }
+
+  // Navbar'da eski buton hâlâ varsa, görünmesin diye dokunmuyoruz (CSS zaten gizliyor).
 }
 
 function initTheme() {
@@ -113,6 +174,9 @@ function initTheme() {
     theme = "dark";
   }
   applyTheme(theme);
+
+  // Tema butonunu sidebar'a garanti ekle
+  ensureSidebarThemeToggle();
 }
 
 /* ==========================
@@ -156,6 +220,10 @@ function setAriaHidden(id, state) {
 function openSidebar(){
   const el = qs("#sidebar");
   if (!el) return;
+
+  // Sidebar açılınca tema butonunu orada garanti et
+  ensureSidebarThemeToggle();
+
   el.classList.add("open");
   setAriaHidden("#sidebar", false);
   lockBodyScroll();
@@ -943,10 +1011,7 @@ window.mavernTrack = trackAiSignal;
 
 function buildClientSignals() {
   const { items, subtotal, discount, payable } = getTotals();
-  const theme =
-    document.documentElement.getAttribute("data-theme") === "light"
-      ? "light"
-      : "dark";
+  const theme = readCurrentTheme();
 
   return {
     sessionId: MAVERN_SESSION_ID,
@@ -1079,18 +1144,13 @@ function sanitize(s) {
 window.addEventListener("DOMContentLoaded", async () => {
   // Tema
   initTheme();
-  const themeBtn = document.getElementById("themeToggle");
-  if (themeBtn) {
-    themeBtn.addEventListener("click", () => {
-      const current =
-        document.documentElement.getAttribute("data-theme") === "light"
-          ? "light"
-          : "dark";
-      const next = current === "light" ? "dark" : "light";
-      try { localStorage.setItem(THEME_KEY, next); } catch {}
-      applyTheme(next);
-      trackAiSignal("theme_changed", { to: next });
-    });
+
+  // Navbar'daki eski themeToggle varsa (HTML'de kalsa bile), çalışmasın:
+  const oldThemeBtn = document.getElementById("themeToggle");
+  if (oldThemeBtn) {
+    // güvenli: varsa disable, görünmüyor zaten
+    oldThemeBtn.disabled = true;
+    oldThemeBtn.setAttribute("aria-hidden", "true");
   }
 
   // Oturum & sepet & ürünler

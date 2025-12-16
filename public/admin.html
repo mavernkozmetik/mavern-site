@@ -381,6 +381,8 @@
       border-radius: 16px;
       box-shadow: var(--shadow);
       padding: 24px;
+      max-height: 90vh;
+      overflow-y: auto;
     }
     .preview {
       width: 100px;
@@ -514,7 +516,6 @@
         <button class="tab" data-tab="coupons" role="tab">Kuponlar</button>
         <button class="tab" data-tab="reviews" role="tab">Yorumlar</button>
         <button class="tab" data-tab="users" role="tab">Üyeler</button>
-        <button class="tab" data-tab="ai" role="tab">AI & Geri Bildirim</button>
       </div>
 
       <!-- ÜRÜNLER -->
@@ -559,30 +560,6 @@
       <div id="tab-users" class="tab-content hidden">
         <h3 style="font-size: 18px; font-weight: 600;">Üye Listesi</h3>
         <div id="userList" class="list"></div>
-      </div>
-
-      <!-- AI & GERİ BİLDİRİM -->
-      <div id="tab-ai" class="tab-content hidden">
-        <div class="grid">
-          <div>
-            <h3 style="font-size:18px;font-weight:600;">AI Danışman (Kozmetik)</h3>
-            <p class="muted" style="margin-top:4px;font-size:13px;">
-              Örneğin: “Yağlı cilt için basic bakım seti öner”, “Son siparişlere göre hangi ürün grubu öne çıkıyor?” gibi sorular sorabilirsin.
-            </p>
-            <textarea id="aiQuestion" placeholder="Sormak istediğiniz kozmetik soruyu yazın..." style="margin-top:12px;"></textarea>
-            <div class="row" style="margin-top:10px;justify-content:flex-end;">
-              <button class="btn primary" onclick="askAI()">Cevap Al</button>
-            </div>
-            <div id="aiAnswer" class="card" style="margin-top:12px; padding:14px; font-size:14px; white-space:pre-wrap;"></div>
-          </div>
-          <div>
-            <h3 style="font-size:18px;font-weight:600;">Kullanıcı Geri Bildirimleri</h3>
-            <p class="muted" style="margin-top:4px;font-size:13px;">
-              Kullanıcıların verdiği puanlar ve kısa notlar.
-            </p>
-            <div id="feedbackList" class="list"></div>
-          </div>
-        </div>
       </div>
     </section>
   </div>
@@ -701,7 +678,7 @@
       return d.toLocaleString("tr-TR");
     }
 
-    // Görsel yolu: sunucu /uploads döndürüyorsa bozulmasın, yoksa logo fallback.
+    // Görsel yolu
     function resolveImageUrl(image) {
       if (!image) return "logo.png";
       const trimmed = String(image).trim();
@@ -717,13 +694,14 @@
       preparing: "Hazırlanıyor",
       shipped: "Kargoya verildi",
       completed: "Teslim edildi",
-      cancelled: "İptal edildi"
+      cancelled: "İptal edildi",
+      returned: "İade edildi"
     };
     function getOrderStatusInfo(status) {
       const label = ORDER_STATUS_LABELS[status] || "Bilinmiyor";
       let cls = "warn";
       if (status === "completed") cls = "ok";
-      if (status === "cancelled") cls = "err";
+      if (status === "cancelled" || status === "returned") cls = "err";
       return { label, cls };
     }
 
@@ -841,9 +819,6 @@
           break;
         case "users":
           loadUsers();
-          break;
-        case "ai":
-          loadFeedback();
           break;
       }
     }
@@ -1320,7 +1295,6 @@
       if (!orderId) return;
       let o = findOrderById(orderId);
       if (!o) {
-        // garanti olsun diye tekrar çek
         try {
           const res = await fetch("/api/admin/messages?type=order", withAuth());
           await handle401(res);
@@ -1416,12 +1390,8 @@
         ${linesHTML}
 
         <div style="margin-top:10px; text-align:right; font-size:13px;">
-          Toplam: ${
-            total != null ? `${total.toLocaleString("tr-TR")} ₺` : "—"
-          }<br>
-          İndirim: ${
-            discount ? `${discount.toLocaleString("tr-TR")} ₺` : "0 ₺"
-          }<br>
+          Toplam: ${total != null ? `${total.toLocaleString("tr-TR")} ₺` : "—"}<br>
+          İndirim: ${discount ? `${discount.toLocaleString("tr-TR")} ₺` : "0 ₺"}<br>
           <strong>Ödenecek: ${
             payable != null ? `${payable.toLocaleString("tr-TR")} ₺` : "—"
           }</strong>
@@ -1433,21 +1403,12 @@
           <div>
             <label class="muted" style="font-size:13px; display:block; margin-bottom:4px;">Sipariş Durumu</label>
             <select id="orderStatusSelect">
-              <option value="pending" ${
-                (o.status || "pending") === "pending" ? "selected" : ""
-              }>Sipariş alındı</option>
-              <option value="preparing" ${
-                o.status === "preparing" ? "selected" : ""
-              }>Hazırlanıyor</option>
-              <option value="shipped" ${
-                o.status === "shipped" ? "selected" : ""
-              }>Kargoya verildi</option>
-              <option value="completed" ${
-                o.status === "completed" ? "selected" : ""
-              }>Teslim edildi</option>
-              <option value="cancelled" ${
-                o.status === "cancelled" ? "selected" : ""
-              }>İptal edildi</option>
+              <option value="pending" ${(o.status || "pending") === "pending" ? "selected" : ""}>Sipariş alındı</option>
+              <option value="preparing" ${o.status === "preparing" ? "selected" : ""}>Hazırlanıyor</option>
+              <option value="shipped" ${o.status === "shipped" ? "selected" : ""}>Kargoya verildi</option>
+              <option value="completed" ${o.status === "completed" ? "selected" : ""}>Teslim edildi</option>
+              <option value="cancelled" ${o.status === "cancelled" ? "selected" : ""}>İptal edildi</option>
+              <option value="returned" ${o.status === "returned" ? "selected" : ""}>İade edildi</option>
             </select>
           </div>
           <div>
@@ -1518,9 +1479,9 @@
           .map((u) => {
             const displayName =
               u.displayName || u.fullName || u.email || "Kullanıcı";
-            const approvedBadge = u.isApproved
-              ? '<span class="badge ok">Onaylı</span>'
-              : '<span class="badge warn">Onay Bekliyor</span>';
+            const verifiedBadge = u.isVerified
+              ? '<span class="badge ok">Mail Doğrulandı</span>'
+              : '<span class="badge warn">Mail Bekliyor</span>';
             const adminBadge = u.isAdmin ? '<span class="badge ok">Admin</span>' : "";
             return `
               <div class="card" style="padding:12px;">
@@ -1535,7 +1496,7 @@
                     </div>
                   </div>
                   <div class="row" style="gap:8px;flex-wrap:wrap;">
-                    ${approvedBadge}
+                    ${verifiedBadge}
                     ${adminBadge}
                     <button class="btn ghost" onclick="showUserModal('${esc(u.id)}')">Detay</button>
                   </div>
@@ -1548,91 +1509,202 @@
       }
     }
 
-    function showUserModal(userId) {
-      const u = LAST_USERS.find((x) => String(x.id) === String(userId));
-      if (!u) {
-        showToast("Kullanıcı detayı bulunamadı.", "err");
-        return;
-      }
-      const displayName =
-        u.displayName || u.fullName || u.email || "Kullanıcı";
-      const aiProfile =
-        u.aiProfile && typeof u.aiProfile === "object"
-          ? JSON.stringify(u.aiProfile, null, 2)
-          : null;
-
-      $("#userDetail").innerHTML = `
-        <div style="font-weight:600; font-size:16px;">${esc(displayName)}</div>
-        <div class="muted" style="font-size:13px;margin-top:4px;">
-          ${esc(u.email || "")}
-        </div>
-        ${
-          u.phone
-            ? `<div class="muted" style="font-size:13px;margin-top:4px;">${esc(
-                u.phone
-              )}</div>`
-            : ""
-        }
-        ${
-          u.city || u.address
-            ? `
-          <div class="muted" style="font-size:13px;margin-top:6px;">
-            ${u.city ? "Şehir: " + esc(u.city) + "<br>" : ""}
-            ${u.address ? "Adres: " + esc(u.address) : ""}
-          </div>`
-            : ""
-        }
-        <div class="divider"></div>
-        <div class="muted" style="font-size:13px;">
-          Kayıt Tarihi: ${formatDate(u.createdAt)}<br>
-          Son Giriş: ${formatDate(u.lastLoginAt)}<br>
-          Son IP: ${esc(u.lastLoginIp || "-")}
-        </div>
-        <div style="margin-top:10px;">
-          <label class="muted" style="font-size:13px;">
-            Onay Durumu: ${u.isApproved ? "Onaylı" : "Onay Bekliyor"}
-          </label>
-          <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap;">
-            <button class="btn primary" onclick="toggleUserApproval('${esc(
-              u.id
-            )}', ${u.isApproved ? "false" : "true"})">
-              ${u.isApproved ? "Onayı Kaldır" : "Onayla"}
-            </button>
-            <button class="btn danger" onclick="deleteUser('${esc(
-              u.id
-            )}')">Kullanıcıyı Sil</button>
-          </div>
-        </div>
-        ${
-          aiProfile
-            ? `
-          <div class="divider"></div>
-          <h4 style="font-size:15px;margin-bottom:4px;">AI Profil</h4>
-          <pre style="font-size:12px;white-space:pre-wrap;">${esc(aiProfile)}</pre>`
-            : ""
-        }
-      `;
-      showModal("userModal");
-    }
-
-    async function toggleUserApproval(id, approved) {
+    async function showUserModal(userId) {
       try {
         const res = await fetch(
-          `/api/admin/users/${encodeURIComponent(id)}/approve`,
-          withAuth({
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ approved })
-          })
+          `/api/admin/users/${encodeURIComponent(userId)}/full`,
+          withAuth()
         );
         await handle401(res);
         const data = await res.json();
-        if (!data.success) throw new Error();
-        showToast("Kullanıcı onay durumu güncellendi.", "ok");
-        hideModal("userModal");
-        loadUsers();
+        if (!data.success || !data.user) {
+          showToast("Kullanıcı detayı bulunamadı.", "err");
+          return;
+        }
+        const { user, orders, contacts, reviews, feedback } = data;
+        const displayName =
+          user.displayName || user.fullName || user.email || "Kullanıcı";
+        const aiProfile =
+          user.aiProfile && typeof user.aiProfile === "object"
+            ? JSON.stringify(user.aiProfile, null, 2)
+            : null;
+
+        const statusRow = `
+          <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px;">
+            <span class="pill ${user.isVerified ? "yes" : "no"}">
+              E-posta: ${user.isVerified ? "Doğrulandı" : "Bekliyor"}
+            </span>
+            ${
+              user.isAdmin
+                ? '<span class="pill yes">Admin</span>'
+                : ""
+            }
+          </div>
+        `;
+
+        const ordersHtml = (orders || []).length
+          ? `
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tarih</th>
+                <th>Durum</th>
+                <th class="right">Tutar</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${orders
+                .map((o) => {
+                  const st = getOrderStatusInfo(o.status || "pending");
+                  const total =
+                    typeof o.payable === "number" && isFinite(o.payable)
+                      ? `${o.payable.toLocaleString("tr-TR")} ₺`
+                      : typeof o.total === "number" && isFinite(o.total)
+                      ? `${o.total.toLocaleString("tr-TR")} ₺`
+                      : "—";
+                  return `
+                    <tr>
+                      <td>${esc(o.id)}</td>
+                      <td>${formatDate(o.createdAt)}</td>
+                      <td><span class="badge ${st.cls}">${st.label}</span></td>
+                      <td class="right">${esc(total)}</td>
+                    </tr>`;
+                })
+                .join("")}
+            </tbody>
+          </table>`
+          : '<p class="muted">Bu kullanıcıya ait sipariş bulunmuyor.</p>';
+
+        const contactsHtml = (contacts || []).length
+          ? contacts
+              .map(
+                (c) => `
+            <div class="card" style="padding:10px;">
+              <div class="muted" style="font-size:12px;">${formatDate(
+                c.createdAt
+              )}</div>
+              <div style="margin-top:4px;white-space:pre-wrap;font-size:13px;">
+                ${esc(c.message || "")}
+              </div>
+            </div>`
+              )
+              .join("")
+          : '<p class="muted">İletişim formu kaydı yok.</p>';
+
+        const reviewsHtml = (reviews || []).length
+          ? reviews
+              .map(
+                (r) => `
+            <div class="card" style="padding:10px;">
+              <div class="row-between">
+                <div class="stars">${"★★★★★".slice(0, r.rating || 0)}</div>
+                <div class="muted" style="font-size:12px;">${formatDate(
+                  r.createdAt
+                )}</div>
+              </div>
+              <div style="margin-top:4px;white-space:pre-wrap;font-size:13px;">
+                ${esc(r.comment || "")}
+              </div>
+            </div>`
+              )
+              .join("")
+          : '<p class="muted">Yorum bulunmuyor.</p>';
+
+        const feedbackHtml = (feedback || []).length
+          ? feedback
+              .map(
+                (f) => `
+            <div class="card" style="padding:10px;">
+              <div class="row-between">
+                <div class="stars">${"★★★★★".slice(0, f.rating || 0)}</div>
+                <div class="muted" style="font-size:12px;">${formatDate(
+                  f.createdAt
+                )}</div>
+              </div>
+              ${
+                f.page
+                  ? `<div class="muted" style="font-size:12px;margin-top:2px;">Sayfa: ${esc(
+                      f.page
+                    )}</div>`
+                  : ""
+              }
+              ${
+                f.comment
+                  ? `<div style="margin-top:4px;white-space:pre-wrap;font-size:13px;">${esc(
+                      f.comment
+                    )}</div>`
+                  : ""
+              }
+            </div>`
+              )
+              .join("")
+          : '<p class="muted">Feedback bulunmuyor.</p>';
+
+        $("#userDetail").innerHTML = `
+          <div style="font-weight:600; font-size:16px;">${esc(displayName)}</div>
+          <div class="muted" style="font-size:13px;margin-top:4px;">
+            ${esc(user.email || "")}
+          </div>
+          ${
+            user.phone
+              ? `<div class="muted" style="font-size:13px;margin-top:4px;">${esc(
+                  user.phone
+                )}</div>`
+              : ""
+          }
+          ${
+            user.city || user.address
+              ? `
+            <div class="muted" style="font-size:13px;margin-top:6px;">
+              ${user.city ? "Şehir: " + esc(user.city) + "<br>" : ""}
+              ${user.address ? "Adres: " + esc(user.address) : ""}
+            </div>`
+              : ""
+          }
+          ${statusRow}
+          <div class="muted" style="font-size:13px;margin-top:10px;">
+            Kayıt Tarihi: ${formatDate(user.createdAt)}<br>
+            Son Giriş: ${formatDate(user.lastLoginAt)}<br>
+            Son IP: ${esc(user.lastLoginIp || "-")}
+          </div>
+          <div style="margin-top:10px;">
+            <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap;">
+              <button class="btn danger" onclick="deleteUser('${esc(
+                user.id
+              )}')">Kullanıcıyı Sil</button>
+            </div>
+          </div>
+
+          ${
+            aiProfile
+              ? `
+          <div class="divider"></div>
+          <h4 style="font-size:15px;margin-bottom:4px;">AI Profil</h4>
+          <pre style="font-size:12px;white-space:pre-wrap;">${esc(aiProfile)}</pre>`
+              : ""
+          }
+
+          <div class="divider"></div>
+          <h4 style="font-size:15px;margin-bottom:6px;">Siparişler</h4>
+          ${ordersHtml}
+
+          <div class="divider"></div>
+          <h4 style="font-size:15px;margin-bottom:6px;">İletişim Kayıtları</h4>
+          ${contactsHtml}
+
+          <div class="divider"></div>
+          <h4 style="font-size:15px;margin-bottom:6px;">Yorumlar</h4>
+          ${reviewsHtml}
+
+          <div class="divider"></div>
+          <h4 style="font-size:15px;margin-bottom:6px;">Feedback</h4>
+          ${feedbackHtml}
+        `;
+
+        showModal("userModal");
       } catch {
-        showToast("Onay durumu güncellenemedi.", "err");
+        showToast("Kullanıcı detayı yüklenemedi.", "err");
       }
     }
 
@@ -1806,75 +1878,6 @@
         loadReviews();
       } catch {
         showToast("Yorum silinemedi.", "err");
-      }
-    }
-
-    // ========= FEEDBACK & AI =========
-    async function loadFeedback() {
-      try {
-        const res = await fetch("/api/admin/feedback", withAuth());
-        await handle401(res);
-        const data = await res.json();
-        const list = data.success && Array.isArray(data.items) ? data.items : [];
-        const container = $("#feedbackList");
-        if (!list.length) {
-          container.innerHTML = '<p class="muted">Henüz geri bildirim yok.</p>';
-          return;
-        }
-        container.innerHTML = list
-          .slice(0, 20)
-          .map((f) => {
-            const stars = "★★★★★".slice(0, f.rating || 0);
-            return `
-              <div class="card" style="padding:10px;">
-                <div class="row-between">
-                  <div>
-                    <div class="stars">${esc(stars)}</div>
-                    <div class="muted" style="font-size:12px;margin-top:2px;">
-                      ${formatDate(f.createdAt)}
-                    </div>
-                  </div>
-                  ${
-                    f.page
-                      ? `<span class="pill">${esc(f.page)}</span>`
-                      : ""
-                  }
-                </div>
-                ${
-                  f.comment
-                    ? `<div style="margin-top:6px;font-size:13px;white-space:pre-wrap;">${esc(
-                        f.comment
-                      )}</div>`
-                    : ""
-                }
-              </div>`;
-          })
-          .join("");
-      } catch {
-        $("#feedbackList").innerHTML = '<p class="muted">Geri bildirimler yüklenemedi.</p>';
-      }
-    }
-
-    async function askAI() {
-      const question = $("#aiQuestion").value.trim();
-      if (!question) {
-        return showToast("Lütfen bir soru yazın.", "err");
-      }
-      $("#aiAnswer").textContent = "Yanıt üretiliyor...";
-      try {
-        const res = await fetch("/api/ai/consult", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question, profileSnapshot: null })
-        });
-        const data = await res.json();
-        if (data.success && data.answer) {
-          $("#aiAnswer").textContent = data.answer;
-        } else {
-          $("#aiAnswer").textContent = "Şu an yanıt üretilemedi.";
-        }
-      } catch {
-        $("#aiAnswer").textContent = "Şu an yanıt üretilemedi.";
       }
     }
 

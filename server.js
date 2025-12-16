@@ -71,6 +71,7 @@ app.use(
   })
 );
 
+// public/ altındaki tüm .html + asset dosyaları
 app.use(express.static(PUBLIC_DIR, { extensions: ["html"] }));
 
 /* ------------------ Router Montajı ------------------ */
@@ -85,7 +86,17 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.get("/api/version", (_req, res) => {
-  res.json({ name: "mavern", version: "2.0.0" });
+  res.json({ name: "mavern", version: "2.1.0" });
+});
+
+/* ------------------ Admin Panel Kısa URL ------------------ */
+/* /admin.html dosyasını daha temiz bir URL ile sunar */
+
+app.get("/admin", (_req, res) => {
+  const adminPath = path.join(PUBLIC_DIR, "admin.html");
+  return res.sendFile(adminPath, (err) => {
+    if (err) return res.status(404).send("Not found");
+  });
 });
 
 /* ------------------ SPA Fallback (frontend .html) ------------------ */

@@ -12,14 +12,12 @@
 
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* Bu sayfa için sadece küçük yardımcı sınıflar */
     .hidden{display:none !important;}
     .field{margin-bottom:8px;}
   </style>
 </head>
 <body>
 
-<!-- Üst bar (index.html ile aynı yapı / tema uyumlu) -->
 <header class="topbar">
   <div class="logo-area">
     <a href="index.html" class="logo-mark" aria-label="Mavern ana sayfa">
@@ -28,48 +26,40 @@
     <h1 class="brand">Mavern</h1>
   </div>
   <nav class="topnav">
-    <!-- Mobil için sol menü açan link -->
     <a href="#" onclick="openSidebar();return false;">☰ Menü</a>
     <a href="index.html">Ana sayfa</a>
     <a href="#" onclick="openProductsPanel();return false;">Ürünler</a>
     <a href="index.html#contact">İletişim</a>
 
     <a href="#" onclick="openCart();return false;" class="cart-link">
-      <span class="cart-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" focusable="false">
-          <path d="M6.5 9.5h11l-1 8.5H7.5l-1-8.5Z" />
-          <path d="M9 9.5V7.2A3.2 3.2 0 0 1 12.2 4 3.2 3.2 0 0 1 15.4 7.2v2.3" />
-        </svg>
+      <span class="cart-icon">
+        <svg viewBox="0 0 24 24"><path d="M6.5 9.5h11l-1 8.5H7.5l-1-8.5Z"/><path d="M9 9.5V7.2A3.2 3.2 0 0 1 12.2 4 3.2 3.2 0 0 1 15.4 7.2v2.3"/></svg>
       </span>
       <span>Sepet</span>
       <span id="cartCount" class="badge"></span>
     </a>
 
     <a href="auth.html" id="accountLink" class="account-link">Giriş / Kayıt</a>
-
-    <!-- Tema butonu: script.js içindeki initTheme / applyTheme ile uyumlu -->
     <button id="themeToggle" class="theme-toggle" type="button">☾ Koyu tema</button>
   </nav>
 </header>
 
-<!-- Sol menü (mobil) -->
 <aside id="sidebar" class="panel left" aria-hidden="true">
-  <button class="close-btn" type="button" onclick="closeSidebar()">×</button>
+  <button class="close-btn" onclick="closeSidebar()">×</button>
   <a href="index.html#about" onclick="closeSidebar()">Hakkımızda</a>
   <a href="#" onclick="openProductsPanel(); closeSidebar(); return false;">Ürünler</a>
   <a href="index.html#contact" onclick="closeSidebar()">İletişim</a>
-  <a href="https://www.instagram.com/mavern.26/?utm_source=qr&igsh=NjhrdmdwOXIzcGZs#" target="_blank" rel="noopener noreferrer">Instagram</a>
+  <a href="https://www.instagram.com/mavern.26" target="_blank" rel="noopener noreferrer">Instagram</a>
 </aside>
 
-<!-- Sepet paneli -->
 <aside id="cartPanel" class="panel right" aria-hidden="true">
-  <button class="close-btn" type="button" onclick="closeCart()">×</button>
+  <button class="close-btn" onclick="closeCart()">×</button>
   <h2>Sepet</h2>
   <div id="cartItems" class="cart-list"></div>
 
   <div class="coupon-row">
     <input id="couponInput" placeholder="İndirim kodu" />
-    <button class="btn" type="button" onclick="applyCoupon()">Uygula</button>
+    <button class="btn" onclick="applyCoupon()">Uygula</button>
     <div id="couponMsg" class="muted small"></div>
   </div>
 
@@ -79,484 +69,288 @@
     <div class="row total"><span>Ödenecek</span><span id="payable">0 ₺</span></div>
 
     <div class="row actions" style="margin-top:10px;gap:8px;flex-wrap:wrap">
-      <button class="btn primary" type="button" onclick="openCheckout()">Ödeme</button>
-      <button class="btn" type="button" onclick="clearCart()">Sepeti Boşalt</button>
+      <button class="btn primary" onclick="openCheckout()">Ödeme</button>
+      <button class="btn" onclick="clearCart()">Sepeti Boşalt</button>
     </div>
     <div id="checkoutMsg" class="muted small"></div>
   </div>
 </aside>
 
-<!-- Mobil sticky sepet bar -->
 <div id="stickyCartBar" class="sticky-cart-bar">
   <div class="sum">
     <strong data-sticky-total>0 ₺</strong>
     <small data-sticky-label>0 ürün</small>
   </div>
-  <button class="btn primary" type="button" onclick="openCart()">Sepeti Aç</button>
+  <button class="btn primary" onclick="openCart()">Sepeti Aç</button>
 </div>
 
-<!-- Checkout overlay (index.html ile aynı yapı) -->
+<!-- Checkout Overlay -->
 <div id="checkoutOverlay" class="overlay" aria-hidden="true">
   <div class="overlay-card">
     <div class="head">
-      <h3 class="elegant" style="margin:0">Sipariş Bilgileri</h3>
-      <button class="close-btn" type="button" onclick="closeCheckout()">Kapat</button>
+      <h3 class="elegant">Sipariş Bilgileri</h3>
+      <button class="close-btn" onclick="closeCheckout()">Kapat</button>
     </div>
 
     <div class="checkout-grid">
-      <div>
-        <label class="muted small" for="chName">Ad Soyad</label>
-        <input id="chName" placeholder="Ad Soyad" autocomplete="name">
-      </div>
-      <div>
-        <label class="muted small" for="chEmail">E-posta</label>
-        <input id="chEmail" placeholder="ornek@eposta.com" autocomplete="email">
-      </div>
-      <div>
-        <label class="muted small" for="chPhone">Telefon</label>
-        <input id="chPhone" placeholder="+90 5xx xxx xx xx" autocomplete="tel">
-      </div>
-      <div class="full">
-        <label class="muted small" for="chAddress">Adres</label>
-        <textarea id="chAddress" placeholder="Açık adresinizi yazın"></textarea>
-      </div>
+      <div><label class="muted small">Ad Soyad</label><input id="chName" autocomplete="name"></div>
+      <div><label class="muted small">E-posta</label><input id="chEmail" autocomplete="email"></div>
+      <div><label class="muted small">Telefon</label><input id="chPhone" autocomplete="tel"></div>
+      <div class="full"><label class="muted small">Adres</label><textarea id="chAddress"></textarea></div>
 
-      <div class="full kvkk-box">
-        <iframe src="kvkk.html" title="KVKK Aydınlatma Metni"></iframe>
-      </div>
+      <div class="full kvkk-box"><iframe src="kvkk.html"></iframe></div>
 
-      <div class="full row" style="justify-content:space-between;flex-wrap:wrap">
-        <label class="row" style="gap:8px">
-          <input type="checkbox" id="chKvkk">
-          <span class="muted small">KVKK Aydınlatma Metnini okudum ve onaylıyorum.</span>
-        </label>
+      <div class="full row" style="justify-content:space-between;">
+        <label class="row" style="gap:8px"><input type="checkbox" id="chKvkk"><span class="muted small">KVKK Metnini onaylıyorum.</span></label>
         <span id="chSummary" class="pill ok">Ödenecek: <span id="chPayable">0 ₺</span></span>
       </div>
 
-      <div class="full row end" style="gap:8px;flex-wrap:wrap">
-        <button class="btn ghost" type="button" onclick="closeCheckout()">Vazgeç</button>
-        <button class="btn primary" type="button" onclick="submitCheckout()">Siparişi Gönder</button>
+      <div class="full row end" style="gap:8px;">
+        <button class="btn ghost" onclick="closeCheckout()">Vazgeç</button>
+        <button class="btn primary" onclick="submitCheckout()">Siparişi Gönder</button>
       </div>
       <div id="chStatus" class="muted small full"></div>
     </div>
   </div>
 </div>
 
-<!-- Ana içerik: Auth / Hesap -->
+<!-- Auth Main -->
 <main class="auth-shell">
-  <!-- GİRİŞ / KAYIT KARTI (oturum yokken) -->
+
+  <!-- LOGIN / REGISTER -->
   <section id="authSection" class="auth-card">
     <a href="index.html" class="auth-back">
-      <svg viewBox="0 0 16 16" aria-hidden="true">
-        <path d="M9.5 3 5 7.5 9.5 12"
-              fill="none" stroke="currentColor" stroke-width="1.4"
-              stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <svg viewBox="0 0 16 16"><path d="M9.5 3 5 7.5 9.5 12" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
       Ana sayfaya dön
     </a>
+
     <h2 class="auth-title">Giriş / Kayıt</h2>
-    <p class="auth-sub">
-      Mavern hesabınızla siparişlerinizi daha hızlı tamamlayabilir, adres bilgilerinizi saklayabilir ve kişisel bakım tercihlerinize göre daha isabetli öneriler alabilirsiniz.
-    </p>
+    <p class="auth-sub">Siparişlerinizi kolayca yönetmek ve kişisel öneriler almak için giriş yapabilirsiniz.</p>
 
     <div class="account-tabs" style="margin-top:8px;">
-      <button id="authTabLogin" class="active" type="button">Giriş Yap</button>
-      <button id="authTabRegister" type="button">Kayıt Ol</button>
+      <button id="authTabLogin" class="active">Giriş Yap</button>
+      <button id="authTabRegister">Kayıt Ol</button>
     </div>
 
-    <!-- GİRİŞ FORMU -->
+    <!-- LOGIN -->
     <div id="authLoginPane" class="auth-grid" style="margin-top:10px;">
-      <label for="loginEmail">E-posta</label>
-      <input id="loginEmail" type="email" placeholder="ornek@mail.com" autocomplete="email">
-
-      <label for="loginPassword">Şifre</label>
-      <input id="loginPassword" type="password" placeholder="Şifreniz" autocomplete="current-password">
-
-      <button class="auth-submit" type="button" onclick="handleLogin()">Giriş Yap</button>
+      <label>E-posta</label><input id="loginEmail" type="email" autocomplete="email">
+      <label>Şifre</label><input id="loginPassword" type="password" autocomplete="current-password">
+      <button class="auth-submit" onclick="handleLogin()">Giriş Yap</button>
       <div id="loginStatus" class="small"></div>
-      <p class="auth-sub" style="margin-top:6px;font-size:12px;">
-        Şifrenizi unuttuysanız, kayıtlı e-posta adresinizle <a href="index.html#contact">bizimle iletişime geçebilirsiniz</a>.
-      </p>
     </div>
 
-    <!-- KAYIT FORMU -->
+    <!-- REGISTER -->
     <div id="authRegisterPane" class="auth-grid hidden" style="margin-top:10px;">
-      <label for="regDisplayName">Görünen Ad <span class="small">(isteğe bağlı)</span></label>
-      <input id="regDisplayName" type="text" placeholder="Mavern üyesi">
+      <label>Görünen Ad (opsiyonel)</label><input id="regDisplayName">
+      <label>Ad Soyad</label><input id="regFullName">
+      <label>Telefon</label><input id="regPhone">
+      <label>Şehir</label><input id="regCity">
+      <label>Adres (opsiyonel)</label><textarea id="regAddress"></textarea>
+      <label>Posta Kodu</label><input id="regZip">
+      <label>Not</label><input id="regNotes">
+      <label>E-posta</label><input id="regEmail" type="email">
+      <label>Şifre (min. 6 karakter)</label><input id="regPassword" type="password" minlength="6">
 
-      <label for="regFullName">Ad Soyad</label>
-      <input id="regFullName" type="text" placeholder="Adınız Soyadınız">
-
-      <label for="regPhone">Telefon</label>
-      <input id="regPhone" type="tel" placeholder="+90 5xx xxx xx xx">
-
-      <label for="regCity">Şehir</label>
-      <input id="regCity" type="text" placeholder="Eskişehir">
-
-      <label for="regAddress">Adres <span class="small">(kısa)</span></label>
-      <textarea id="regAddress" rows="2" placeholder="Mahalle / sokak / kısa açıklama (opsiyonel)"></textarea>
-
-      <label for="regZip">Posta Kodu <span class="small">(opsiyonel)</span></label>
-      <input id="regZip" type="text" placeholder="26xxx">
-
-      <label for="regNotes">Not <span class="small">(opsiyonel)</span></label>
-      <input id="regNotes" type="text" placeholder="Teslimatla ilgili not vs.">
-
-      <label for="regEmail">E-posta</label>
-      <input id="regEmail" type="email" placeholder="ornek@mail.com" autocomplete="email">
-
-      <label for="regPassword">Şifre (en az 6 karakter)</label>
-      <input id="regPassword" type="password" placeholder="Şifreniz" autocomplete="new-password" minlength="6">
-
-      <button class="auth-submit" type="button" onclick="handleRegister()">Kayıt Ol</button>
+      <button class="auth-submit" onclick="handleRegister()">Kayıt Ol</button>
       <div id="registerStatus" class="small"></div>
-      <p class="auth-sub" style="margin-top:6px;font-size:12px;">
-        Kayıt işleminiz başarıyla alındıktan sonra, hesabınızı aktifleştirmek için e-posta adresinize gönderilen doğrulama bağlantısını kullanmanız gerekir.
-      </p>
+
+      <p class="auth-sub small">Kayıt sonrası e-posta doğrulaması gereklidir.</p>
     </div>
   </section>
 
-  <!-- HESAP GÖRÜNÜMÜ (giriş yapılmışken) -->
+  <!-- ACCOUNT VIEW -->
   <section id="accountSection" class="auth-card hidden">
     <a href="index.html" class="auth-back">
-      <svg viewBox="0 0 16 16" aria-hidden="true">
-        <path d="M9.5 3 5 7.5 9.5 12"
-              fill="none" stroke="currentColor" stroke-width="1.4"
-              stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <svg viewBox="0 0 16 16"><path d="M9.5 3 5 7.5 9.5 12" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
       Ana sayfaya dön
     </a>
+
     <h2 class="auth-title">Hesabım</h2>
     <p id="accWelcome" class="auth-sub"></p>
-    <!-- AI / kişiselleştirme bilgi satırı -->
-    <p id="accAiLine" class="auth-sub" style="font-size:12px;">
-      Hesap bilgileriniz, KVKK kapsamında yalnızca siparişlerinizi yönetmek ve zamanla daha isabetli ürün önerileri sunmak için kullanılmaktadır.
-    </p>
+
+    <p class="auth-sub small">Bilgileriniz KVKK kapsamında yalnızca sipariş yönetimi ve deneyim geliştirme amacıyla işlenir.</p>
+
+    <div id="accAlerts" style="margin-top:8px;"></div>
 
     <div class="account-tabs" style="margin-top:8px;">
-      <button id="accTabProfile" class="active" type="button">Profilim</button>
-      <button id="accTabOrders" type="button">Siparişlerim</button>
+      <button id="accTabProfile" class="active">Profilim</button>
+      <button id="accTabOrders">Siparişlerim</button>
     </div>
 
-    <!-- PROFİL SEKMESİ -->
+    <!-- PROFILE TAB -->
     <div id="accProfile" style="margin-top:10px;">
+      <div class="field"><span class="pill"><span class="small">E-posta:</span> <strong id="profEmail"></strong></span></div>
+      <div class="field"><span class="pill"><span class="small">Görünen Ad:</span> <strong id="profDisplayName"></strong></span></div>
+      <div class="field"><span class="pill"><span class="small">Ad Soyad:</span> <strong id="profFullName"></strong></span></div>
+      <div class="field"><span class="pill"><span class="small">Telefon:</span> <strong id="profPhone"></strong></span></div>
+      <div class="field"><span class="pill"><span class="small">Durum:</span> <strong id="profStatus"></strong></span></div>
+      <div class="field"><span class="pill"><span class="small">Yetki:</span> <strong id="profRole"></strong></span></div>
+
       <div class="field">
-        <span class="pill"><span class="small">E-posta:</span> <strong id="profEmail"></strong></span>
-      </div>
-      <div class="field">
-        <span class="pill"><span class="small">Görünen Ad:</span> <strong id="profDisplayName"></strong></span>
-      </div>
-      <div class="field">
-        <span class="pill"><span class="small">Ad Soyad:</span> <strong id="profFullName"></strong></span>
-      </div>
-      <div class="field">
-        <span class="pill"><span class="small">Telefon:</span> <strong id="profPhone"></strong></span>
-      </div>
-      <div class="field">
-        <span class="pill"><span class="small">Durum:</span> <strong id="profStatus"></strong></span>
-      </div>
-      <div class="field">
-        <span class="pill"><span class="small">Yetki:</span> <strong id="profRole"></strong></span>
-      </div>
-      <div class="field">
-        <label class="small">Adres / Şehir (kayıtlıysa)</label>
+        <label class="small">Adres / Şehir</label>
         <div class="muted small" id="profAddress"></div>
       </div>
 
-      <button class="auth-submit" type="button" onclick="handleLogout()">Çıkış Yap</button>
-      <p class="auth-sub" style="margin-top:6px;font-size:12px;">
-        Çıkış yaptığınızda sepetiniz cihazınızda tutulmaya devam eder; isterseniz daha sonra tekrar giriş yapabilirsiniz.
-      </p>
+      <button class="auth-submit" onclick="handleLogout()">Çıkış Yap</button>
     </div>
 
-    <!-- SİPARİŞLER SEKMESİ -->
+    <!-- ORDERS TAB -->
     <div id="accOrders" class="hidden" style="margin-top:10px;">
-      <!-- script.js içindeki loadMyOrders burayı dolduracak -->
       <div data-orders-root class="orders-list"></div>
     </div>
+
   </section>
 </main>
 
 <script src="script.js"></script>
 <script>
-  // Küçük helper
-  function setStatus(elId, msg, ok){
-    const el = document.getElementById(elId);
-    if(!el) return;
-    el.textContent = msg || "";
-    el.style.color = !msg ? "" : (ok ? "#4ade80" : "#fecaca");
+function setStatus(id,msg,ok){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.textContent=msg||"";
+  el.style.color=!msg?"":(ok?"#4ade80":"#fecaca");
+}
+
+function setAuthTab(m){
+  const isLogin=(m==='login');
+  document.getElementById('authTabLogin').classList.toggle('active',isLogin);
+  document.getElementById('authTabRegister').classList.toggle('active',!isLogin);
+  document.getElementById('authLoginPane').classList.toggle('hidden',!isLogin);
+  document.getElementById('authRegisterPane').classList.toggle('hidden',isLogin);
+}
+
+function setAccountTab(m){
+  const isProf=(m==='profile');
+  document.getElementById('accTabProfile').classList.toggle('active',isProf);
+  document.getElementById('accTabOrders').classList.toggle('active',!isProf);
+  document.getElementById('accProfile').classList.toggle('hidden',!isProf);
+  document.getElementById('accOrders').classList.toggle('hidden',isProf);
+}
+
+function showAuthView(){
+  document.getElementById('authSection').classList.remove('hidden');
+  document.getElementById('accountSection').classList.add('hidden');
+}
+
+function showAccountView(){
+  document.getElementById('authSection').classList.add('hidden');
+  document.getElementById('accountSection').classList.remove('hidden');
+  setAccountTab('profile');
+}
+
+async function handleRegister(){
+  const body={
+    displayName:regDisplayName.value.trim(),
+    fullName:regFullName.value.trim(),
+    phone:regPhone.value.trim(),
+    city:regCity.value.trim(),
+    address:regAddress.value.trim(),
+    zip:regZip.value.trim(),
+    notes:regNotes.value.trim(),
+    email:regEmail.value.trim(),
+    password:regPassword.value
+  };
+
+  if(!body.email||!isValidEmail(body.email)) return setStatus('registerStatus','Geçerli bir e-posta girin.',false);
+  if(hasTr(body.email)) return setStatus('registerStatus','E-postada Türkçe karakter olamaz.',false);
+  if(!body.password||body.password.length<6) return setStatus('registerStatus','Şifre en az 6 karakter olmalıdır.',false);
+
+  setStatus('registerStatus','Gönderiliyor...',true);
+
+  try{
+    const res=await api('/api/auth/register',{method:'POST',body:JSON.stringify(body)});
+    if(res.success){
+      setStatus('registerStatus','Kayıt başarılı. Lütfen e-posta doğrulaması yapın.',true);
+      regPassword.value='';
+    }else setStatus('registerStatus',res.message||'Kayıt yapılamadı.',false);
+  }catch(e){
+    setStatus('registerStatus','Sunucu hatası.',false);
   }
+}
 
-  function setAuthTab(mode){
-    const btnLogin  = document.getElementById('authTabLogin');
-    const btnReg    = document.getElementById('authTabRegister');
-    const paneLogin = document.getElementById('authLoginPane');
-    const paneReg   = document.getElementById('authRegisterPane');
+async function handleLogin(){
+  const email=loginEmail.value.trim();
+  const password=loginPassword.value;
 
-    const isLogin = (mode === 'login');
-    if(btnLogin && btnReg){
-      btnLogin.classList.toggle('active', isLogin);
-      btnReg.classList.toggle('active', !isLogin);
-    }
-    if(paneLogin && paneReg){
-      paneLogin.classList.toggle('hidden', !isLogin);
-      paneReg.classList.toggle('hidden', isLogin);
-    }
-    setStatus('loginStatus','',true);
-    setStatus('registerStatus','',true);
+  if(!email||!isValidEmail(email)) return setStatus('loginStatus','E-posta geçersiz.',false);
+  if(hasTr(email)) return setStatus('loginStatus','E-postada Türkçe karakter olamaz.',false);
+  if(!password) return setStatus('loginStatus','Şifre boş olamaz.',false);
 
-    // AI sinyali (hangi tab kullanılıyor)
-    if (typeof trackAiSignal === 'function') {
-      trackAiSignal('auth_tab_change', { tab: isLogin ? 'login' : 'register' });
-    }
+  setStatus('loginStatus','Giriş yapılıyor...',true);
+
+  try{
+    const res=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email,password})});
+    if(res.success&&res.token){
+      localStorage.setItem('mavern_jwt',res.token);
+      document.getElementById('accountLink').textContent='Hesabım';
+      await loadProfile();
+      if(typeof loadMyOrders==='function') loadMyOrders();
+      window.scrollTo({top:0,behavior:'smooth'});
+    }else setStatus('loginStatus',res.message||'Giriş başarısız.',false);
+  }catch(e){
+    let msg=e.message||'Sunucu hatası.';
+    if(msg.toLowerCase().includes('doğrula'))
+      msg='Lütfen önce e-posta doğrulaması yapın.';
+    setStatus('loginStatus',msg,false);
   }
+}
 
-  function setAccountTab(mode){
-    const btnProf = document.getElementById('accTabProfile');
-    const btnOrd  = document.getElementById('accTabOrders');
-    const secProf = document.getElementById('accProfile');
-    const secOrd  = document.getElementById('accOrders');
-    const isProf = (mode === 'profile');
+async function loadProfile(){
+  try{
+    const res=await api('/api/auth/me',{method:'GET'});
+    if(!res.success||!res.user) return showAuthView();
 
-    if(btnProf && btnOrd){
-      btnProf.classList.toggle('active', isProf);
-      btnOrd.classList.toggle('active', !isProf);
-    }
-    if(secProf && secOrd){
-      secProf.classList.toggle('hidden', !isProf);
-      secOrd.classList.toggle('hidden', isProf);
-    }
+    const u=res.user;
+    const name=u.displayName||u.fullName||u.email;
+    accWelcome.textContent='Hoş geldin, '+name+'.';
 
-    // AI sinyali (hesap sekmesi kullanımı)
-    if (typeof trackAiSignal === 'function') {
-      trackAiSignal('account_tab_change', { tab: isProf ? 'profile' : 'orders' });
-    }
-  }
+    profEmail.textContent=u.email||'-';
+    profDisplayName.textContent=u.displayName||'(tanımlı değil)';
+    profFullName.textContent=u.fullName||'(tanımlı değil)';
+    profPhone.textContent=u.phone||'(tanımlı değil)';
 
-  function showAuthView(){
-    document.getElementById('authSection')?.classList.remove('hidden');
-    document.getElementById('accountSection')?.classList.add('hidden');
-  }
+    const isVerified=!!u.isVerified;
+    profStatus.textContent=isVerified?'E-posta doğrulandı':'E-posta doğrulaması bekleniyor';
+    profRole.textContent=u.isAdmin?'Admin':'Üye';
 
-  function showAccountView(){
-    document.getElementById('authSection')?.classList.add('hidden');
-    document.getElementById('accountSection')?.classList.remove('hidden');
-    setAccountTab('profile');
-  }
+    const addr=[u.address,u.city,u.zip].filter(Boolean).join(' • ');
+    profAddress.textContent=addr||'Adres kaydedilmemiş.';
 
-  async function handleRegister(){
-    const displayName = document.getElementById('regDisplayName')?.value.trim() || "";
-    const fullName    = document.getElementById('regFullName')?.value.trim() || "";
-    const phone       = document.getElementById('regPhone')?.value.trim() || "";
-    const city        = document.getElementById('regCity')?.value.trim() || "";
-    const address     = document.getElementById('regAddress')?.value.trim() || "";
-    const zip         = document.getElementById('regZip')?.value.trim() || "";
-    const notes       = document.getElementById('regNotes')?.value.trim() || "";
-    const email       = document.getElementById('regEmail')?.value.trim() || "";
-    const password    = document.getElementById('regPassword')?.value || "";
+    accAlerts.innerHTML = !isVerified
+      ? '<span class="pill no small">E-posta doğrulaması bekleniyor. Lütfen gelen kutunuzu kontrol edin.</span>'
+      : '';
 
-    if(!email || !isValidEmail(email)){
-      setStatus('registerStatus','Geçerli bir e-posta girin.',false);
-      return;
-    }
-    if(hasTr(email)){
-      setStatus('registerStatus','E-posta adresinde Türkçe karakter kullanmayın.',false);
-      return;
-    }
-    if(!password || password.length < 6){
-      setStatus('registerStatus','Şifre en az 6 karakter olmalı.',false);
-      return;
-    }
-
-    setStatus('registerStatus','Gönderiliyor...',true);
-    try{
-      const body = { displayName, fullName, phone, city, address, zip, notes, email, password };
-      const res = await api('/api/auth/register',{
-        method:'POST',
-        body:JSON.stringify(body)
-      });
-      if(res.success){
-        setStatus(
-          'registerStatus',
-          'Kayıt işleminiz başarıyla alındı. Lütfen e-posta kutunuzu kontrol ederek hesabınızı doğrulayın.',
-          true
-        );
-        const p = document.getElementById('regPassword'); if(p) p.value = '';
-
-        // AI sinyali: kayıt isteği
-        if (typeof trackAiSignal === 'function') {
-          trackAiSignal('register_submitted', {
-            hasAddress: !!address,
-            hasPhone:   !!phone,
-            hasCity:    !!city
-          });
-        }
-      }else{
-        setStatus('registerStatus', res.message || 'Kayıt yapılamadı.', false);
-      }
-    }catch(e){
-      setStatus('registerStatus', e.message || 'Sunucu hatası.', false);
-    }
-  }
-
-  async function handleLogin(){
-    const email    = document.getElementById('loginEmail')?.value.trim() || "";
-    const password = document.getElementById('loginPassword')?.value || "";
-
-    if(!email || !isValidEmail(email)){
-      setStatus('loginStatus','Geçerli bir e-posta girin.',false);
-      return;
-    }
-    if(hasTr(email)){
-      setStatus('loginStatus','E-posta adresinde Türkçe karakter kullanmayın.',false);
-      return;
-    }
-    if(!password){
-      setStatus('loginStatus','Şifre boş olamaz.',false);
-      return;
-    }
-
-    setStatus('loginStatus','Giriş yapılıyor...',true);
-    try{
-      const res = await api('/api/auth/login',{
-        method:'POST',
-        body:JSON.stringify({ email, password })
-      });
-      if(res.success && res.token){
-        try{ localStorage.setItem('mavern_jwt', res.token); }catch(_){}
-        if(typeof TOKEN !== 'undefined') TOKEN = res.token;
-        setStatus('loginStatus','Giriş başarılı.',true);
-
-        // Header’daki Hesap yazısını güncelle
-        const link = document.getElementById('accountLink');
-        if(link) link.textContent = 'Hesabım';
-
-        // AI sinyali: başarılı giriş
-        if (typeof trackAiSignal === 'function') {
-          trackAiSignal('login_success', {});
-        }
-
-        await loadProfile();
-        if(typeof loadMyOrders === 'function') loadMyOrders();
-        window.scrollTo({top:0,behavior:'smooth'});
-      }else{
-        setStatus('loginStatus', res.message || 'Giriş başarısız.', false);
-
-        // AI sinyali: hatalı giriş
-        if (typeof trackAiSignal === 'function') {
-          trackAiSignal('login_failed', { reason: res.message || 'unknown' });
-        }
-      }
-    }catch(e){
-      let msg = e.message || 'Sunucu hatası.';
-
-      // E-posta doğrulanmadıysa premium bir uyarı göster
-      if (msg.toLowerCase().includes('doğrula')) {
-        msg = 'Lütfen önce e-posta adresinizi doğrulayın. Doğrulama bağlantısını size gönderdiğimiz e-postada bulabilirsiniz.';
-      }
-
-      setStatus('loginStatus', msg, false);
-    }
-  }
-
-  async function loadProfile(){
-    try{
-      const res = await api('/api/auth/me',{ method:'GET' });
-      if(!res.success || !res.user){
-        showAuthView();
-        return;
-      }
-      const u = res.user;
-      const name = u.displayName || u.fullName || u.email || 'Mavern üyesi';
-
-      const accWelcome = document.getElementById('accWelcome');
-      if(accWelcome) accWelcome.textContent = 'Hoş geldin, ' + name + '.';
-
-      document.getElementById('profEmail').textContent       = u.email || '-';
-      document.getElementById('profDisplayName').textContent = u.displayName || '(tanımlı değil)';
-      document.getElementById('profFullName').textContent    = u.fullName || '(tanımlı değil)';
-      document.getElementById('profPhone').textContent       = u.phone || '(tanımlı değil)';
-
-      const isVerified = !!u.isVerified;
-      const statusText = isVerified
-        ? 'E-posta doğrulandı'
-        : 'E-posta doğrulaması bekleniyor';
-      document.getElementById('profStatus').textContent = statusText;
-
-      document.getElementById('profRole').textContent        = u.isAdmin ? 'Admin' : 'Üye';
-
-      const parts = [];
-      if(u.address) parts.push(u.address);
-      if(u.city) parts.push(u.city);
-      if(u.zip) parts.push(u.zip);
-      const addrEl = document.getElementById('profAddress');
-      if(addrEl) addrEl.textContent = parts.join(' • ') || 'Adres bilgisi kaydedilmemiş.';
-
-      showAccountView();
-    }catch(e){
-      // token bozuksa oturumu sıfırla
-      try{ localStorage.removeItem('mavern_jwt'); }catch(_){}
-      if(typeof TOKEN !== 'undefined') TOKEN = null;
-      showAuthView();
-    }
-  }
-
-  function handleLogout(){
-    try{ localStorage.removeItem('mavern_jwt'); }catch(_){}
-    if(typeof TOKEN !== 'undefined') TOKEN = null;
-    const link = document.getElementById('accountLink');
-    if(link) link.textContent = 'Giriş / Kayıt';
+    showAccountView();
+  }catch(e){
+    localStorage.removeItem('mavern_jwt');
     showAuthView();
-    setStatus('loginStatus','',true);
-    setStatus('registerStatus','',true);
-
-    // AI sinyali: çıkış
-    if (typeof trackAiSignal === 'function') {
-      trackAiSignal('logout', {});
-    }
   }
+}
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // Auth tabları
-    document.getElementById('authTabLogin')?.addEventListener('click', () => setAuthTab('login'));
-    document.getElementById('authTabRegister')?.addEventListener('click', () => setAuthTab('register'));
+function handleLogout(){
+  localStorage.removeItem('mavern_jwt');
+  document.getElementById('accountLink').textContent='Giriş / Kayıt';
+  showAuthView();
+}
 
-    // Hesap tabları
-    document.getElementById('accTabProfile')?.addEventListener('click', () => setAccountTab('profile'));
-    document.getElementById('accTabOrders')?.addEventListener('click', () => {
-      setAccountTab('orders');
-      if(typeof loadMyOrders === 'function') loadMyOrders();
-    });
+document.addEventListener('DOMContentLoaded',()=>{
+  authTabLogin.addEventListener('click',()=>setAuthTab('login'));
+  authTabRegister.addEventListener('click',()=>setAuthTab('register'));
+  accTabProfile.addEventListener('click',()=>setAccountTab('profile'));
+  accTabOrders.addEventListener('click',()=>{ setAccountTab('orders'); if(typeof loadMyOrders==='function') loadMyOrders(); });
 
-    // Enter ile login (login password alanında)
-    document.getElementById('loginPassword')?.addEventListener('keydown', (e) => {
-      if(e.key === 'Enter'){
-        e.preventDefault();
-        handleLogin();
-      }
-    });
+  loginPassword.addEventListener('keydown',(e)=>{ if(e.key==='Enter') handleLogin(); });
 
-    // Sayfa açıldığında token varsa direkt profil + siparişler
-    let token = null;
-    try{ token = localStorage.getItem('mavern_jwt'); }catch(_){}
-    if(token){
-      if(typeof TOKEN !== 'undefined') TOKEN = token;
-      loadProfile();
-      if(typeof loadMyOrders === 'function') loadMyOrders();
-    }else{
-      showAuthView();
-    }
-  });
+  const token=localStorage.getItem('mavern_jwt');
+  if(token){
+    loadProfile();
+    if(typeof loadMyOrders==='function') loadMyOrders();
+  }else showAuthView();
 
-  // Header'daki Hesap / Giriş yazısını token'a göre ayarla
-  (function(){
-    const link = document.getElementById('accountLink');
-    if(!link) return;
-    try{
-      const tok = localStorage.getItem('mavern_jwt');
-      link.textContent = tok ? 'Hesabım' : 'Giriş / Kayıt';
-    }catch(_){}
-  })();
+  const link=document.getElementById('accountLink');
+  link.textContent = token ? 'Hesabım' : 'Giriş / Kayıt';
+});
 </script>
 </body>
 </html>

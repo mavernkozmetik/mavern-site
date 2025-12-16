@@ -1,4 +1,6 @@
 // server-core.js
+"use strict";
+
 const express = require("express");
 const rateLimit = require("express-rate-limit");
 const bcrypt = require("bcryptjs");
@@ -21,7 +23,13 @@ const {
   writeFeedback
 } = require("./utils/storage");
 
-const { sendVerificationEmail, sendMail } = require("./utils/email");
+// Yeni e-posta fonksiyonları: premium şablonlar
+const {
+  sendVerificationEmail,
+  sendMail,
+  sendOrderSummaryEmail,
+  sendContactThanksEmail
+} = require("./utils/email");
 
 const router = express.Router();
 
@@ -86,6 +94,23 @@ function sanitizeAIProfile(input, depth = 0) {
       const sub = sanitizeAIProfile(v, depth + 1);
       if (sub !== null) out[k] = sub;
     }
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+// Feedback context sanitize (küçük, güvenli)
+function sanitizeContext(ctx) {
+  if (!ctx || typeof ctx !== "object" || Array.isArray(ctx)) return null;
+  const out = {};
+  let count = 0;
+  for (const [k, v] of Object.entries(ctx)) {
+    if (count++ > 20) break; // max 20 anahtar
+    const key = String(k).trim().slice(0, 60);
+    if (!key) continue;
+
+    if (typeof v === "string") out[key] = v.trim().slice(0, 300);
+    else if (typeof v === "number" || typeof v === "boolean") out[key] = v;
+    // object/array vb. kabul etmiyoruz (dosya şişmesin)
   }
   return Object.keys(out).length ? out : null;
 }
@@ -181,16 +206,10 @@ const upload = multer({
   }
 });
 
-router.post(
-  "/api/reviews/upload",
-  requireJWT,
-  upload.single("file"),
-  (req, res) => {
-    if (!req.file)
-      return res.status(400).json({ success: false, message: "Dosya yok" });
-    res.json({ success: true, path: "/uploads/" + req.file.filename });
-  }
-);
+router.post("/api/reviews/upload", requireJWT, upload.single("file"), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: "Dosya yok" });
+  res.json({ success: true, path: "/uploads/" + req.file.filename });
+});
 
 /* ======================================================================== */
 /*  AUTH + E-POSTA DOĞRULAMA                                                */
@@ -207,30 +226,29 @@ router.post("/api/auth/register", tightLimiter, async (req, res) => {
     city,
     district,
     address,
-    zip,
-    notes
+    zip
+    // notes alanını yeni akışta kullanmasak da eski datayı bozmamak için dokunmuyoruz
   } = req.body || {};
 
   const e = String(email || "").trim().toLowerCase();
   if (!e || containsTR(e) || !isValidEmail(e)) {
-    return res.status(400).json({ success: false, message: "Geçerli e-posta gerekli" });
+    return res.status(400).json({ success: false, message: "Geçerli bir e-posta adresi gerekli." });
   }
   if (!password || String(password).length < 6) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Şifre en az 6 karakter olmalı" });
+    return res.status(400).json({ success: false, message: "Şifre en az 6 karakter olmalı." });
   }
 
   const users = readUsers();
   if (users.find((u) => u.email === e)) {
-    return res.status(400).json({ success: false, message: "Bu e-posta zaten kayıtlı" });
+    return res.status(400).json({
+      success: false,
+      message: "Bu e-posta adresiyle zaten bir hesap bulunuyor."
+    });
   }
 
   const safePhone = String(phone || "").trim();
   if (safePhone && !isValidPhone(safePhone)) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Telefon formatı geçersiz" });
+    return res.status(400).json({ success: false, message: "Telefon formatı geçersiz." });
   }
 
   const hash = await bcrypt.hash(String(password), 10);
@@ -247,11 +265,15 @@ router.post("/api/auth/register", tightLimiter, async (req, res) => {
     district: String(district || "").trim() || null,
     address: String(address || "").trim() || null,
     zip: String(zip || "").trim().slice(0, 16) || null,
-    notes: String(notes || "").trim().slice(0, 500) || null,
-    isVerified: false,
+    // Kayıt notunu artık kullanmıyoruz ama eski JSON yapısını bozmamak için koruyabiliriz:
+    notes: null,
+    // Yeni sistem:
+    isVerified: false, // e-posta doğrulaması
     verificationToken,
     verifiedAt: null,
+    // Opsiyonel admin onayı (login'i engellemez)
     isAdmin: false,
+    isApproved: false,
     aiProfile: null,
     createdAt: new Date().toISOString(),
     lastLoginAt: null,
@@ -261,6 +283,7 @@ router.post("/api/auth/register", tightLimiter, async (req, res) => {
   users.push(user);
   writeUsers(users);
 
+  // E-posta doğrulama maili (premium HTML şablonuyla)
   try {
     await sendVerificationEmail(user.email, verificationToken);
   } catch (e) {
@@ -269,7 +292,8 @@ router.post("/api/auth/register", tightLimiter, async (req, res) => {
 
   return res.json({
     success: true,
-    message: "Kayıt oluşturuldu. Lütfen e-posta adresinizi doğrulayın."
+    message:
+      "Kayıt işleminiz başarıyla alındı. Lütfen e-posta kutunuzu kontrol ederek hesabınızı doğrulayın."
   });
 });
 
@@ -277,13 +301,16 @@ router.post("/api/auth/register", tightLimiter, async (req, res) => {
 router.post("/api/auth/verify-email", tightLimiter, (req, res) => {
   const { token } = req.body || {};
   if (!token || typeof token !== "string") {
-    return res.status(400).json({ success: false, message: "Token gerekli" });
+    return res.status(400).json({ success: false, message: "Doğrulama token değeri gerekli." });
   }
 
   const users = readUsers();
   const idx = users.findIndex((u) => u.verificationToken === token);
   if (idx === -1) {
-    return res.status(400).json({ success: false, message: "Geçersiz veya kullanılmış token" });
+    return res.status(400).json({
+      success: false,
+      message: "Geçersiz veya daha önce kullanılmış bir doğrulama bağlantısı."
+    });
   }
 
   users[idx].isVerified = true;
@@ -291,7 +318,10 @@ router.post("/api/auth/verify-email", tightLimiter, (req, res) => {
   users[idx].verifiedAt = new Date().toISOString();
   writeUsers(users);
 
-  return res.json({ success: true, message: "E-posta adresiniz doğrulandı." });
+  return res.json({
+    success: true,
+    message: "E-posta adresiniz başarıyla doğrulandı. Artık hesabınızla giriş yapabilirsiniz."
+  });
 });
 
 // Login
@@ -302,18 +332,22 @@ router.post("/api/auth/login", tightLimiter, async (req, res) => {
   const users = readUsers();
   const idx = users.findIndex((u) => u.email === e);
   if (idx === -1) {
-    return res.status(400).json({ success: false, message: "Kullanıcı bulunamadı" });
+    return res.status(400).json({
+      success: false,
+      message: "Bu e-posta ile kayıtlı bir hesap bulunamadı."
+    });
   }
   const user = users[idx];
 
   const ok = await bcrypt.compare(String(password || ""), user.passHash || "");
   if (!ok) {
-    return res.status(400).json({ success: false, message: "Şifre hatalı" });
+    return res.status(400).json({ success: false, message: "Şifre hatalı. Lütfen tekrar deneyin." });
   }
   if (!user.isVerified) {
     return res.status(403).json({
       success: false,
-      message: "Lütfen e-posta adresinizi doğrulayın."
+      message:
+        "Lütfen önce e-posta adresinizi doğrulayın. Doğrulama bağlantısını size gönderdiğimiz e-postada bulabilirsiniz."
     });
   }
 
@@ -339,6 +373,7 @@ router.post("/api/auth/login", tightLimiter, async (req, res) => {
       notes: user.notes,
       isVerified: !!user.isVerified,
       isAdmin: !!user.isAdmin,
+      isApproved: !!user.isApproved,
       createdAt: user.createdAt,
       lastLoginAt: user.lastLoginAt,
       lastLoginIp: user.lastLoginIp
@@ -350,7 +385,7 @@ router.post("/api/auth/login", tightLimiter, async (req, res) => {
 router.get("/api/auth/me", requireJWT, (req, res) => {
   const users = readUsers();
   const user = users.find((u) => u.id === req.user.uid);
-  if (!user) return res.status(404).json({ success: false, message: "Kullanıcı yok" });
+  if (!user) return res.status(404).json({ success: false, message: "Kullanıcı bulunamadı." });
 
   res.json({
     success: true,
@@ -367,6 +402,7 @@ router.get("/api/auth/me", requireJWT, (req, res) => {
       notes: user.notes,
       isVerified: !!user.isVerified,
       isAdmin: !!user.isAdmin,
+      isApproved: !!user.isApproved,
       createdAt: user.createdAt,
       lastLoginAt: user.lastLoginAt,
       lastLoginIp: user.lastLoginIp
@@ -391,36 +427,34 @@ router.patch("/api/auth/profile", requireJWT, async (req, res) => {
 
   const users = readUsers();
   const idx = users.findIndex((u) => u.id === req.user.uid);
-  if (idx === -1) {
-    return res.status(404).json({ success: false, message: "Kullanıcı bulunamadı" });
-  }
+  if (idx === -1) return res.status(404).json({ success: false, message: "Kullanıcı bulunamadı." });
   const user = users[idx];
 
   if (displayName !== undefined) user.displayName = String(displayName || "").trim() || user.displayName;
-  if (fullName !== undefined)    user.fullName    = String(fullName || "").trim()    || null;
+  if (fullName !== undefined) user.fullName = String(fullName || "").trim() || null;
 
   if (phone !== undefined) {
     const p = String(phone || "").trim();
     if (p && !isValidPhone(p)) {
-      return res.status(400).json({ success: false, message: "Telefon formatı geçersiz" });
+      return res.status(400).json({ success: false, message: "Telefon formatı geçersiz." });
     }
     user.phone = p || null;
   }
 
-  if (city !== undefined)     user.city     = String(city || "").trim()     || null;
+  if (city !== undefined) user.city = String(city || "").trim() || null;
   if (district !== undefined) user.district = String(district || "").trim() || null;
-  if (address !== undefined)  user.address  = String(address || "").trim()  || null;
-  if (zip !== undefined)      user.zip      = String(zip || "").trim().slice(0, 16) || null;
-  if (notes !== undefined)    user.notes    = String(notes || "").trim().slice(0, 500) || null;
+  if (address !== undefined) user.address = String(address || "").trim() || null;
+  if (zip !== undefined) user.zip = String(zip || "").trim().slice(0, 16) || null;
+  if (notes !== undefined) user.notes = String(notes || "").trim().slice(0, 500) || null;
 
   if (newPassword) {
     const curr = String(currentPassword || "");
     const ok = await bcrypt.compare(curr, user.passHash || "");
     if (!ok) {
-      return res.status(400).json({ success: false, message: "Mevcut şifre hatalı" });
+      return res.status(400).json({ success: false, message: "Mevcut şifre hatalı." });
     }
     if (String(newPassword).length < 6) {
-      return res.status(400).json({ success: false, message: "Yeni şifre en az 6 karakter olmalı" });
+      return res.status(400).json({ success: false, message: "Yeni şifre en az 6 karakter olmalı." });
     }
     const hash = await bcrypt.hash(String(newPassword), 10);
     user.passHash = hash;
@@ -444,6 +478,7 @@ router.patch("/api/auth/profile", requireJWT, async (req, res) => {
       notes: user.notes,
       isVerified: !!user.isVerified,
       isAdmin: !!user.isAdmin,
+      isApproved: !!user.isApproved,
       createdAt: user.createdAt,
       lastLoginAt: user.lastLoginAt,
       lastLoginIp: user.lastLoginIp
@@ -458,7 +493,7 @@ router.patch("/api/auth/profile", requireJWT, async (req, res) => {
 router.get("/api/profile/full", requireJWT, (req, res) => {
   const users = readUsers();
   const u = users.find((x) => x.id === req.user.uid);
-  if (!u) return res.status(404).json({ success: false, message: "Kullanıcı yok" });
+  if (!u) return res.status(404).json({ success: false, message: "Kullanıcı bulunamadı." });
 
   res.json({ success: true, profile: u.aiProfile || null });
 });
@@ -467,14 +502,12 @@ router.put("/api/profile/full", requireJWT, (req, res) => {
   const { aiProfile } = req.body || {};
   const cleanProfile = sanitizeAIProfile(aiProfile);
   if (!cleanProfile) {
-    return res.status(400).json({ success: false, message: "Geçersiz profil yapısı" });
+    return res.status(400).json({ success: false, message: "Geçersiz profil yapısı." });
   }
 
   const users = readUsers();
   const idx = users.findIndex((u) => u.id === req.user.uid);
-  if (idx === -1) {
-    return res.status(404).json({ success: false, message: "Kullanıcı bulunamadı" });
-  }
+  if (idx === -1) return res.status(404).json({ success: false, message: "Kullanıcı bulunamadı." });
 
   users[idx].aiProfile = cleanProfile;
   writeUsers(users);
@@ -506,23 +539,23 @@ router.post("/api/products/:id/reviews", requireJWT, (req, res) => {
   const { rating, comment, photos, anonymous } = req.body || {};
 
   if (!productId) {
-    return res.status(400).json({ success: false, message: "Geçersiz ürün" });
+    return res.status(400).json({ success: false, message: "Geçersiz ürün." });
   }
 
   const r = Number(rating);
   if (!Number.isFinite(r) || r < 1 || r > 5) {
-    return res.status(400).json({ success: false, message: "Puan 1–5 arası olmalı" });
+    return res.status(400).json({ success: false, message: "Puan 1–5 arası olmalı." });
   }
 
   const text = String(comment || "").trim();
   if (text.length < 3) {
-    return res.status(400).json({ success: false, message: "Yorum çok kısa" });
+    return res.status(400).json({ success: false, message: "Yorum çok kısa." });
   }
 
   const products = readProducts();
   const exists = products.find((p) => p.id === productId);
   if (!exists) {
-    return res.status(400).json({ success: false, message: "Ürün bulunamadı" });
+    return res.status(400).json({ success: false, message: "Ürün bulunamadı." });
   }
 
   const users = readUsers();
@@ -571,31 +604,30 @@ router.post("/api/products/:id/reviews", requireJWT, (req, res) => {
 router.post("/api/coupon/check", (req, res) => {
   const { code } = req.body || {};
   const normalized = String(code || "").trim().toUpperCase();
-  if (!normalized) return res.json({ success: false, message: "Kod gerekli" });
+  if (!normalized) return res.json({ success: false, message: "Kod gerekli." });
 
   const coupons = readCoupons();
   const found = coupons.find((c) => c.code === normalized);
-  if (!found) return res.json({ success: false, message: "Geçersiz kod" });
-  if (found.active === false)
-    return res.json({ success: false, message: "Kod pasif" });
+  if (!found) return res.json({ success: false, message: "Geçersiz kod." });
+  if (found.active === false) return res.json({ success: false, message: "Kod pasif." });
 
   const now = Date.now();
   if (found.startsAt) {
     const st = Date.parse(found.startsAt);
     if (!Number.isNaN(st) && now < st) {
-      return res.json({ success: false, message: "Kod henüz başlamadı" });
+      return res.json({ success: false, message: "Kod henüz başlamadı." });
     }
   }
   if (found.expiresAt) {
     const exp = Date.parse(found.expiresAt);
     if (!Number.isNaN(exp) && now > exp) {
-      return res.json({ success: false, message: "Kod süresi dolmuş" });
+      return res.json({ success: false, message: "Kod süresi dolmuş." });
     }
   }
 
   const percent = Number(found.percent || 0);
   if (!(percent > 0 && percent <= 90)) {
-    return res.json({ success: false, message: "Kod yapılandırması geçersiz" });
+    return res.json({ success: false, message: "Kod yapılandırması geçersiz." });
   }
 
   res.json({
@@ -618,7 +650,7 @@ router.post(
   async (req, res) => {
     const { name, email, message } = req.body || {};
     if (!name || !email || !message) {
-      return res.status(400).json({ success: false, message: "Tüm alanlar zorunlu" });
+      return res.status(400).json({ success: false, message: "Lütfen tüm alanları doldurun." });
     }
     if (containsTR(email)) {
       return res.status(400).json({
@@ -627,9 +659,7 @@ router.post(
       });
     }
     if (!isValidEmail(email)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Geçerli bir e-posta girin." });
+      return res.status(400).json({ success: false, message: "Geçerli bir e-posta adresi girin." });
     }
 
     const list = readMessages();
@@ -648,6 +678,7 @@ router.post(
     list.push(rec);
     writeMessages(list);
 
+    // Admin'e bilgilendirme
     try {
       await sendMail({
         subject: `Mavern İletişim - ${name}`,
@@ -662,7 +693,6 @@ router.post(
         L[i].mailError = null;
         writeMessages(L);
       }
-      res.json({ success: true, message: "Mesaj gönderildi." });
     } catch (e) {
       const L = readMessages();
       const i = L.findIndex((m) => m.id === id);
@@ -671,11 +701,21 @@ router.post(
         L[i].mailError = e.message || String(e);
         writeMessages(L);
       }
-      res.json({
-        success: true,
-        message: "Mesaj kaydedildi, e-posta şu an gönderilemedi."
-      });
+      // Admin maili başarısız olsa bile kullanıcıya "mesaj alındı" demeye devam edeceğiz.
     }
+
+    // Kullanıcıya premium teşekkür e-postası
+    try {
+      await sendContactThanksEmail(email);
+    } catch (e) {
+      console.error("İletişim teşekkür mail hatası:", e.message);
+    }
+
+    return res.json({
+      success: true,
+      message:
+        "Teşekkür ederiz, mesajınız bize ulaştı. Ekibimiz en kısa sürede sizinle iletişime geçecektir."
+    });
   }
 );
 
@@ -685,16 +725,16 @@ router.post(
   tightLimiter,
   idempGuard(["items", "email", "name", "phone", "address", "coupon", "profileSnapshot"]),
   async (req, res) => {
-    const { items, email, name, phone, address, coupon, profileSnapshot } =
-      req.body || {};
+    const { items, email, name, phone, address, coupon, profileSnapshot } = req.body || {};
 
     if (!Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ success: false, message: "Sepet boş" });
+      return res.status(400).json({ success: false, message: "Sepet boş." });
     }
     if (!name || !email || !phone || !address) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Ad, e-posta, telefon ve adres zorunlu" });
+      return res.status(400).json({
+        success: false,
+        message: "Ad, e-posta, telefon ve adres zorunludur."
+      });
     }
     if (containsTR(email)) {
       return res.status(400).json({
@@ -703,26 +743,18 @@ router.post(
       });
     }
     if (!isValidEmail(email)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Geçerli bir e-posta girin." });
+      return res.status(400).json({ success: false, message: "Geçerli bir e-posta adresi girin." });
     }
     if (!isValidPhone(phone)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Geçerli bir telefon girin." });
+      return res.status(400).json({ success: false, message: "Geçerli bir telefon numarası girin." });
     }
 
     const addr = String(address).trim();
     if (addr.length < 10) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Adres çok kısa (min 10 karakter)" });
+      return res.status(400).json({ success: false, message: "Adres çok kısa (min 10 karakter)." });
     }
     if (addr.length > 600) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Adres çok uzun (max 600 karakter)" });
+      return res.status(400).json({ success: false, message: "Adres çok uzun (max 600 karakter)." });
     }
 
     const allProducts = readProducts();
@@ -730,15 +762,13 @@ router.post(
     const notBuyable = [];
 
     for (const it of items) {
-      const found = it.id
-        ? allProducts.find((p) => p.id === it.id)
-        : allProducts.find((p) => p.name === it.name);
+      const found = it.id ? allProducts.find((p) => p.id === it.id) : allProducts.find((p) => p.name === it.name);
       if (!found) {
-        notBuyable.push({ name: it.name || "(?)", reason: "Ürün bulunamadı" });
+        notBuyable.push({ name: it.name || "(?)", reason: "Ürün bulunamadı." });
         continue;
       }
       if (!found.purchasable || !Number.isFinite(found.price)) {
-        notBuyable.push({ name: found.name, reason: "Satılamıyor (fiyat yok)" });
+        notBuyable.push({ name: found.name, reason: "Satılamıyor (fiyat yok)." });
         continue;
       }
       const qty = Math.max(1, Number(it.qty || 1));
@@ -767,9 +797,7 @@ router.post(
       const normalized = String(coupon).trim().toUpperCase();
       const coupons = readCoupons();
       const now = Date.now();
-      const found = coupons.find(
-        (c) => c.code === normalized && c.active !== false
-      );
+      const found = coupons.find((c) => c.code === normalized && c.active !== false);
       if (found) {
         let usable = true;
         if (found.startsAt) {
@@ -788,9 +816,7 @@ router.post(
     }
 
     const payable = total - discount;
-    const lines = normalizedItems
-      .map((it) => `• ${it.name} x${it.qty} — ${it.price}₺`)
-      .join("\n");
+    const lines = normalizedItems.map((it) => `• ${it.name} x${it.qty} — ${it.price}₺`).join("\n");
 
     const profileClean = sanitizeAIProfile(profileSnapshot);
     const decoded = tryGetJWTUser(req);
@@ -824,9 +850,10 @@ router.post(
     messages.push(order);
     writeMessages(messages);
 
+    // Admin’e sipariş maili
     try {
       await sendMail({
-        subject: "Yeni Sipariş",
+        subject: "Mavern • Yeni Sipariş",
         text: `Müşteri: ${name} (${email})
 Telefon: ${phone}
 Adres  : ${addr}
@@ -846,15 +873,6 @@ Kupon   : ${appliedCoupon || "-"}
         L[i].mailError = null;
         writeMessages(L);
       }
-
-      res.json({
-        success: true,
-        message: "Sipariş iletildi.",
-        total,
-        discount,
-        payable,
-        orderId: id
-      });
     } catch (e) {
       const L = readMessages();
       const i = L.findIndex((m) => m.id === id);
@@ -863,16 +881,32 @@ Kupon   : ${appliedCoupon || "-"}
         L[i].mailError = e.message || String(e);
         writeMessages(L);
       }
+      // Admin maili düşmese bile sipariş kaydı tutuluyor.
+    }
 
-      res.json({
-        success: true,
-        message: "Sipariş kaydedildi, e-posta şu an gönderilemedi.",
+    // Kullanıcıya sipariş özeti e-postası (premium şablon)
+    try {
+      await sendOrderSummaryEmail(email, {
+        id,
+        name,
+        items: normalizedItems,
         total,
         discount,
         payable,
-        orderId: id
+        coupon: appliedCoupon
       });
+    } catch (e) {
+      console.error("Sipariş özeti mail hatası:", e.message);
     }
+
+    res.json({
+      success: true,
+      message: "Siparişiniz başarıyla alındı. Teşekkür ederiz.",
+      total,
+      discount,
+      payable,
+      orderId: id
+    });
   }
 );
 
@@ -894,18 +928,24 @@ router.get("/api/orders/my", requireJWT, (req, res) => {
   res.json({ success: true, items: list });
 });
 
+// ✅ DÜZELTİLDİ: Guest siparişler yalnızca aynı e-posta sahibi kullanıcı tarafından görülebilir
 router.get("/api/orders/:id", requireJWT, (req, res) => {
   const uid = req.user.uid;
   const id = String(req.params.id || "");
   const msg = readMessages().find((m) => m.id === id && m.type === "order");
 
   if (!msg) {
-    return res.status(404).json({ success: false, message: "Sipariş bulunamadı" });
+    return res.status(404).json({ success: false, message: "Sipariş bulunamadı." });
   }
-  if (msg.userId && msg.userId !== uid) {
-    return res
-      .status(403)
-      .json({ success: false, message: "Bu siparişi görüntüleme yetkiniz yok" });
+
+  const users = readUsers();
+  const me = users.find((u) => u.id === uid) || null;
+
+  const okByUserId = msg.userId && msg.userId === uid;
+  const okByEmail = !msg.userId && me && msg.email && me.email && msg.email === me.email;
+
+  if (!okByUserId && !okByEmail) {
+    return res.status(403).json({ success: false, message: "Bu siparişi görüntüleme yetkiniz yok." });
   }
 
   const item = {
@@ -925,7 +965,7 @@ router.post("/api/feedback", requireJWT, tightLimiter, (req, res) => {
   const { rating, comment, page, context } = req.body || {};
   const r = Number(rating);
   if (!Number.isFinite(r) || r < 1 || r > 5) {
-    return res.status(400).json({ success: false, message: "Puan 1–5 arasında olmalı" });
+    return res.status(400).json({ success: false, message: "Puan 1–5 arasında olmalı." });
   }
 
   const users = readUsers();
@@ -939,7 +979,8 @@ router.post("/api/feedback", requireJWT, tightLimiter, (req, res) => {
     rating: r,
     comment: String(comment || "").trim().slice(0, 500),
     page: String(page || "").trim().slice(0, 200) || null,
-    context: context && typeof context === "object" ? context : null,
+    // ✅ DÜZELTİLDİ: context sanitize
+    context: sanitizeContext(context),
     createdAt: new Date().toISOString()
   };
 
@@ -964,11 +1005,11 @@ router.post("/api/ai/consult", tightLimiter, (req, res) => {
   const { question, profileSnapshot } = req.body || {};
   const q = String(question || "").trim();
   if (!q) {
-    return res.status(400).json({ success: false, message: "Soru metni gerekli" });
+    return res.status(400).json({ success: false, message: "Soru metni gerekli." });
   }
 
   const suggestion =
-    "Bu özellik şu anda test aşamasında. Profilinizi ve sorunuzu aldık; yakında çok daha derin kişiselleştirilmiş öneriler sunacağız. Şimdilik saç ve saç derinize uygun nazik bir şampuan kullanmayı, aşırı sıcak sudan kaçınmayı ve düzenli bakım rutini oluşturmayı ihmal etmeyin.";
+    "Bu özellik şu anda test aşamasında. Profilinizi ve sorunuzu aldık; yakında çok daha derin kişiselleştirilmiş öneriler sunacağız. Şimdilik saç ve saç derinize uygun nazik bir şampuan kullanmayı, aşırı sıcak sudan kaçınmamayı ve düzenli bakım rutini oluşturmayı ihmal etmeyin.";
 
   res.json({
     success: true,

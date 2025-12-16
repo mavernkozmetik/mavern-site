@@ -1,4 +1,6 @@
 // server-admin.js
+"use strict";
+
 const express = require("express");
 const rateLimit = require("express-rate-limit");
 const multer = require("multer");
@@ -61,7 +63,8 @@ function requireAdmin(req, res, next) {
 router.post("/api/login", (req, res) => {
   const { username, password } = req.body || {};
   if (username === ADMIN_USER && password === ADMIN_PASS) {
-    ADMIN_TOKEN = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    ADMIN_TOKEN =
+      Math.random().toString(36).slice(2) + Date.now().toString(36);
     return res.json({ success: true, token: ADMIN_TOKEN, username });
   }
   return res
@@ -88,7 +91,9 @@ const uploadAdmin = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const ok = ["image/jpeg", "image/png", "image/webp"].includes(file.mimetype);
+    const ok = ["image/jpeg", "image/png", "image/webp"].includes(
+      file.mimetype
+    );
     cb(ok ? null : new Error("Sadece JPG/PNG/WEBP yüklenebilir"), ok);
   }
 });
@@ -99,7 +104,9 @@ router.post(
   uploadAdmin.single("file"),
   (req, res) => {
     if (!req.file)
-      return res.status(400).json({ success: false, message: "Dosya yok" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Dosya yok" });
     res.json({ success: true, path: "/uploads/" + req.file.filename });
   }
 );
@@ -130,7 +137,13 @@ router.post("/api/admin/mail/test", requireAdmin, async (_req, res) => {
 /*  Admin: Kullanıcılar                                                      */
 /* ======================================================================== */
 
-// Liste
+/**
+ * Kullanıcı listesi:
+ *  - isVerified: e-posta doğrulaması
+ *  - isAdmin   : site içi admin flag
+ *
+ * Not: isApproved alanı artık kullanılmıyor (deprecated).
+ */
 router.get("/api/admin/users", requireAdmin, (_req, res) => {
   const users = readUsers().map((u) => ({
     id: u.id,
@@ -154,23 +167,40 @@ router.get("/api/admin/users", requireAdmin, (_req, res) => {
   res.json({ success: true, items: users });
 });
 
-// FULL detay
+/**
+ * FULL detay:
+ *  - user
+ *  - orders (siparişler)
+ *  - reviews (yorumlar)
+ *  - feedback
+ *  - contacts (iletişim kayıtları)
+ *
+ * Not: user.isApproved artık dönmüyoruz (deprecated).
+ */
 router.get("/api/admin/users/:id/full", requireAdmin, (req, res) => {
   const id = String(req.params.id || "");
   const users = readUsers();
   const user = users.find((u) => u.id === id);
   if (!user) {
-    return res.status(404).json({ success: false, message: "Kullanıcı bulunamadı" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Kullanıcı bulunamadı" });
   }
 
   const messages = readMessages();
-  const reviews  = readReviews();
+  const reviews = readReviews();
   const feedback = readFeedback();
 
   const orders = messages.filter(
     (m) =>
       m.type === "order" &&
       (m.userId === user.id || (m.email && m.email === user.email))
+  );
+
+  const contacts = messages.filter(
+    (m) =>
+      m.type === "contact" &&
+      (m.email && m.email === user.email)
   );
 
   const userReviews = reviews.filter(
@@ -205,8 +235,60 @@ router.get("/api/admin/users/:id/full", requireAdmin, (req, res) => {
       verifiedAt: user.verifiedAt
     },
     orders,
+    contacts,
     reviews: userReviews,
     feedback: userFeedback
+  });
+});
+
+/**
+ * Kullanıcı güncelle:
+ *  - isAdmin: panel dışındaki “site içi admin” yetkisi
+ *
+ * Not:
+ *  - isVerified yalnızca e-posta doğrulaması ile değişsin, buradan değiştirmiyoruz.
+ *  - isApproved alanı artık kullanılmıyor ve burada dikkate alınmıyor.
+ */
+router.patch("/api/admin/users/:id", requireAdmin, (req, res) => {
+  const id = String(req.params.id || "");
+  const { isAdmin } = req.body || {};
+
+  const users = readUsers();
+  const idx = users.findIndex((u) => u.id === id);
+  if (idx === -1) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Kullanıcı bulunamadı" });
+  }
+
+  if (typeof isAdmin === "boolean") {
+    users[idx].isAdmin = isAdmin;
+  }
+
+  writeUsers(users);
+
+  const u = users[idx];
+  res.json({
+    success: true,
+    user: {
+      id: u.id,
+      email: u.email,
+      displayName: u.displayName,
+      fullName: u.fullName,
+      phone: u.phone,
+      city: u.city,
+      district: u.district,
+      address: u.address,
+      zip: u.zip,
+      notes: u.notes,
+      isVerified: !!u.isVerified,
+      isAdmin: !!u.isAdmin,
+      aiProfile: u.aiProfile || null,
+      createdAt: u.createdAt,
+      lastLoginAt: u.lastLoginAt,
+      lastLoginIp: u.lastLoginIp,
+      verifiedAt: u.verifiedAt
+    }
   });
 });
 
@@ -215,9 +297,12 @@ router.delete("/api/admin/users/:id", requireAdmin, (req, res) => {
   const id = String(req.params.id || "");
   let users = readUsers();
   const before = users.length;
+  const user = users.find((u) => u.id === id) || null;
   users = users.filter((u) => u.id !== id);
   if (users.length === before) {
-    return res.status(404).json({ success: false, message: "Kullanıcı bulunamadı" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Kullanıcı bulunamadı" });
   }
   writeUsers(users);
 
@@ -231,6 +316,9 @@ router.delete("/api/admin/users/:id", requireAdmin, (req, res) => {
   fbs = fbs.filter((f) => f.userId !== id);
   writeFeedback(fbs);
 
+  // İsteğe bağlı: kullanıcının e-postasına bağlı contact/order kayıtlarını silmiyoruz,
+  // raporlama / muhasebe için log olarak kalsın.
+
   res.json({ success: true });
 });
 
@@ -242,7 +330,9 @@ router.delete("/api/admin/users/:id", requireAdmin, (req, res) => {
 router.post("/api/admin/products", requireAdmin, (req, res) => {
   const { name, price, image, desc } = req.body || {};
   if (!name) {
-    return res.status(400).json({ success: false, message: "İsim gerekli" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Ürün adı gerekli" });
   }
 
   const list = readProducts();
@@ -269,7 +359,9 @@ router.put("/api/admin/products/:id", requireAdmin, (req, res) => {
   const list = readProducts();
   const idx = list.findIndex((p) => p.id === id);
   if (idx === -1) {
-    return res.status(404).json({ success: false, message: "Ürün bulunamadı" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Ürün bulunamadı" });
   }
 
   if (name !== undefined) list[idx].name = String(name).trim();
@@ -293,7 +385,9 @@ router.delete("/api/admin/products/:id", requireAdmin, (req, res) => {
   const before = list.length;
   list = list.filter((p) => p.id !== id);
   if (list.length === before) {
-    return res.status(404).json({ success: false, message: "Ürün bulunamadı" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Ürün bulunamadı" });
   }
   writeProducts(list);
   res.json({ success: true });
@@ -317,7 +411,9 @@ router.patch("/api/admin/reviews/:id/approve", requireAdmin, (req, res) => {
   const list = readReviews();
   const idx = list.findIndex((r) => r.id === id);
   if (idx === -1) {
-    return res.status(404).json({ success: false, message: "Yorum bulunamadı" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Yorum bulunamadı" });
   }
 
   if (typeof approved === "boolean") {
@@ -336,7 +432,9 @@ router.delete("/api/admin/reviews/:id", requireAdmin, (req, res) => {
   const before = list.length;
   list = list.filter((r) => r.id !== id);
   if (list.length === before) {
-    return res.status(404).json({ success: false, message: "Yorum bulunamadı" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Yorum bulunamadı" });
   }
   writeReviews(list);
   res.json({ success: true });
@@ -362,7 +460,9 @@ router.patch("/api/admin/messages/:id/read", requireAdmin, (req, res) => {
   const list = readMessages();
   const idx = list.findIndex((m) => m.id === id);
   if (idx === -1) {
-    return res.status(404).json({ success: false, message: "Mesaj bulunamadı" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Mesaj bulunamadı" });
   }
   list[idx].read = true;
   writeMessages(list);
@@ -375,7 +475,9 @@ router.delete("/api/admin/messages/:id", requireAdmin, (req, res) => {
   const before = list.length;
   list = list.filter((m) => m.id !== id);
   if (list.length === before) {
-    return res.status(404).json({ success: false, message: "Mesaj bulunamadı" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Mesaj bulunamadı" });
   }
   writeMessages(list);
   res.json({ success: true });
@@ -389,7 +491,9 @@ router.patch("/api/admin/orders/:id", requireAdmin, (req, res) => {
   const list = readMessages();
   const idx = list.findIndex((m) => m.id === id && m.type === "order");
   if (idx === -1) {
-    return res.status(404).json({ success: false, message: "Sipariş bulunamadı" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Sipariş bulunamadı" });
   }
 
   if (status !== undefined) {
@@ -402,7 +506,9 @@ router.patch("/api/admin/orders/:id", requireAdmin, (req, res) => {
       "returned"
     ];
     if (!allowed.includes(status)) {
-      return res.status(400).json({ success: false, message: "Geçersiz durum" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Geçersiz sipariş durumu" });
     }
     list[idx].status = status;
   }
@@ -419,30 +525,40 @@ router.patch("/api/admin/orders/:id", requireAdmin, (req, res) => {
 });
 
 // Mesaj / sipariş mailini yeniden gönder
-router.post("/api/admin/messages/:id/resend", requireAdmin, async (req, res) => {
-  const id = String(req.params.id || "");
-  const list = readMessages();
-  const idx = list.findIndex((m) => m.id === id);
-  if (idx === -1) {
-    return res.status(404).json({ success: false, message: "Mesaj bulunamadı" });
-  }
-  const msg = list[idx];
+router.post(
+  "/api/admin/messages/:id/resend",
+  requireAdmin,
+  async (req, res) => {
+    const id = String(req.params.id || "");
+    const list = readMessages();
+    const idx = list.findIndex((m) => m.id === id);
+    if (idx === -1) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Mesaj bulunamadı" });
+    }
+    const msg = list[idx];
 
-  try {
-    if (msg.type === "contact") {
-      await sendMail({
-        subject: `Mavern İletişim (Yeniden) - ${msg.name || "-"}`,
-        text: `Gönderen: ${msg.name || "-"} - ${msg.email || "-"}\n\nMesaj:\n${msg.message || ""}`,
-        replyTo: msg.email || undefined
-      });
-    } else if (msg.type === "order") {
-      const lines = (msg.items || [])
-        .map((it) => `• ${it.name} x${it.qty || 1} — ${it.price}₺`)
-        .join("\n");
+    try {
+      if (msg.type === "contact") {
+        await sendMail({
+          subject: `Mavern İletişim (Yeniden) - ${msg.name || "-"}`,
+          text: `Gönderen: ${msg.name || "-"} - ${
+            msg.email || "-"
+          }\n\nMesaj:\n${msg.message || ""}`,
+          replyTo: msg.email || undefined
+        });
+      } else if (msg.type === "order") {
+        const lines = (msg.items || [])
+          .map(
+            (it) =>
+              `• ${it.name} x${it.qty || 1} — ${it.price}₺`
+          )
+          .join("\n");
 
-      await sendMail({
-        subject: "Yeni Sipariş (Yeniden Gönderim)",
-        text: `Müşteri: ${msg.name || "-"} (${msg.email || "-"})
+        await sendMail({
+          subject: "Yeni Sipariş (Yeniden Gönderim)",
+          text: `Müşteri: ${msg.name || "-"} (${msg.email || "-"})
 Telefon: ${msg.phone || "-"}
 Adres  : ${msg.address || "-"}
 
@@ -452,26 +568,29 @@ ${lines}
 Kupon   : ${msg.coupon || "-"}
 İndirim: ${msg.discount || 0}₺
 Ödenecek: ${msg.payable || 0}₺`
-      });
-    } else {
-      return res
-        .status(400)
-        .json({ success: false, message: "Bu mesaj tipi yeniden gönderilemiyor" });
-    }
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: "Bu mesaj tipi yeniden gönderilemiyor"
+        });
+      }
 
-    list[idx].mailSent = true;
-    list[idx].mailError = null;
-    writeMessages(list);
-    res.json({ success: true, message: "Mail yeniden gönderildi" });
-  } catch (e) {
-    list[idx].mailSent = false;
-    list[idx].mailError = e.message || String(e);
-    writeMessages(list);
-    res
-      .status(500)
-      .json({ success: false, message: "Mail gönderilemedi: " + e.message });
+      list[idx].mailSent = true;
+      list[idx].mailError = null;
+      writeMessages(list);
+      res.json({ success: true, message: "Mail yeniden gönderildi" });
+    } catch (e) {
+      list[idx].mailSent = false;
+      list[idx].mailError = e.message || String(e);
+      writeMessages(list);
+      res.status(500).json({
+        success: false,
+        message: "Mail gönderilemedi: " + e.message
+      });
+    }
   }
-});
+);
 
 /* ======================================================================== */
 /*  Admin: Kuponlar                                                          */
@@ -500,12 +619,15 @@ router.post("/api/admin/coupons", requireAdmin, (req, res) => {
   const p = Number(percent);
 
   if (!code) {
-    return res.status(400).json({ success: false, message: "Kod gerekli" });
-  }
-  if (!(p > 0 && p <= 90)) {
     return res
       .status(400)
-      .json({ success: false, message: "Yüzde 1–90 arasında olmalı" });
+      .json({ success: false, message: "Kod gerekli" });
+  }
+  if (!(p > 0 && p <= 90)) {
+    return res.status(400).json({
+      success: false,
+      message: "Yüzde 1–90 arasında olmalı"
+    });
   }
 
   const list = readCoupons();
@@ -539,7 +661,9 @@ router.delete("/api/admin/coupons/:code", requireAdmin, (req, res) => {
   const before = list.length;
   list = list.filter((c) => c.code !== code);
   if (list.length === before) {
-    return res.status(404).json({ success: false, message: "Kod bulunamadı" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Kod bulunamadı" });
   }
   writeCoupons(list);
   res.json({ success: true });

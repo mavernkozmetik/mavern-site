@@ -883,7 +883,19 @@
             throw new Error("Oturum doğrulanamadı");
           }
 
-          if (!me.user.isApproved) {
+          const u = me.user;
+
+          // 1) E-posta doğrulanmamışsa
+          if (!u.isVerified) {
+            gate.style.display = "block";
+            fields.style.display = "none";
+            gate.textContent =
+              "Yorum yazabilmek için e-posta adresinizi doğrulamanız gerekir. Lütfen e-posta kutunuzu kontrol edin.";
+            return;
+          }
+
+          // 2) Admin onayı yoksa
+          if (!u.isApproved) {
             gate.style.display = "block";
             fields.style.display = "none";
             gate.textContent =
@@ -891,8 +903,11 @@
             return;
           }
 
+          // 3) Her şey tamamsa formu aç
           gate.style.display = "none";
           fields.style.display = "block";
+          status.textContent =
+            "Yorumlar, yayınlanmadan önce kısa bir moderasyon sürecinden geçer.";
         } catch (err) {
           console.warn("Yorum gate hatası:", err);
           gate.style.display = "block";

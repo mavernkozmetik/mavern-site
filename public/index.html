@@ -8,33 +8,311 @@
 
   <!-- SEO -->
   <meta name="description" content="Mavern: Minimal, premium ve kişiselleştirilebilir bakım ürünleri. Yapay zekâ destekli öneriler yakında.">
-   <meta name="robots" content="index,follow">
+  <meta name="robots" content="index,follow">
   <meta property="og:title" content="Mavern">
   <meta property="og:description" content="Minimal, premium ve kişiselleştirilmiş bakım deneyimi.">
-  <meta property="og:image" content="logo.png">
+  <meta property="og:image" content="mavernlogo.png">
   <meta property="og:type" content="website">
 
-   <link rel="icon" type="image/png" href="logo.png">
+  <!-- Favicon (sekme ikonu) -->
+  <link rel="icon" type="image/png" href="mavern-site-ici-logo.png">
 
   <!-- Fontlar -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;1,500&family=Poppins:ital,wght@0,300;0,500;1,300;1,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Playfair+Display:ital,wght@0,500;1,500&family=Poppins:ital,wght@0,300;0,500;1,300;1,500&display=swap" rel="stylesheet">
 
   <!-- Stil -->
   <link rel="stylesheet" href="style.css" />
+
+  <style>
+    :root{
+      --brand-font: "DM Serif Display", "Playfair Display", serif;
+
+      /* ✅ Premium ölçüler (~%35 küçültülmüş, daha “sessiz lüks”) */
+      --nav-logo: 36px;          /* navbar M */
+      --nav-wordmark: 22px;      /* navbar MAVERN */
+      --hero-wordmark: 46px;     /* hero MAVERN (artık PNG yok ama değişken kalsın) */
+      --intro-m: 160px;          /* intro M */
+      --intro-wordmark: 22px;    /* intro MAVERN */
+    }
+
+    /* Screen-reader only */
+    .sr-only{
+      position:absolute !important;
+      width:1px !important;
+      height:1px !important;
+      padding:0 !important;
+      margin:-1px !important;
+      overflow:hidden !important;
+      clip:rect(0,0,0,0) !important;
+      white-space:nowrap !important;
+      border:0 !important;
+    }
+
+    /* ✅ PNG reset (vertical-align kaldırıldı → uyarı da biter) */
+    img.brand-logo,
+    img.brand-wordmark,
+    img.hero-wordmark,
+    img.intro-m,
+    img.intro-wordmark,
+    img.cart-icon-img{
+      display:block !important;
+      line-height:0 !important;
+      height:auto;
+      object-fit:contain;
+    }
+
+    /* ✅ Wordmark’lar asla max-width:100% ile büyümesin */
+    img.brand-wordmark,
+    img.hero-wordmark,
+    img.intro-wordmark{
+      max-width:none !important;
+      width:auto !important;
+    }
+
+    /* ===================== AÇILIŞ ANİMASYONU ===================== */
+    .intro-overlay{
+      position:fixed; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      background:#0b0b0d;
+      z-index:9999;
+      opacity:1;
+      transition: opacity .45s ease;
+    }
+    html[data-theme="light"] .intro-overlay{ background:#f6f6f4; }
+
+    .intro-wrap{
+      width:min(520px, 86vw);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:6px;
+      transform: translateY(6px);
+    }
+
+    .intro-m{
+      width:min(var(--intro-m), 56vw);
+      opacity:0;
+      filter: brightness(.25) contrast(1.1);
+      transform: translateY(8px) scale(.985);
+      animation: introM 520ms ease forwards;
+    }
+
+    .intro-wordmark{
+      width:auto;
+      height: clamp(18px, 2.6vw, var(--intro-wordmark));
+      opacity:0;
+      transform: translateY(10px);
+      filter: drop-shadow(0 0 14px rgba(255,255,255,.14));
+      animation: introWord 520ms ease forwards;
+      animation-delay: 320ms;
+      margin:0;
+    }
+    html[data-theme="light"] .intro-wordmark{
+      filter: drop-shadow(0 0 12px rgba(0,0,0,.10));
+    }
+
+    .intro-fadeout{ opacity:0; pointer-events:none; }
+
+    @keyframes introM{
+      0%   { opacity:0; filter:brightness(.25) contrast(1.1); transform: translateY(10px) scale(.985); }
+      55%  { opacity:1; filter:brightness(1.12) contrast(1.05); transform: translateY(0) scale(1); }
+      100% { opacity:1; filter:brightness(1) contrast(1); transform: translateY(0) scale(1); }
+    }
+    @keyframes introWord{
+      0%   { opacity:0; transform: translateY(12px); }
+      55%  { opacity:1; transform: translateY(0); }
+      100% { opacity:1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .intro-m, .intro-wordmark { animation:none !important; opacity:1 !important; transform:none !important; }
+      .intro-overlay{ transition:none !important; }
+    }
+
+    /* ===================== NAVBAR (PREMIUM) ===================== */
+    header.topbar{
+      padding:10px 14px !important;
+      min-height:56px !important;
+      align-items:center !important;
+    }
+
+    .logo-area{
+      display:flex !important;
+      align-items:center !important;
+      gap:10px !important;
+    }
+
+    .logo-mark{
+      display:flex !important;
+      align-items:center !important;
+      justify-content:center !important;
+      width:var(--nav-logo) !important;
+      height:var(--nav-logo) !important;
+      background:transparent !important;
+      border:none !important;
+      box-shadow:none !important;
+      border-radius:0 !important;
+      overflow:visible !important;
+      flex:0 0 auto !important;
+    }
+
+    img.brand-logo{
+      width:var(--nav-logo) !important;
+      height:var(--nav-logo) !important;
+      max-width:none !important;
+      max-height:none !important;
+      filter:none !important;
+    }
+
+    /* ✅ Wordmark boyutu (CSS) */
+    .brand-wordmark{
+      height: var(--nav-wordmark) !important;
+      width:auto !important;
+      margin:0 !important;
+      transform: translateY(0);
+      opacity:.94;
+      max-width:none !important;
+      flex:0 0 auto !important;
+    }
+
+    nav.topnav{
+      display:flex !important;
+      align-items:center !important;
+      gap:12px !important;
+      flex-wrap:nowrap !important;
+    }
+
+    nav.topnav a{
+      padding:6px 6px !important;
+      margin-left:0 !important;
+      line-height:1 !important;
+      font-size:14px !important;
+      opacity:.92 !important;
+      transform: translateY(1px);
+    }
+
+    /* ✅ Sepet: hizalama + esneme fix */
+    a.cart-link{
+      display:inline-flex !important;
+      align-items:baseline !important; /* ikon ve yazı alt hizası aynı */
+      gap:6px !important;
+      line-height:1 !important;
+    }
+
+    img.cart-icon-img{
+      height:18px !important;   /* sabit yükseklik */
+      width:auto !important;    /* PNG yanlara açılmaz */
+      object-fit:contain !important;
+      transform:none !important; /* eski aşağı itme kalktı */
+      margin:0 !important;
+    }
+
+    .badge:empty{ display:none !important; }
+
+    #accountLink.account-link,
+    nav.topnav .account-link{
+      border:none !important;
+      background:transparent !important;
+      padding:6px 6px !important;
+      border-radius:0 !important;
+      font-size:14px !important;
+      opacity:.92 !important;
+      transform: translateY(1px) !important;
+    }
+
+    #themeToggle.theme-toggle{
+      display:none !important;
+    }
+
+    /* ===================== SIDEBAR THEME ===================== */
+    /* ✅ Tema satırı kaldırıldığı için bu stil artık kullanılmayacak ama kalsın sorun değil */
+    .sidebar-content .theme-row-btn{
+      padding:12px 0;
+      font-size:15px;
+      border-top:1px solid rgba(255,255,255,0.06);
+      background:transparent;
+      border-left:0;
+      border-right:0;
+      border-bottom:0;
+      color:inherit;
+      cursor:pointer;
+      text-align:left;
+      width:100%;
+      margin-top:10px;
+      letter-spacing:.02em;
+      opacity:.92;
+    }
+    html[data-theme="light"] .sidebar-content .theme-row-btn{
+      border-top:1px solid rgba(0,0,0,0.10);
+    }
+
+    /* ===================== HERO: PNG yerine slogan ===================== */
+    .hero-slogan{
+      font-family: var(--brand-font);
+      letter-spacing:.08em;
+      font-weight:600;
+      font-size: clamp(28px, 4.2vw, 46px);
+      margin: 0 0 10px 0;
+      line-height:1.05;
+      opacity:.98;
+      text-transform:none;
+    }
+
+    /* ===================== İLETİŞİM: textarea büyümesin + uzun metinde içeride kaydır ===================== */
+    #contactMsg{
+      resize: none !important;       /* sağ alttan çekip büyütme kapalı */
+      overflow-y: auto !important;   /* çok uzun metinde kutu büyümeden içeride scroll */
+      overflow-x: hidden !important;
+      min-height: 140px;             /* sabit rahat alan */
+    }
+
+    @media (max-width:600px){
+      :root{
+        --nav-logo: 32px;
+        --nav-wordmark: 20px;
+        --hero-wordmark: 40px;
+        --intro-m: 140px;
+        --intro-wordmark: 20px;
+      }
+
+      header.topbar{
+        padding:10px 12px !important;
+        min-height:54px !important;
+      }
+
+      nav.topnav{ gap:10px !important; flex-wrap:wrap !important; }
+      nav.topnav a{ font-size:14px !important; }
+
+      img.cart-icon-img{
+        height:18px !important;
+        width:auto !important;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-<!-- ============================================================
-     HEADER
-=============================================================== -->
+<div id="introOverlay" class="intro-overlay" aria-hidden="true" style="display:none;">
+  <div class="intro-wrap">
+    <img id="introMLogo" class="intro-m" src="mavern-site-ici-logo.png" alt="Mavern">
+    <img id="introWordmark" class="intro-wordmark" src="mavern-koyu-tema-başlık.png" alt="Mavern">
+    <span class="sr-only">Mavern</span>
+  </div>
+</div>
+
 <header class="topbar" role="banner">
   <div class="logo-area">
     <a href="index.html" class="logo-mark" aria-label="Mavern ana sayfa">
-      <img src="logo.png" alt="Mavern Logosu" class="brand-logo" />
+      <img id="navbarLogo" src="mavern-site-ici-logo.png" alt="Mavern" class="brand-logo" />
     </a>
-    <h1 class="brand">Mavern</h1>
+
+    <!-- ✅ INLINE KİLİT -->
+    <img id="navbarWordmark" class="brand-wordmark"
+         src="mavern-koyu-tema-başlık.png" alt="Mavern"
+         style="height:22px !important; width:auto !important; max-width:none !important; flex:0 0 auto !important;">
+
+    <h1 class="sr-only">Mavern</h1>
   </div>
 
   <nav class="topnav" aria-label="Ana menü">
@@ -42,30 +320,18 @@
     <a href="#" onclick="openProductsPanel();return false;">Ürünler</a>
     <a href="#" onclick="scrollToSection('contact');return false;">İletişim</a>
 
-    <!-- Sepet -->
     <a href="#" onclick="openCart();return false;" class="cart-link" aria-label="Sepeti aç">
-      <span class="cart-icon">
-        <svg viewBox="0 0 24 24">
-          <path d="M6.5 9.5h11l-1 8.5H7.5l-1-8.5Z" />
-          <path d="M9 9.5V7.2A3.2 3.2 0 0 1 12.2 4 3.2 3.2 0 0 1 15.4 7.2v2.3" />
-        </svg>
-      </span>
+      <img id="cartIconImg" class="cart-icon-img" src="sepet-koyu-tema.png" alt="">
       <span>Sepet</span>
-      <span id="cartCount" class="badge"></span>
+      <span id="cartCount" class="badge" aria-hidden="true"></span>
     </a>
 
-    <!-- Hesap -->
     <a href="auth.html" id="accountLink" class="account-link">Giriş / Kayıt</a>
 
-    <!-- Tema -->
     <button id="themeToggle" class="theme-toggle" type="button">☾ Koyu Tema</button>
   </nav>
 </header>
 
-<!-- ============================================================
-     MOBİL SIDEBAR
-     (Modern blur–overlay + daha derli toplu)
-=============================================================== -->
 <aside id="sidebar" class="panel left" aria-hidden="true">
   <div class="sidebar-bg"></div>
 
@@ -76,12 +342,12 @@
     <a href="#" onclick="openProductsPanel(); closeSidebar(); return false;">Ürünler</a>
     <a href="#" onclick="scrollToSection('contact'); closeSidebar(); return false;">İletişim</a>
     <a href="https://www.instagram.com/mavern.26" target="_blank" rel="noopener noreferrer">Instagram</a>
+
+    <!-- ✅ KALDIRILDI: Tema yazısı istemiyorsun -->
+    <!-- <button id="sidebarThemeBtn" class="theme-row-btn" type="button" onclick="document.getElementById('themeToggle')?.click();">Açık tema</button> -->
   </div>
 </aside>
 
-<!-- ============================================================
-     SEPET PANELİ
-=============================================================== -->
 <aside id="cartPanel" class="panel right" aria-hidden="true">
   <button class="close-btn" type="button" onclick="closeCart()">×</button>
   <h2>Sepet</h2>
@@ -102,11 +368,10 @@
     <div class="row actions">
       <button class="btn primary" onclick="openCheckout()">Ödeme</button>
       <button class="btn" onclick="clearCart()">Boşalt</button>
-     </div>
+    </div>
   </div>
 </aside>
 
-<!-- Mobil Sticky bar -->
 <div id="stickyCartBar" class="sticky-cart-bar">
   <div class="sum">
     <strong data-sticky-total>0 ₺</strong>
@@ -115,29 +380,26 @@
   <button class="btn primary" onclick="openCart()">Sepeti Aç</button>
 </div>
 
-<!-- ============================================================
-     HERO (Dark Theme Revamp)
-=============================================================== -->
 <section class="hero hero-dark">
   <div class="grain"></div>
   <div class="vignette"></div>
 
   <div class="hero-inner">
-    <!-- Sol taraf -->
     <div class="hero-copy">
-      <h2 class="elegant">MAVERN</h2>
+
+      <!-- ✅ PNG yerine slogan -->
+      <h2 class="hero-slogan">Kozmetikte Yeni Çağ</h2>
 
       <p class="lead">
         Günlük bakımı kişisel bir ritüele dönüştüren minimal ve seçkin ürünler.
       </p>
 
-      <!-- Giriş yapmış kullanıcıya özel -->
       <p id="heroPersonalLine"
          class="muted small"
          style="margin:4px 0 10px;display:none;"></p>
 
       <ul class="bullets">
-        <li>Saç & cilt tipine göre optimize formüller</li>
+        <li>Saç &amp; cilt tipine göre optimize formüller</li>
         <li>Küçük partilerde taze üretim</li>
         <li>Yapay zekâ destekli öneriler (yakında)</li>
       </ul>
@@ -152,18 +414,14 @@
       </p>
     </div>
 
-    <!-- Sağ taraf logo spotlight -->
     <div class="hero-art" aria-hidden="true">
       <div class="spotlight ring">
-        <img src="logo.png" alt="Mavern Logo" />
+        <img src="mavernlogo.png" alt="Mavern Logo" />
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============================================================
-     GÜVEN ŞERİDİ
-=============================================================== -->
 <div class="trust-strip-wrap">
   <div class="trust-strip">
     <div class="trust-item"><span class="trust-dot"></span> Hızlı ve özenli kargo</div>
@@ -172,22 +430,16 @@
     <div class="trust-item"><span class="trust-dot"></span> KVKK uyumlu veri işleme</div>
   </div>
 </div>
-<!-- ============================================================
-     ANA İÇERİK
-=============================================================== -->
+
 <main class="container">
 
-  <!-- ============================================================
-       AI / KİŞİSELLEŞTİRME TEASER
-  =============================================================== -->
   <section id="ai-preview" class="section" data-section="ai-preview">
     <div class="section-head">
       <h3 class="elegant">Yakında: Kişiselleştirilmiş Bakım Deneyimi</h3>
-      <span class="muted small">
-        Bu özellik hesabınız aktifken otomatik etkinleşecektir.
-      </span>
-     </div>
-     <div class="benefits-grid">
+      <span class="muted small">Bu özellik hesabınız aktifken otomatik etkinleşecektir.</span>
+    </div>
+
+    <div class="benefits-grid">
       <article class="benefit">
         <h4>Saç &amp; Cilt Profili</h4>
         <p>
@@ -219,9 +471,6 @@
     </p>
   </section>
 
-  <!-- ============================================================
-       ÖNE ÇIKANLAR
-  =============================================================== -->
   <section id="productsPreview" class="section">
     <div class="section-head">
       <h3 class="elegant">Öne Çıkanlar</h3>
@@ -235,9 +484,6 @@
     </div>
   </section>
 
-  <!-- ============================================================
-       NEDEN MAVERN
-  =============================================================== -->
   <section class="section">
     <div class="section-head">
       <h3 class="elegant">Neden Mavern?</h3>
@@ -254,7 +500,7 @@
       </article>
 
       <article class="benefit">
-        <h4>Taze & sınırlı üretim</h4>
+        <h4>Taze &amp; sınırlı üretim</h4>
         <p>
           Seri üretim yerine küçük partilerde üretim yaparak tazelik ve kaliteyi garanti altına alıyoruz.
         </p>
@@ -269,9 +515,6 @@
     </div>
   </section>
 
-  <!-- ============================================================
-       HAKKIMIZDA
-  =============================================================== -->
   <section id="about" class="section about">
     <div class="about-card">
       <h3 class="elegant">Hakkımızda</h3>
@@ -282,9 +525,7 @@
         gerçekten kullanmaktan keyif aldığınız bir deneyime dönüşmesi.
       </p>
 
-      <p class="muted" style="margin-top:8px;">
-        Ürünlerimizi geliştirirken:
-      </p>
+      <p class="muted" style="margin-top:8px;">Ürünlerimizi geliştirirken:</p>
 
       <ul class="muted" style="padding-left:18px;margin:4px 0 0;font-size:.9rem">
         <li>İşlev odaklı, sade ancak güçlü içerikler</li>
@@ -294,9 +535,6 @@
     </div>
   </section>
 
-  <!-- ============================================================
-       SSS
-  =============================================================== -->
   <section id="faq" class="section">
     <div class="section-head">
       <h3 class="elegant">Sık Sorulan Sorular</h3>
@@ -320,9 +558,7 @@
           <span>Ürünler ne kadar sürede kargoya verilir?</span>
           <small>Stok durumuna göre</small>
         </summary>
-        <p>
-          Stokta olan ürünler genellikle 1–3 iş günü içinde kargoya hazırlanır.
-        </p>
+        <p>Stokta olan ürünler genellikle 1–3 iş günü içinde kargoya hazırlanır.</p>
       </details>
 
       <details>
@@ -330,9 +566,7 @@
           <span>İade veya değişim yapabiliyor muyum?</span>
           <small>Yasal çerçevede</small>
         </summary>
-        <p>
-          Açılmamış ve kullanılmamış ürünlerde iade/değişim talepleriniz değerlendirilir.
-        </p>
+        <p>Açılmamış ve kullanılmamış ürünlerde iade/değişim talepleriniz değerlendirilir.</p>
       </details>
 
       <details>
@@ -346,10 +580,8 @@
         </p>
       </details>
     </div>
-   </section>
-  <!-- ============================================================
-       İLETİŞİM
-  =============================================================== -->
+  </section>
+
   <section id="contact" class="section">
     <div class="section-head">
       <h3 class="elegant">İletişim</h3>
@@ -365,9 +597,6 @@
     </div>
   </section>
 
-  <!-- ============================================================
-       FOOTER
-  =============================================================== -->
   <footer class="footer">
     <div>© 2025 Mavern. Tüm hakları saklıdır.</div>
     <div>
@@ -376,12 +605,8 @@
       <a href="kvkk.html">KVKK Aydınlatma Metni</a>
     </div>
   </footer>
-
 </main>
 
-<!-- ============================================================
-     ÜRÜNLER OVERLAY (Tam liste)
-=============================================================== -->
 <div id="productsPanel" class="overlay" aria-hidden="true">
   <div class="overlay-card dark">
     <button class="close-btn" type="button" onclick="closeProductsPanel()" aria-label="Ürün panelini kapat">×</button>
@@ -395,9 +620,6 @@
   </div>
 </div>
 
-<!-- ============================================================
-     CHECKOUT OVERLAY (Sipariş ön talep formu)
-=============================================================== -->
 <div id="checkoutOverlay" class="overlay" aria-hidden="true">
   <div class="overlay-card">
     <div class="head">
@@ -425,7 +647,6 @@
       </div>
 
       <div class="full kvkk-box">
-        <!-- KVKK içeriğini site içinde göstermek için iframe -->
         <iframe src="kvkk.html" title="KVKK Aydınlatma Metni"></iframe>
       </div>
 
@@ -447,50 +668,98 @@
   </div>
 </div>
 
-<!-- ============================================================
-     SCRIPTLER
-=============================================================== -->
 <script src="script.js"></script>
 <script>
-  // ============================================================
-  //  Auth / Hesap linki & AI profil ön-yükleme
-  //  - Kullanıcı JWT varsa /api/auth/me çağrılır
-  //  - Hero’da kişisel karşılama satırı gösterilir
-  //  - İleride AI için kullanılacak profil localStorage’a da yazılır
-  // ============================================================
+  const ASSETS = {
+    dark: {
+      navbarLogo: 'mavern-site-ici-logo.png',
+      introM: 'mavern-site-ici-logo.png',
+      wordmark: 'mavern-koyu-tema-başlık.png',
+      cart: 'sepet-koyu-tema.png'
+    },
+    light: {
+      navbarLogo: 'mavern-site-ici-acık-tema-logo.png',
+      introM: 'mavern-site-ici-acık-tema-logo.png',
+      wordmark: 'mavern-acik-tema-baslik.png',
+      cart: 'sepet.png'
+    }
+  };
+
+  function getTheme(){
+    return (document.documentElement.getAttribute('data-theme') || 'dark').toLowerCase();
+  }
+
+  /* ✅ Artık sidebar tema butonu yok: bu fonksiyon no-op */
+  function syncSidebarThemeBtn(){}
+
+  function applyThemeAssets(){
+    const theme = getTheme() === 'light' ? 'light' : 'dark';
+    const a = ASSETS[theme];
+
+    const navbarLogo = document.getElementById('navbarLogo');
+    const introMLogo = document.getElementById('introMLogo');
+    const cartIconImg = document.getElementById('cartIconImg');
+    const navbarWordmark = document.getElementById('navbarWordmark');
+    const introWordmark = document.getElementById('introWordmark');
+
+    if (navbarLogo) navbarLogo.src = a.navbarLogo;
+    if (introMLogo) introMLogo.src = a.introM;
+    if (cartIconImg) cartIconImg.src = a.cart;
+
+    if (navbarWordmark) navbarWordmark.src = a.wordmark;
+    if (introWordmark) introWordmark.src = a.wordmark;
+
+    syncSidebarThemeBtn();
+  }
+
+  (function watchTheme(){
+    applyThemeAssets();
+    const obs = new MutationObserver(() => applyThemeAssets());
+    obs.observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+  })();
+
+  (function intro(){
+    try{
+      const seen = sessionStorage.getItem('mavern_intro_seen');
+      if (seen === '1') return;
+      sessionStorage.setItem('mavern_intro_seen', '1');
+    }catch(_){}
+
+    const overlay = document.getElementById('introOverlay');
+    if (!overlay) return;
+
+    overlay.style.display = 'flex';
+
+    const FADE_OUT_AT = 1350;
+    const REMOVE_AT   = 1750;
+
+    setTimeout(() => overlay.classList.add('intro-fadeout'), FADE_OUT_AT);
+    setTimeout(() => overlay.style.display = 'none', REMOVE_AT);
+  })();
+
   window.mavernProfile = null;
 
   (function initAccountAndProfile(){
-    const linkId = 'accountLink';
-    const link = document.getElementById(linkId);
+    const link = document.getElementById('accountLink');
 
     let token = null;
-    try {
-      token = localStorage.getItem('mavern_jwt');
-    } catch (_) {}
+    try { token = localStorage.getItem('mavern_jwt'); } catch (_) {}
 
-    if (link) {
-      link.textContent = token ? 'Hesabım' : 'Giriş / Kayıt';
-    }
+    if (link) link.textContent = token ? 'Hesabım' : 'Giriş / Kayıt';
     if (!token) return;
 
-    // 1) Kullanıcı bilgisi
-    fetch('/api/auth/me', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    })
+    fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data || !data.success || !data.user) return;
 
         const u = data.user;
 
-        // Hesap linki label
         if (link) {
           const labelBase = u.displayName || u.fullName || (u.email || '').split('@')[0];
           link.textContent = labelBase ? (labelBase + ' • Hesabım') : 'Hesabım';
         }
 
-        // Hero’da kişisel mesaj
         const heroLine = document.getElementById('heroPersonalLine');
         if (heroLine) {
           const name = u.fullName || u.displayName || (u.email || '').split('@')[0];
@@ -498,51 +767,29 @@
           heroLine.style.display = 'block';
         }
 
-        // 2) Profil / AI snapshot kaynağı
-        return fetch('/api/profile/full', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
+        return fetch('/api/profile/full', { headers: { 'Authorization': 'Bearer ' + token } });
       })
       .then(r => r && r.ok ? r.json() : null)
       .then(data => {
         if (!data || !data.success) return;
         window.mavernProfile = data.profile || null;
-        try {
-          localStorage.setItem('mavern_ai_profile', JSON.stringify(window.mavernProfile || {}));
-        } catch (_) {}
+        try { localStorage.setItem('mavern_ai_profile', JSON.stringify(window.mavernProfile || {})); } catch (_) {}
       })
-      .catch(function(){
-        // Sessiz fail: misafir gibi devam et
-      });
+      .catch(function(){});
   })();
 
-  // ============================================================
-  //  AI Snapshot Helper
-  //  - server.js içindeki /api/checkout body.profileSnapshot alanına
-  //    gönderilecek veriyi hazırlar.
-  // ============================================================
   window.mavernGetProfileSnapshot = function(){
     const snapshot = {};
+    if (window.mavernProfile && typeof window.mavernProfile === 'object') snapshot.serverProfile = window.mavernProfile;
 
-    // Sunucudan gelen profil
-    if (window.mavernProfile && typeof window.mavernProfile === 'object') {
-      snapshot.serverProfile = window.mavernProfile;
-    }
-
-    // Frontend tarafında tutulabilecek ek sinyaller
     try {
       const localRaw = localStorage.getItem('mavern_ai_profile_local');
       if (localRaw) {
         const localObj = JSON.parse(localRaw);
-        if (localObj && typeof localObj === 'object') {
-          snapshot.localSignals = localObj;
-        }
+        if (localObj && typeof localObj === 'object') snapshot.localSignals = localObj;
       }
-    } catch (_) {
-      // JSON parse hatası vb. durumlarda sessiz geç
-    }
+    } catch (_) {}
 
-    // Boşsa null döndür; backend null’ı handle edebilecek
     return Object.keys(snapshot).length ? snapshot : null;
   };
 </script>
